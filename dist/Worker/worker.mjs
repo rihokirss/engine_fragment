@@ -78780,6 +78780,7 @@ class VirtualPropertiesController {
     // which makes bulk reads (e.g. getItemsData over all psets) O(n²).
     __publicField(this, "_localIdIndexCache", null);
     __publicField(this, "_relationsItemIndexCache", null);
+    __publicField(this, "_categoryIndexCache", null);
     this._virtualModel = virtualModel;
     this._model = virtualModel.data;
     this._boxes = boxes;
@@ -79438,25 +79439,57 @@ class VirtualPropertiesController {
         }
       }
     }
-    for (let index = 0; index < this._model.categoriesLength(); index++) {
-      const currentCategory = this._model.categories(index);
-      if (!currentCategory)
-        continue;
-      const localId = this._model.localIds(index);
-      if (deletedItems.has(localId)) {
-        continue;
-      }
+    const catIndex = this.getCategoryIndex();
+    for (const [currentCategory, ids] of catIndex) {
       for (const categoryRegex of categories) {
         if (categoryRegex.test(currentCategory)) {
           if (!result[currentCategory]) {
             result[currentCategory] = [];
           }
-          result[currentCategory].push(localId);
+          const target = result[currentCategory];
+          if (deletedItems.size > 0) {
+            for (const localId of ids) {
+              if (!deletedItems.has(localId))
+                target.push(localId);
+            }
+          } else {
+            for (const localId of ids)
+              target.push(localId);
+          }
           break;
         }
       }
     }
     return result;
+  }
+  /**
+   * Lazily built category → localIds index over the immutable flatbuffer
+   * data. Keyed by the underlying buffer and length so it rebuilds if the
+   * model buffer is regenerated. Items created/updated/deleted via edit
+   * requests are handled by the callers on top of this index.
+   */
+  getCategoryIndex() {
+    const arr = this._model.localIdsArray();
+    const length = this._model.categoriesLength();
+    let cache = this._categoryIndexCache;
+    if (!cache || cache.length !== length || arr && cache.buffer !== arr.buffer) {
+      const map = /* @__PURE__ */ new Map();
+      for (let index = 0; index < length; index++) {
+        const currentCategory = this._model.categories(index);
+        if (!currentCategory)
+          continue;
+        const localId = this._model.localIds(index);
+        let ids = map.get(currentCategory);
+        if (!ids) {
+          ids = [];
+          map.set(currentCategory, ids);
+        }
+        ids.push(localId);
+      }
+      cache = { buffer: arr ? arr.buffer : null, length, map };
+      this._categoryIndexCache = cache;
+    }
+    return cache.map;
   }
   getItemsWithGeometry() {
     const meshes = this._model.meshes(new Meshes());

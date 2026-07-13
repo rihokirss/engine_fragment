@@ -5635,6 +5635,14 @@ declare class VirtualPropertiesController {
     getItemsOfCategories(categories: RegExp[]): {
         [category: string]: number[];
     };
+    private _categoryIndexCache;
+    /**
+     * Lazily built category → localIds index over the immutable flatbuffer
+     * data. Keyed by the underlying buffer and length so it rebuilds if the
+     * model buffer is regenerated. Items created/updated/deleted via edit
+     * requests are handled by the callers on top of this index.
+     */
+    private getCategoryIndex;
     getItemsWithGeometry(): number[];
     getItemsWithGeometryCategories(): (string | null)[];
     private checkAttribute;
