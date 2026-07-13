@@ -33638,12 +33638,13 @@ class VirtualPropertiesController {
     const allAttributesLength = this._model.attributesLength();
     const res = [];
     const missingItemsToIterate = new Set(itemIds);
+    const itemIdSet = (itemIds == null ? void 0 : itemIds.length) ? new Set(itemIds) : null;
     for (let i = 0; i < allAttributesLength; i++) {
       const localId = this._model.localIds(i);
       if (localId === null)
         continue;
       missingItemsToIterate.delete(localId);
-      if ((itemIds == null ? void 0 : itemIds.length) && !itemIds.includes(localId))
+      if (itemIdSet && !itemIdSet.has(localId))
         continue;
       const attribute = this._model.attributes(i);
       if (!attribute)
