@@ -1,4 +1,5 @@
 import * as flatbuffers from 'flatbuffers';
+import { Font } from 'three/examples/jsm/Addons.js';
 import { LineMaterial } from 'three/examples/jsm/Addons.js';
 import { LineMaterialParameters } from 'three/examples/jsm/lines/LineMaterial.js';
 import type { ModelLoadCallback } from 'web-ifc';
@@ -432,6 +433,7 @@ export declare interface CreateGlobalTransformRequest extends BaseCreateRequest 
  * Interface for create index edit requests. Indexes are name-keyed, so
  * `data.name` identifies the index. Fails silently if an index with the
  * same name already exists; use UPDATE_INDEX to replace.
+ * @throws IndexValidationError {@link IndexValidationError}
  */
 export declare interface CreateIndexRequest extends BaseEditRequest {
     type: EditRequestType.CREATE_INDEX;
@@ -1132,6 +1134,7 @@ declare namespace ET {
         DeleteItemRequest,
         DeleteRelationRequest,
         RawIndexData,
+        IndexValidationError,
         CreateIndexRequest,
         UpdateIndexRequest,
         DeleteIndexRequest,
@@ -1232,6 +1235,32 @@ export declare class FloatVector {
     mutate_z(value: number): boolean;
     static sizeOf(): number;
     static createFloatVector(builder: flatbuffers.Builder, x: number, y: number, z: number): flatbuffers.Offset;
+}
+
+declare interface FontConfig {
+    /**
+     * @see {@link Font.generateShapes}
+     * @default 0.2
+     */
+    size: number;
+    /**
+     * @see {@link Font.generateShapes}
+     * @default "ltr"
+     */
+    direction: "ltr" | "rtl" | "tb";
+    /**
+     * Number of segments per shape. Expects a `Integer`.
+     * @see {@link THREE.ShapeGeometry}
+     * @default 12
+     */
+    curveSegments: number;
+    /**
+     * Label offset from line's tip, negative values will offset label onto line.
+     * When using negative values that may exceed the axis line,
+     * you may want to set the label's material `side` to `THREE.DoubleSide`.
+     * @default 0.5
+     */
+    offset: number;
 }
 
 declare class FragmentsConnection extends Connection {
@@ -1483,22 +1512,31 @@ export declare class FragmentsModel {
      * iteration) but valid for any mode. Number keys come back as a
      * `Uint32Array`, string keys as `string[]`.
      */
-    getIndexKeys(name: string): Promise<string[] | Uint32Array | null>;
+    getIndexKeys<K extends string | number>(name: string): Promise<IndexArrayType<K> | null>;
+    /**
+     * Get key at given index.
+     * Useful for keys-only indexes but valid for any mode.
+     */
+    getIndexKey<K extends string | number>(name: string, index: number): Promise<K | null>;
+    /**
+     * Get the values of an index. Useful for inverse lookups.
+     */
+    getIndexValues<V extends string | number>(name: string): Promise<V[] | null>;
     /**
      * Test whether a key exists in the named index without resolving its value.
      */
-    hasIndexEntry(name: string, key: string | number): Promise<boolean>;
+    hasIndexEntry<K extends string | number>(name: string, key: K): Promise<boolean>;
     /**
      * Forward lookup of a single entry in the named index. The return shape
      * depends on the index mode (see {@link IndexEntry}).
      */
-    getIndexEntry(name: string, key: string | number): Promise<IndexEntry>;
+    getIndexEntry<K extends string | number, V extends IndexEntry>(name: string, key: K): Promise<V | null>;
     /**
      * Inverse lookup. For an index with forward direction `key -> value`,
      * returns every key that maps to `value`. The inverse map is built lazily
      * on first call and cached for the model's lifetime.
      */
-    getInverseIndexEntry(name: string, value: string | number): Promise<InverseIndexEntry>;
+    getInverseIndexEntry<K extends string | number, V extends string | number>(name: string, value: K): Promise<IndexArrayType<V> | null>;
     getItemsWithGeometryCategories(): Promise<(string | null)[]>;
     /**
      * Get all the items of the model that have geometry.
@@ -1707,25 +1745,45 @@ export declare class FragmentsModel {
     /**
      * Get the grids of the model (if any).
      *
-     * Returns a `THREE.Group` with one child per grid (each child carries
-     * `userData.id = localId` and `userData.kind = "grid"`). Each grid's
-     * children are `THREE.Line` instances with `userData.kind = "axis"`,
-     * `userData.tag` (the axis label), and `userData.axis` ("uAxes",
-     * "vAxes", or "wAxes").
+     * Returns a `THREE.Group` with one child per grid (each child is a `THREE.Group`
+     * that carries `userData.id = localId` and `userData.kind = "grid"`).
+     *
+     * Each grid's children are `THREE.Group` instances with `userData.kind = "axis"`,
+     * acting as an axis container.
+     * A `THREE.LINE` instance with `userData.kind = "line"` is appended to it.
+     *
+     * When opting in to showing labels, two `THREE.SHAPE` instances with
+     * `userData.kind = "label"` and `userData.index` (the label's index, `0` or `1`)
+     * are appended to the axis container.
+     *
+     * All grid's descendants (`"axis"`, `"line"`, `"label"`) carry `userData.tag` (the axis label value)
+     * and `userData.axis` (`"uAxes"`, `"vAxes"`, or `"wAxes"`).
      */
-    getGrids(): Promise<THREE.Group<THREE.Object3DEventMap>>;
+    getGrids(config?: GridsConfig): Promise<THREE.Group<THREE.Object3DEventMap>>;
     /**
-     * The shared `LineDashedMaterial` used to render every grid axis line.
+     * The shared material used to render every grid axis line.
      * Mutating its properties (color, opacity, dash sizes, etc.) updates all
      * rendered grid lines immediately. Use `setGridMaterial` to swap to a
      * different material instance.
      */
-    getGridMaterial(): THREE.LineDashedMaterial;
+    getGridMaterial(): THREE.LineBasicMaterial;
     /**
      * Replace the shared grid material. The previous material is disposed
      * after the swap.
      */
-    setGridMaterial(material: THREE.LineDashedMaterial): void;
+    setGridMaterial(material: THREE.LineBasicMaterial): void;
+    /**
+     * The shared material used to render every grid axis label.
+     * Mutating its properties (color, opacity, dash sizes, etc.) updates all
+     * rendered grid labels immediately. Use `setGridLabelMaterial` to swap to a
+     * different material instance.
+     */
+    getGridLabelMaterial(): THREE.Material;
+    /**
+     * Replace the shared grid label material. The previous material is disposed
+     * after the swap.
+     */
+    setGridLabelMaterial(material: THREE.Material): void;
     /**
      * Sets a camera for the model. The model will use it to load tiles dinamically depending on the users view
      * (e.g. hiding items that are not in the view, setting the LOD to far away items, etc).
@@ -2098,15 +2156,8 @@ export declare class FragmentsModels {
      *
      * @param workerURL - The URL of the worker script that will handle the fragments processing. If omitted, it falls back to the worker bundled with the package (only works with bundlers that can resolve `new URL("./Worker/worker.mjs", import.meta.url)`).
      * @param options - Optional configuration.
-     * @param options.classicWorker - If true, creates classic (non-module) workers. Use together with `toClassicWorker()`.
-     * @param options.maxWorkers - Effective max worker cap. Defaults to `navigator.hardwareConcurrency - 3`, floored at 2. Set explicitly for CI environments or when you know your workload.
-     * @param options.threadGroups - Reserved worker capacity per named thread group. Workers are spawned lazily (nothing is spawned until the first load targets a pool). A model loaded with `threadGroup: "x"` always lands on group "x"'s pool; default-pool loads never touch a reserved worker. The sum of group sizes must leave at least one slot for the default pool, otherwise init throws.
      */
-    constructor(workerURL?: string, options?: {
-        classicWorker?: boolean;
-        maxWorkers?: number;
-        threadGroups?: Record<string, number>;
-    });
+    constructor(workerURL?: string, options?: FragmentsModelsOptions);
     /**
      * Effective max worker cap for this instance. Surfaces the value derived
      * from `navigator.hardwareConcurrency - 3` (floored at 2) or the explicit
@@ -2124,7 +2175,7 @@ export declare class FragmentsModels {
      * @param options - Configuration options for loading the model.
      * @param options.modelId - Unique identifier for the model.
      * @param options.camera - Optional camera to use for model culling and LOD.
-     * @param options.raw - If true, loads raw (uncompressed) data. Default is false.
+     * @param options.raw - Whether the buffer is raw (uncompressed) or deflated. If omitted, it is auto-detected from the buffer (see {@link isRawBuffer}).
      * @param options.userData - Optional custom data to attach to the model.
      * @param options.virtualModelConfig - Optional configuration for virtual model setup.
      * @returns Promise resolving to the loaded FragmentsModel instance.
@@ -2172,6 +2223,21 @@ export declare class FragmentsModels {
     private manageRequest;
     private newUpdateEvent;
     private newRequestEvent;
+}
+
+export declare interface FragmentsModelsOptions {
+    /**
+     * If true, creates classic (non-module) workers. Use together with `toClassicWorker()`.
+     */
+    classicWorker?: boolean;
+    /**
+     * Effective max worker cap. Defaults to `navigator.hardwareConcurrency - 3`, floored at 2. Set explicitly for CI environments or when you know your workload.
+     */
+    maxWorkers?: number;
+    /**
+     * Reserved worker capacity per named thread group. Workers are spawned lazily (nothing is spawned until the first load targets a pool). A model loaded with `threadGroup: "x"` always lands on group "x"'s pool; default-pool loads never touch a reserved worker. The sum of group sizes must leave at least one slot for the default pool, otherwise init throws.
+     */
+    threadGroups?: Record<string, number>;
 }
 
 declare namespace GE {
@@ -2319,13 +2385,37 @@ export declare class GeometryEngine {
 }
 
 export declare type GeometryProcessSettings = {
+    /**
+     * Maximum number of vertices to try to define a brep shell. If the number of vertices is greater than the threshold, the geometry will be saved as raw data, consuming more space.
+     */
     threshold: number;
+    /**
+     * Precision of the vertices when computing breps.
+     */
     precision: number;
+    /**
+     * Precision of the normals when computing breps.
+     */
     normalPrecision: number;
+    /**
+     * Precision of the plane constants for coplanarity when computing breps.
+     */
     planePrecision: number;
+    /**
+     * The threshold use to distinguish hard and smooth faces.
+     */
     faceThreshold: number;
+    /**
+     * The thresholds use to distinguish hard and smooth faces for each category. It overrides the global faceThreshold.
+     */
     categoryFaceThresholds?: Map<number, number>;
+    /**
+     * Whether to force ifc spaces to be transparent.
+     */
     forceTransparentSpaces: boolean;
+    /**
+     * Whether to process IfcRelSpaceBoundary2ndLevel entities and generate meshes from their IfcConnectionSurfaceGeometry.
+     */
     processIfcRelSpaceBoundarySecondLevel?: boolean;
 };
 
@@ -2336,8 +2426,10 @@ export declare const geometryTypes: Set<number>;
 
 export declare class GeomsFbUtils {
     static ushortMaxValue: number;
-    static round(value: number, precission: number): number;
-    static getAABB(vertices: Float32Array | number[]): {
+    static round(value: number, precision: number): number;
+    static floor(value: number, precision: number): number;
+    static ceil(value: number, precision: number): number;
+    static getAABB(vertices: Float32Array | number[], precision?: number): {
         min: {
             x: number;
             y: number;
@@ -2491,6 +2583,10 @@ export declare type GridData = {
     wAxes: GridAxisData[];
 };
 
+declare interface GridsConfig {
+    labels?: LabelConfig;
+}
+
 /** Per-group output data: the set of IFC entity IDs to include and any rewritten relationship lines. */
 export declare interface GroupData {
     fileIds: Set<number>;
@@ -2586,6 +2682,15 @@ export declare class IfcImporter {
      */
     replaceSiteElevation: boolean;
     /**
+     * Whether the generated materials should render both faces (double-sided)
+     * instead of just the front face.
+     * @remarks Some exporters (e.g. certain Revit pipelines) produce geometry
+     * whose winding is not consistent, so front-face-only rendering can hide
+     * those faces. Enable this to render both sides. Defaults to false
+     * (front-face only) to match the previous behavior.
+     */
+    doubleSidedMaterials: boolean;
+    /**
      * If set, ignores the items that are further away to the origin than this value.
      * Keep in mind that if your IFC is correctly georreferenced, this value should never
      * be too high. If it's too high, it's either because your file uses absolute coordinates,
@@ -2647,6 +2752,8 @@ export declare interface IfcSplitterPath {
     basename(p: string): string;
 }
 
+export declare type IndexArrayType<T extends string | number> = T extends string ? string[] : T extends number ? Uint32Array : never;
+
 /**
  * Forward-lookup result for a single key in a {@link IndexInfo}.
  *
@@ -2655,7 +2762,7 @@ export declare interface IfcSplitterPath {
  * values) for the 1:N modes. The `Uint32Array` is a zero-copy view over the
  * underlying buffer; do not mutate it.
  */
-export declare type IndexEntry = string | number | Uint32Array | string[] | null;
+export declare type IndexEntry = string | number | Uint32Array | string[];
 
 /**
  * Snapshot of an index's shape. Returned by `getIndexInfo` so callers can
@@ -2697,6 +2804,29 @@ export declare type IndexMode = "keysOnly" | "oneToOne" | "oneToNLinear" | "oneT
  */
 export declare type IndexRequest = CreateIndexRequest | UpdateIndexRequest | DeleteIndexRequest;
 
+export declare interface IndexValidationError extends Error {
+    cause: {
+        type: "invalid-length";
+        key: "values" | "end" | "start";
+        expected: number;
+        actual: number;
+    } | {
+        type: "invalid-bounds";
+        errors: {
+            index: number;
+            start: number;
+            end: number;
+        }[];
+    } | {
+        type: "invalid-number";
+        key: "keys" | "values";
+        errors: {
+            index: number;
+            value: number;
+        }[];
+    };
+}
+
 /** Value type of a user-defined model index. `none` for keys-only indexes. */
 export declare type IndexValueType = "string" | "number" | "none";
 
@@ -2718,6 +2848,26 @@ export declare type InverseIndexEntry = Uint32Array | string[] | null;
  * assume every request carries a `localId`.
  */
 export declare function isIndexRequest(request: BaseEditRequest): request is IndexRequest;
+
+/**
+ * Returns whether `bytes` is a raw (uncompressed) fragments buffer rather than
+ * a pako/zlib-deflated one, by inspecting the first two bytes.
+ *
+ * A deflated fragments buffer is a zlib stream: byte 0's low nibble is the
+ * deflate compression method (8) and `(byte0 << 8 | byte1)` is a multiple of 31
+ * (the zlib header check). A raw fragments buffer is a flatbuffer, whose leading
+ * 32-bit root offset does not satisfy that. This lets `load` and the model
+ * constructors accept either form without the caller tracking which it is.
+ *
+ * In the extremely unlikely case a raw buffer's first two bytes happen to look
+ * like a zlib header, pass `raw` explicitly to override the detection.
+ *
+ * Performance note: a raw (uncompressed) model is the fastest to load. Only
+ * deflate a fragments buffer when you persist it to disk or send it over the
+ * network. Inflating and deflating on every load, with no transport in between,
+ * just wastes CPU.
+ */
+export declare function isRawBuffer(bytes: Uint8Array): boolean;
 
 /** Represents a single item in a Fragments model, providing methods to access and retrieve its attributes, relations, geometry, and data. */
 declare class Item {
@@ -3063,6 +3213,31 @@ export declare type ItemsQueryParams = {
         name: string;
         query?: ItemsQueryParams;
     };
+};
+
+declare type LabelConfig = {
+    show: true;
+    /**
+     * Three {@link Font} instance
+     *
+     * Convert font file to json: https://gero3.github.io/facetype.js/
+     *
+     * @example
+     * import { Font, FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
+     *
+     * const font = await new Promise<Font>((resolve, reject) =>
+     *   new FontLoader().load(
+     *     new URL("./assets/font.json", import.meta.url).href,
+     *     resolve,
+     *     undefined,
+     *     reject
+     *   )
+     * );
+     */
+    font: Font;
+    config?: Partial<FontConfig>;
+} | {
+    show?: false;
 };
 
 /**
@@ -4061,6 +4236,15 @@ declare class RaycastController {
     raycast(ray: THREE.Ray, frustum: THREE.Frustum, planes: THREE.Plane[], returnAll?: boolean): any;
     snapRaycast(ray: THREE.Ray, frustum: THREE.Frustum, snaps: Snap[], planes: THREE.Plane[]): any[];
     rectangleRaycast(frustum: THREE.Frustum, planes: THREE.Plane[], fullyInside: boolean): number[];
+    private narrowPhaseFrustum;
+    private sampleMatchesFrustum;
+    private geometryFullyInside;
+    private buildSampleGeometries;
+    private toLocalPlanes;
+    private pushLocalPlanes;
+    private geometryIntersectsPlanes;
+    private triangleIntersectsFrustum;
+    private clipPolygonByPlane;
     private snapCastEdges;
     private filterVisible;
     private computeSnaps;
@@ -4138,7 +4322,7 @@ export declare interface RaycastResult {
     /** The second edge of the snapped edge */
     snappedEdgeP2?: THREE.Vector3;
     /** The points of the raycasted face */
-    facePoints?: Float32Array;
+    facePoints?: Float64Array;
     /** The indices of the raycasted face */
     faceIndices?: Uint16Array;
 }
@@ -4453,6 +4637,8 @@ export declare class SingleThreadedFragmentsModel {
     get modelId(): string;
     /**
      * The constructor of the fragments model.
+     * @param raw - Whether `modelData` is raw (uncompressed) or deflated. If
+     * omitted, it is auto-detected from the buffer (see {@link isRawBuffer}).
      */
     constructor(modelId: string, modelData: Uint8Array, raw?: boolean);
     /**
@@ -4493,20 +4679,29 @@ export declare class SingleThreadedFragmentsModel {
      * iteration) but valid for any mode. Number keys come back as a
      * `Uint32Array`, string keys as `string[]`.
      */
-    getIndexKeys(name: string): string[] | Uint32Array | null;
+    getIndexKeys<K extends string | number>(name: string): IndexArrayType<K> | null;
+    /**
+     * Get key at given index.
+     * Useful for keys-only indexes but valid for any mode.
+     */
+    getIndexKey<K extends string | number>(name: string, index: number): K | null;
+    /**
+     * Get the values of an index. Useful for inverse lookups.
+     */
+    getIndexValues<V extends string | number>(name: string): V[] | null;
     /**
      * Test whether a key exists in the named index without resolving its value.
      */
-    hasIndexEntry(name: string, key: string | number): boolean;
+    hasIndexEntry<K extends string | number>(name: string, key: K): boolean;
     /**
      * Forward lookup of a single entry in the named index. The return shape
      * depends on the index mode.
      */
-    getIndexEntry(name: string, key: string | number): IndexEntry;
+    getIndexEntry<K extends string | number, V extends IndexEntry>(name: string, key: K): V | null;
     /**
      * Inverse lookup. Returns every key that maps to `value`.
      */
-    getInverseIndexEntry(name: string, value: string | number): InverseIndexEntry;
+    getInverseIndexEntry<K extends string | number, V extends string | number>(name: string, value: K): IndexArrayType<V> | null;
     /**
      * Get all the items of the model that have geometry.
      */
@@ -4550,7 +4745,7 @@ export declare class SingleThreadedFragmentsModel {
      * Get the spatial structure children of the specified items.
      * @param ids - The IDs of the items to look up.
      */
-    getItemsChildren(ids: Identifier[]): void;
+    getItemsChildren(ids: Identifier[]): number[];
     /**
      * Get all the data of the specified items.
      * @param ids - The IDs of the items to look up.
@@ -4670,10 +4865,11 @@ export declare class SingleThreadedFragmentsModel {
      * Apply a batch of edit requests. Accumulates onto this model's
      * pending-edit history; call {@link save} to flatten them into a new
      * committed buffer or {@link reset} to discard.
-     * @returns The delta flatbuffer bytes and the local IDs assigned to
+     * @param [raw] whether to return the raw buffer or the the result of {@link pako.deflate}. Defaults to `true`.
+     * @returns The delta raw/deflated flatbuffer bytes and the local IDs assigned to
      * any newly-created items.
      */
-    edit(requests: EditRequest[]): {
+    edit(requests: EditRequest[], raw?: boolean): {
         deltaModelBuffer: Uint8Array;
         ids: number[];
     };
@@ -4681,9 +4877,10 @@ export declare class SingleThreadedFragmentsModel {
     reset(): void;
     /**
      * Flatten the current pending-edit history into a new committed buffer.
-     * @returns The raw flatbuffer bytes of the updated model.
+     * @param [raw] whether to return the raw buffer or the the result of {@link pako.deflate}. Defaults to `true`.
+     * @returns The raw/deflated flatbuffer bytes of the updated model.
      */
-    save(): Uint8Array;
+    save(raw?: boolean): Uint8Array;
     /** Undo the last edit. */
     undo(): void;
     /** Redo the last undone edit. */
@@ -4894,6 +5091,7 @@ export declare interface UpdateGlobalTransformRequest extends BaseUpdateRequest 
  * Interface for update index edit requests. Replaces the entire index
  * identified by `data.name`. Use DELETE_INDEX + CREATE_INDEX if you want
  * to rename.
+ * @throws IndexValidationError {@link IndexValidationError}
  */
 export declare interface UpdateIndexRequest extends BaseEditRequest {
     type: EditRequestType.UPDATE_INDEX;
@@ -5051,10 +5249,12 @@ declare class VirtualFragmentsModel {
     constructor(modelId: string, data: ArrayBuffer, connection: Connection, config?: VirtualModelConfig);
     getIndexNames(): string[];
     getIndexInfo(name: string): IndexInfo | null;
-    getIndexKeys(name: string): Uint32Array | string[] | null;
-    hasIndexEntry(name: string, key: string | number): boolean;
-    getIndexEntry(name: string, key: string | number): IndexEntry;
-    getInverseIndexEntry(name: string, value: string | number): InverseIndexEntry;
+    getIndexKeys<K extends string | number>(name: string): IndexArrayType<K> | null;
+    getIndexKey<K extends string | number>(name: string, index: number): K | null;
+    getIndexValues<V extends string | number>(name: string): V[] | null;
+    hasIndexEntry<K extends string | number>(name: string, key: K): boolean;
+    getIndexEntry<K extends string | number, V extends IndexEntry>(name: string, key: K): V | null;
+    getInverseIndexEntry<K extends string | number, V extends string | number>(name: string, value: K): IndexArrayType<V> | null;
     getItemsByConfig(condition: (item: number) => boolean): number[];
     getItemsCategories(ids: number[]): (string | null)[];
     getItemIdsByLocalIds(localIds: number[]): number[];
@@ -5158,12 +5358,12 @@ declare class VirtualFragmentsModel {
     getBBoxes(items: number[]): THREE.Box3;
     traverse(itemIds: number[], onItem: (itemId: number, index: number) => void): void;
     update(time: number): boolean;
-    edit(requests: EditRequest[]): {
+    edit(requests: EditRequest[], raw?: boolean): {
         deltaModelBuffer: Uint8Array;
         ids: number[];
     };
     reset(): void;
-    save(): Uint8Array;
+    save(raw?: boolean): Uint8Array;
     undo(): void;
     redo(): void;
     getRequests(): {
@@ -5253,6 +5453,8 @@ declare class VirtualIndexesController {
      * `Uint32Array`, string keys as a fresh `string[]`.
      */
     getKeys(name: string): Uint32Array | string[] | null;
+    getKey(name: string, index: number): string | number | null;
+    getValues(name: string): string[] | number[] | null;
     /**
      * Test whether a key exists in the named index without resolving its value.
      */
@@ -5262,7 +5464,7 @@ declare class VirtualIndexesController {
      * mode (see {@link IndexEntry}). Returns `null` if the index or key is
      * missing, or the key type doesn't match.
      */
-    getEntry(name: string, key: string | number): IndexEntry;
+    getEntry(name: string, key: string | number): IndexEntry | null;
     /**
      * Inverse lookup. For a value, return every key that maps to it. Builds
      * and caches the inverse map on first call.
@@ -5389,6 +5591,10 @@ declare class VirtualPropertiesController {
     private _virtualModel;
     constructor(virtualModel: VirtualFragmentsModel, boxes: VirtualBoxController, config?: VirtualPropertiesConfig);
     private _relations;
+    private _localIdIndexCache;
+    private _relationsItemIndexCache;
+    private indexOfLocalId;
+    private indexOfRelationsItem;
     private getAllLocalIds;
     addInverseRelation(category: string, relation: string, inverseName: string): void;
     getItemsCount(): number;

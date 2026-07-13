@@ -9874,6 +9874,96 @@ function edit(model, requests, config) {
       continue;
     }
     if (request.type === EditRequestType.CREATE_INDEX || request.type === EditRequestType.UPDATE_INDEX) {
+      const { keys, values, end, start } = request.data;
+      const validateNumbers = (items, key) => {
+        if (!items || items.length === 0 || typeof items[0] !== "number") {
+          return;
+        }
+        const numberErrors = [];
+        for (let index = 0; index < items.length; index++) {
+          const value = items[index];
+          if (!Number.isInteger(value) || value < 0 || value > 4294967295) {
+            numberErrors.push({ index, value });
+          }
+        }
+        if (numberErrors.length) {
+          throw new Error(
+            `Invalid index request: ${key} must be non-negative 32-bit integers`,
+            {
+              cause: {
+                type: "invalid-number",
+                key,
+                errors: numberErrors
+              }
+            }
+          );
+        }
+      };
+      validateNumbers(keys, "keys");
+      validateNumbers(values, "values");
+      if (values && !end) {
+        if (values.length !== keys.length) {
+          throw new Error(
+            "Invalid index request: unexpected values vector length",
+            {
+              cause: {
+                type: "invalid-length",
+                key: "values",
+                expected: keys.length,
+                actual: values.length
+              }
+            }
+          );
+        }
+      }
+      if (values && end) {
+        if (end.length !== keys.length) {
+          throw new Error(
+            "Invalid index request: unexpected end vector length",
+            {
+              cause: {
+                type: "invalid-length",
+                key: "end",
+                expected: keys.length,
+                actual: end.length
+              }
+            }
+          );
+        }
+        if (start && start.length !== keys.length) {
+          throw new Error(
+            "Invalid index request: unexpected start vector length",
+            {
+              cause: {
+                type: "invalid-length",
+                key: "start",
+                expected: keys.length,
+                actual: start.length
+              }
+            }
+          );
+        }
+        const errors = [];
+        for (let index = 0; index < keys.length; index++) {
+          const valuesStart = (start == null ? void 0 : start[index]) ?? end[index - 1] ?? 0;
+          const valuesEnd = end[index];
+          if (valuesStart < 0 || valuesEnd > values.length || valuesStart > valuesEnd) {
+            errors.push({
+              index,
+              start: valuesStart,
+              end: valuesEnd
+            });
+          }
+        }
+        if (errors.length) {
+          throw new Error("Invalid index request: out of bounds value slices", {
+            cause: {
+              type: "invalid-bounds",
+              errors
+            }
+          });
+        }
+      }
       indexesToUpsert.set(request.data.name, request.data);
       indexesToDelete.delete(request.data.name);
       continue;
@@ -10581,7 +10671,6 @@ function edit(model, requests, config) {
     }
     categoriesOffsets.push(builder.createSharedString(attributes.category));
     if (attributes.guid) {
-      console.log(attributes.guid);
       guidsOffsets.push(builder.createSharedString(attributes.guid));
       guidsItems.push(currentId);
     }
@@ -11443,30 +11532,30 @@ __publicField(EditUtils, "getSerializedAttributes", getSerializedAttributes);
 __publicField(EditUtils, "itemDataToRawItemData", itemDataToRawItemData);
 __publicField(EditUtils, "DELTA_MODEL_ID", DELTA_MODEL_ID);
 class Point {
-  constructor(vertices, index, id, precission) {
+  constructor(vertices, index, id, precision) {
     __publicField(this, "x");
     __publicField(this, "y");
     __publicField(this, "z");
     __publicField(this, "hash");
     __publicField(this, "id");
-    this.x = GeomsFbUtils.round(vertices[index * 3], precission);
-    this.y = GeomsFbUtils.round(vertices[index * 3 + 1], precission);
-    this.z = GeomsFbUtils.round(vertices[index * 3 + 2], precission);
+    this.x = GeomsFbUtils.round(vertices[index * 3], precision);
+    this.y = GeomsFbUtils.round(vertices[index * 3 + 1], precision);
+    this.z = GeomsFbUtils.round(vertices[index * 3 + 2], precision);
     this.hash = `${this.x}/${this.y}/${this.z}`;
     this.id = id;
   }
 }
 class Points {
-  constructor(precission) {
+  constructor(precision) {
     __publicField(this, "list", /* @__PURE__ */ new Map());
     __publicField(this, "tempV1", new THREE.Vector3());
     __publicField(this, "tempV2", new THREE.Vector3());
     __publicField(this, "tempV3", new THREE.Vector3());
-    __publicField(this, "precission");
-    this.precission = precission;
+    __publicField(this, "precision");
+    this.precision = precision;
   }
   create(vertices, index) {
-    const point = new Point(vertices, index, this.list.size, this.precission);
+    const point = new Point(vertices, index, this.list.size, this.precision);
     if (!this.list.has(point.hash)) {
       this.list.set(point.hash, point);
     }
@@ -11492,7 +11581,7 @@ class Points {
       position[index3 * 3 + 1],
       position[index3 * 3 + 2]
     );
-    const pointPrecision = 1 / this.precission * 10;
+    const pointPrecision = 1 / this.precision * 10;
     const d1Valid = this.tempV1.distanceTo(this.tempV2) > pointPrecision;
     const d2Valid = this.tempV1.distanceTo(this.tempV3) > pointPrecision;
     const d3Valid = this.tempV2.distanceTo(this.tempV3) > pointPrecision;
@@ -11799,7 +11888,7 @@ class Profiles {
   }
 }
 class Plane {
-  constructor(plane, precission, normalPrecision) {
+  constructor(plane, precision, normalPrecision) {
     __publicField(this, "normal");
     __publicField(this, "constant");
     __publicField(this, "id");
@@ -11807,7 +11896,7 @@ class Plane {
     const nx = GeomsFbUtils.round(plane.normal.x, normalPrecision);
     const ny = GeomsFbUtils.round(plane.normal.y, normalPrecision);
     const nz = GeomsFbUtils.round(plane.normal.z, normalPrecision);
-    const c = GeomsFbUtils.round(plane.constant, precission);
+    const c = GeomsFbUtils.round(plane.constant, precision);
     this.normal = new THREE.Vector3(nx, ny, nz);
     this.constant = c;
     const planeSeparator = "||";
@@ -11815,10 +11904,16 @@ class Plane {
   }
 }
 const _GeomsFbUtils = class _GeomsFbUtils {
-  static round(value, precission) {
-    return Math.round(value * precission) / precission;
+  static round(value, precision) {
+    return Math.round(value * precision) / precision;
   }
-  static getAABB(vertices) {
+  static floor(value, precision) {
+    return Math.floor(value * precision) / precision;
+  }
+  static ceil(value, precision) {
+    return Math.ceil(value * precision) / precision;
+  }
+  static getAABB(vertices, precision) {
     let minX = Number.POSITIVE_INFINITY;
     let minY = Number.POSITIVE_INFINITY;
     let minZ = Number.POSITIVE_INFINITY;
@@ -11842,9 +11937,28 @@ const _GeomsFbUtils = class _GeomsFbUtils {
       if (z > maxZ)
         maxZ = z;
     }
-    return {
-      min: { x: minX, y: minY, z: minZ },
-      max: { x: maxX, y: maxY, z: maxZ }
+    return precision ? {
+      min: {
+        x: this.floor(minX, precision),
+        y: this.floor(minY, precision),
+        z: this.floor(minZ, precision)
+      },
+      max: {
+        x: this.ceil(maxX, precision),
+        y: this.ceil(maxY, precision),
+        z: this.ceil(maxZ, precision)
+      }
+    } : {
+      min: {
+        x: minX,
+        y: minY,
+        z: minZ
+      },
+      max: {
+        x: maxX,
+        y: maxY,
+        z: maxZ
+      }
     };
   }
   static transformFromMatrix(matrix, transform = {
@@ -11983,13 +12097,19 @@ const _GeomsFbUtils = class _GeomsFbUtils {
     var _a2;
     const pointsMap = /* @__PURE__ */ new Map();
     const profiles = /* @__PURE__ */ new Map();
+    const { precision } = settings;
     const getPointIndex = (x, y, z) => {
       const key = `${x},${y},${z}`;
       if (pointsMap.has(key)) {
         return pointsMap.get(key)[0];
       }
       const index2 = pointsMap.size;
-      pointsMap.set(key, [index2, x, y, z]);
+      pointsMap.set(key, [
+        index2,
+        this.round(x, precision),
+        this.round(y, precision),
+        this.round(z, precision)
+      ]);
       return index2;
     };
     for (let i = 0; i < index.length - 2; i += 3) {
@@ -12036,7 +12156,7 @@ const _GeomsFbUtils = class _GeomsFbUtils {
     const { threshold, precision, normalPrecision, planePrecision } = settings;
     const vertexCount = position.length / 3;
     const tooBigToShell = vertexCount > threshold;
-    const bbox = this.getAABB(position);
+    const bbox = this.getAABB(position, precision);
     if (bbox.min.x === 0 && bbox.min.y === 0 && bbox.min.z === 0 && bbox.max.x === 0 && bbox.max.y === 0 && bbox.max.z === 0) {
       throw new Error("Fragments: Bbox is not valid");
     }
@@ -15450,6 +15570,13 @@ class BitUtils {
     return 1 << value;
   }
 }
+function isRawBuffer(bytes) {
+  if (bytes.length < 2)
+    return true;
+  const isDeflateMethod = (bytes[0] & 15) === 8;
+  const headerIsMultipleOf31 = (bytes[0] << 8 | bytes[1]) % 31 === 0;
+  return !(isDeflateMethod && headerIsMultipleOf31);
+}
 class ParserHelper {
   static parseMaterial(material) {
     const r = material.r() / 255;
@@ -15648,7 +15775,7 @@ class FaceUtils {
     const xDim = 0;
     const yDim = 1;
     const zDim = 2;
-    const isMostlyHorizontal = absZ > absX && absZ > absY;
+    const isMostlyHorizontal = absZ >= absX && absZ >= absY;
     if (isMostlyHorizontal) {
       const lookingUp = normal.z > 0;
       if (lookingUp) {
@@ -15656,7 +15783,7 @@ class FaceUtils {
       }
       return [yDim, xDim];
     }
-    const isMostlyLookingToY = absY > absX && absY > absZ;
+    const isMostlyLookingToY = absY >= absX && absY >= absZ;
     if (isMostlyLookingToY) {
       const isLookingYPositive = normal.y > 0;
       if (isLookingYPositive) {
@@ -15829,33 +15956,6 @@ class AlignmentsManager {
     this._alignmentMaterials = {};
   }
 }
-class SetupManager {
-  async setup(model, bbox, modelData, raw, config) {
-    const message = this.getCreateModelMessage(model, modelData, raw, config);
-    const data = this.formatModelData(modelData);
-    const result = await model.threads.fetch(message, data);
-    this.updateBox(bbox, result);
-  }
-  formatModelData(modelData) {
-    if (modelData instanceof ArrayBuffer) {
-      return [modelData];
-    }
-    return void 0;
-  }
-  updateBox(bbox, result) {
-    bbox.min.copy(result.boundingBox.min);
-    bbox.max.copy(result.boundingBox.max);
-  }
-  getCreateModelMessage(model, modelData, raw, config) {
-    return {
-      class: MultiThreadingRequestClass.CREATE_MODEL,
-      modelId: model.modelId,
-      modelData,
-      raw,
-      config
-    };
-  }
-}
 class BoxManager {
   async getBoxes(model, localIds) {
     const ids = this.getIndividualBoxesIds(localIds);
@@ -15962,1922 +16062,6 @@ class CoordinatesManager {
     return positions;
   }
 }
-class ItemAttributes extends Map {
-  /**
-   * Creates a new ItemAttributes instance.
-   * @param localId - The local ID of the item.
-   * @param iterable - An optional iterable of key-value pairs to initialize the map with.
-   */
-  constructor(localId, iterable) {
-    super(iterable);
-    /**
-     * A map of local IDs to their corresponding attribute changes.
-     * This is used to track changes to the attributes over time.
-     */
-    __publicField(this, "tracker", null);
-    /**
-     * The local ID of the item.
-     */
-    __publicField(this, "localId");
-    /**
-     * A function that acts as a guard for adding items to the set.
-     * It determines whether a given value should be allowed to be added to the set.
-     *
-     * @param key - The key of the entry to be checked against the guard.
-     * @param value - The value of the entry to be checked against the guard.
-     * @returns A boolean indicating whether the value should be allowed to be added to the set.
-     *          By default, this function always returns true, allowing all values to be added.
-     *          You can override this behavior by providing a custom implementation.
-     */
-    __publicField(this, "guard", () => true);
-    this.localId = localId;
-  }
-  /**
-   * Gets the attributes as a plain javascript object.
-   */
-  get object() {
-    const attr = {};
-    for (const [key, data] of this.entries()) {
-      attr[key] = data.value;
-    }
-    return attr;
-  }
-  /**
-   * Sets an attribute in the map.
-   * @param key - The key of the attribute to set.
-   * @param attr - The attribute data to set.
-   * @returns The updated map.
-   */
-  set(key, attr) {
-    const guard = this.guard ?? (() => true);
-    const isValid = guard(key, attr);
-    if (!isValid)
-      return this;
-    const value = attr.type !== void 0 ? attr : { value: attr.value, type: this.getType(key) };
-    if (!this.tracker)
-      return super.set(key, value);
-    if (this.localId === null) {
-      console.warn(
-        "Item attributes are missing a valid localId. Changes can't be tracked."
-      );
-      return super.set(key, value);
-    }
-    let itemChanges = this.tracker.get(this.localId);
-    if (!itemChanges) {
-      itemChanges = { type: "modified", added: {}, deleted: [], modified: {} };
-      this.tracker.set(this.localId, itemChanges);
-    }
-    if (itemChanges.type === "added") {
-      itemChanges.data[key] = value;
-    } else if (itemChanges.type === "modified") {
-      if (this.has(key)) {
-        itemChanges.modified[key] = value;
-      } else if (itemChanges.deleted.includes(key)) {
-        itemChanges.deleted = itemChanges.deleted.filter((k) => k !== key);
-        itemChanges.modified[key] = value;
-      } else {
-        itemChanges.added[key] = value;
-      }
-    }
-    return super.set(key, value);
-  }
-  /**
-   * Sets the value of an attribute in the map.
-   * @param key - The key of the attribute to set.
-   * @param value - The value of the attribute to set.
-   * @returns The updated map.
-   */
-  setValue(key, value) {
-    return this.set(key, { value, type: this.getType(key) });
-  }
-  /**
-   * Sets the type of an attribute in the map.
-   * @param key - The key of the attribute to set.
-   * @param type - The type of the attribute to set.
-   * @returns The updated map.
-   */
-  setType(key, type) {
-    const value = this.getValue(key);
-    if (!value)
-      return this;
-    return this.set(key, { value, type });
-  }
-  /**
-   * Deletes an attribute from the map.
-   * @param key - The key of the attribute to delete.
-   * @returns The updated map.
-   */
-  delete(key) {
-    if (!this.tracker)
-      return super.delete(key);
-    const localId = this.get("localId");
-    if (localId === void 0 || typeof localId !== "number") {
-      console.warn(
-        "Item attributes are missing a valid localId. Changes can't be tracked."
-      );
-      if (key === "localId")
-        return false;
-      return super.delete(key);
-    }
-    if (key === "localId")
-      return false;
-    if (!this.has(key))
-      return false;
-    let itemChanges = this.tracker.get(localId);
-    if (!itemChanges) {
-      itemChanges = { type: "modified", added: {}, deleted: [], modified: {} };
-      this.tracker.set(localId, itemChanges);
-    }
-    if (itemChanges.type === "added") {
-      delete itemChanges.data[key];
-    } else if (itemChanges.type === "modified") {
-      if (key in itemChanges.added) {
-        delete itemChanges.added[key];
-      } else if (key in itemChanges.modified) {
-        delete itemChanges.modified[key];
-        itemChanges.deleted.push(key);
-      } else {
-        itemChanges.deleted.push(key);
-      }
-    }
-    return super.delete(key);
-  }
-  /**
-   * Gets the value of an attribute from the map.
-   * @param key - The key of the attribute to get.
-   */
-  getValue(key) {
-    const data = this.get(key);
-    if (!data)
-      return null;
-    return data.value;
-  }
-  /**
-   * Gets the type of an attribute from the map.
-   * @param key - The key of the attribute to get.
-   */
-  getType(key) {
-    var _a2;
-    return (_a2 = this.get(key)) == null ? void 0 : _a2.type;
-  }
-  // async getRelationAttribute(relation: string, attribute: string) {
-  //   return (await this.relations.getItems(relation))?.map((item) =>
-  //     item.getValue(attribute),
-  //   );
-  // }
-}
-class ItemRelations extends Map {
-  /**
-   * Creates a new ItemRelations instance.
-   * @param localId - The local ID of the item.
-   * @param iterable - An optional iterable of key-value pairs to initialize the map with.
-   */
-  constructor(localId, iterable) {
-    super(iterable);
-    /**
-     * A map that tracks the changes to the relations of the item.
-     */
-    __publicField(this, "tracker", null);
-    /**
-     * The local ID of the item.
-     */
-    __publicField(this, "localId");
-    /**
-     * A function that acts as a guard for adding items to the set.
-     * It determines whether a given value should be allowed to be added to the set.
-     *
-     * @param key - The key of the entry to be checked against the guard.
-     * @param value - The value of the entry to be checked against the guard.
-     * @returns A boolean indicating whether the value should be allowed to be added to the set.
-     *          By default, this function always returns true, allowing all values to be added.
-     *          You can override this behavior by providing a custom implementation.
-     */
-    __publicField(this, "guard", () => true);
-    /**
-     * An event handler that is called when items are requested.
-     */
-    __publicField(this, "onItemsRequested", null);
-    this.localId = localId;
-  }
-  get itemChanges() {
-    if (!this.tracker)
-      return null;
-    if (!this.localId) {
-      console.warn("Item relations can't be tracked.");
-      return null;
-    }
-    let itemChanges = this.tracker.get(this.localId);
-    if (!itemChanges) {
-      itemChanges = {
-        type: "modified",
-        added: {},
-        deleted: /* @__PURE__ */ new Set(),
-        removed: {},
-        modified: {}
-      };
-      this.tracker.set(this.localId, itemChanges);
-    }
-    return itemChanges;
-  }
-  /**
-   * Sets a new relation in the map.
-   * @param key - The key of the relation.
-   * @param value - The value of the relation.
-   * @returns The ItemRelations instance.
-   */
-  set(key, value) {
-    const keyExisted = this.has(key);
-    const guard = this.guard ?? (() => true);
-    const isValid = guard(key, value);
-    if (!isValid)
-      return this;
-    const itemChanges = this.itemChanges;
-    if (!itemChanges)
-      return super.set(key, value);
-    if (keyExisted) {
-      itemChanges.modified[key] = value;
-    } else {
-      itemChanges.added[key] = value;
-    }
-    return super.set(key, value);
-  }
-  /**
-   * Adds a new item to a target relation.
-   * @param key - The key of the relation.
-   * @param item - The item to add to the relation.
-   */
-  add(key, item) {
-    var _a2;
-    const keyExisted = this.has(key);
-    let items = this.get(key);
-    if (!items) {
-      items = /* @__PURE__ */ new Set([item]);
-      this.set(key, items);
-      return true;
-    }
-    if (!items || items.has(item))
-      return false;
-    const itemChanges = this.itemChanges;
-    if (!itemChanges) {
-      items.add(item);
-      return true;
-    }
-    if (keyExisted) {
-      if ((_a2 = itemChanges.removed[key]) == null ? void 0 : _a2.has(item)) {
-        itemChanges.removed[key].delete(item);
-        if (itemChanges.removed[key].size === 0)
-          delete itemChanges.removed[key];
-      } else {
-        let modificationChanges = itemChanges.modified[key];
-        if (!modificationChanges) {
-          modificationChanges = /* @__PURE__ */ new Set();
-          itemChanges.modified[key] = modificationChanges;
-        }
-        modificationChanges.add(item);
-      }
-    } else {
-      let addedChanges = itemChanges.added[key];
-      if (!addedChanges) {
-        addedChanges = /* @__PURE__ */ new Set();
-        itemChanges.added[key] = addedChanges;
-      }
-      addedChanges.add(item);
-    }
-    items.add(item);
-    return true;
-  }
-  /**
-   * Removes an item from a target relation.
-   * @param key - The key of the relation.
-   * @param item - The item to remove from the relation.
-   * @returns A boolean indicating whether the item was removed from the relation.
-   */
-  remove(key, item) {
-    var _a2;
-    const items = this.get(key);
-    if (!items)
-      return false;
-    if (!items.has(item))
-      return false;
-    const itemChanges = this.itemChanges;
-    if (!itemChanges)
-      return items.delete(item);
-    if ((_a2 = itemChanges.modified[key]) == null ? void 0 : _a2.has(item)) {
-      itemChanges.modified[key].delete(item);
-      if (itemChanges.modified[key].size === 0)
-        delete itemChanges.modified[key];
-    } else {
-      let removeChanges = itemChanges.removed[key];
-      if (!removeChanges) {
-        removeChanges = /* @__PURE__ */ new Set();
-        itemChanges.removed[key] = removeChanges;
-      }
-      removeChanges.add(item);
-    }
-    return items.delete(item);
-  }
-  /**
-   * Deletes a relation from the map.
-   * @param key - The key of the relation to delete.
-   */
-  delete(key) {
-    if (!this.has(key))
-      return false;
-    const itemChanges = this.itemChanges;
-    if (!itemChanges)
-      return super.delete(key);
-    itemChanges.deleted.add(key);
-    return super.delete(key);
-  }
-  /**
-   * Gets the items of a relation.
-   * @param key - The key of the relation.
-   */
-  async getItems(key) {
-    if (!this.onItemsRequested)
-      return null;
-    const relations = this.get(key);
-    if (!relations)
-      return null;
-    const items = await this.onItemsRequested([...relations]);
-    return items;
-  }
-}
-class ItemGeometry {
-  /**
-   * Creates a new ItemGeometry instance.
-   * @param model - The model that the geometry belongs to.
-   * @param localId - The local ID of the item.
-   */
-  constructor(model, localId) {
-    /**
-     * The model that the geometry belongs to.
-     */
-    __publicField(this, "model");
-    /**
-     * The local ID of the item.
-     */
-    __publicField(this, "localId");
-    __publicField(this, "_indices", null);
-    __publicField(this, "_transform", null);
-    __publicField(this, "_normals", null);
-    __publicField(this, "_positions", null);
-    __publicField(this, "_vertices", null);
-    __publicField(this, "_triangles", null);
-    __publicField(this, "_position", null);
-    __publicField(this, "_box", null);
-    this.model = model;
-    this.localId = localId;
-  }
-  async get() {
-    const [geometries] = await this.model.threads.invoke(
-      this.model.modelId,
-      "getItemsGeometry",
-      [[this.localId]]
-    );
-    for (const geometryData of geometries) {
-      geometryData.transform = new THREE.Matrix4().fromArray(
-        geometryData.transform.elements
-      );
-      const { indices, normals, positions, transform } = geometryData;
-      if (!this._indices)
-        this._indices = [];
-      if (!this._normals)
-        this._normals = [];
-      if (!this._positions)
-        this._positions = [];
-      if (!this._transform)
-        this._transform = [];
-      this._indices.push(indices);
-      this._normals.push(normals);
-      this._positions.push(positions);
-      this._transform.push(transform);
-    }
-    return geometries;
-  }
-  /**
-   * Gets the indices of the item.
-   */
-  async getIndices() {
-    if (this._indices !== null)
-      return this._indices;
-    await this.get();
-    return this._indices;
-  }
-  /**
-   * Gets the transform of the item.
-   */
-  async getTransform() {
-    if (this._transform !== null)
-      return this._transform;
-    await this.get();
-    return this._transform;
-  }
-  /**
-   * Gets the normals of the item.
-   */
-  async getNormals() {
-    if (this._normals !== null)
-      return this._normals;
-    await this.get();
-    return this._normals;
-  }
-  /**
-   * Gets the positions of the item.
-   */
-  async getPositions() {
-    if (this._positions !== null)
-      return this._positions;
-    await this.get();
-    return this._positions;
-  }
-  /**
-   * Gets the vertices of the item.
-   */
-  async getVertices() {
-    if (this._vertices)
-      return this._vertices;
-    const allPositions = await this.getPositions();
-    const allTransforms = await this.getTransform();
-    if (!allPositions || !allTransforms)
-      return this._vertices;
-    this._vertices = [];
-    for (let i = 0; i < allPositions.length; i++) {
-      const positions = allPositions[i];
-      const transform = allTransforms[i];
-      if (!positions || !transform)
-        continue;
-      const currentVertices = [];
-      this._vertices.push(currentVertices);
-      const numVertices = Object.keys(positions).length / 3;
-      const hashes = [];
-      for (let i2 = 0; i2 < numVertices; i2++) {
-        const x = positions[i2 * 3];
-        const y = positions[i2 * 3 + 1];
-        const z = positions[i2 * 3 + 2];
-        if (typeof x !== "number" || typeof y !== "number" || typeof z !== "number") {
-          continue;
-        }
-        const hash = `${x},${y},${z}`;
-        if (hashes.includes(hash))
-          continue;
-        hashes.push(hash);
-        const vertex = new THREE.Vector3(x, y, z);
-        vertex.applyMatrix4(transform);
-        currentVertices.push(vertex);
-      }
-    }
-    return this._vertices;
-  }
-  /**
-   * Gets the triangles of the item.
-   */
-  async getTriangles() {
-    if (this._triangles)
-      return this._triangles;
-    const allIndices = await this.getIndices();
-    const allPositions = await this.getPositions();
-    const allTransforms = await this.getTransform();
-    if (!allIndices || !allPositions || !allTransforms)
-      return this._triangles;
-    this._triangles = [];
-    for (let i = 0; i < allIndices.length; i++) {
-      const indices = allIndices[i];
-      const positions = allPositions[i];
-      const transform = allTransforms[i];
-      if (!indices || !positions || !transform)
-        continue;
-      const currentTriangles = [];
-      this._triangles.push(currentTriangles);
-      for (let i2 = 0; i2 < indices.length; i2 += 3) {
-        const a = indices[i2];
-        const b = indices[i2 + 1];
-        const c = indices[i2 + 2];
-        const v1 = new THREE.Vector3(
-          positions[a * 3],
-          positions[a * 3 + 1],
-          positions[a * 3 + 2]
-        );
-        const v2 = new THREE.Vector3(
-          positions[b * 3],
-          positions[b * 3 + 1],
-          positions[b * 3 + 2]
-        );
-        const v3 = new THREE.Vector3(
-          positions[c * 3],
-          positions[c * 3 + 1],
-          positions[c * 3 + 2]
-        );
-        v1.applyMatrix4(transform);
-        v2.applyMatrix4(transform);
-        v3.applyMatrix4(transform);
-        currentTriangles.push(new THREE.Triangle(v1, v2, v3));
-      }
-    }
-    return this._triangles;
-  }
-  /**
-   * Gets the position of the item.
-   */
-  async getPosition() {
-    if (!this._position) {
-      if (this.localId === null)
-        return null;
-      this._position = await this.model.getPositions([this.localId]);
-    }
-    return this._position;
-  }
-  /**
-   * Gets the box of the item.
-   */
-  async getBox() {
-    if (!this._box) {
-      if (this.localId === null)
-        return null;
-      this._box = await this.model.getBoxes([this.localId]);
-    }
-    return this._box;
-  }
-  /**
-   * Sets the visibility of the item.
-   * @param visible - Whether the item should be visible.
-   */
-  async setVisibility(visible) {
-    await this.model.setVisible([this.localId], visible);
-  }
-  /**
-   * Gets the visibility of the item.
-   */
-  async getVisibility() {
-    const [result] = await this.model.getVisible([this.localId]);
-    return result;
-  }
-}
-class Item {
-  /**
-   * Creates a new Item instance.
-   * @param model - The FragmentsModel instance that this item belongs to.
-   * @param id - The identifier for the item, which can be either a number or a string.
-   */
-  constructor(model, id) {
-    /**
-     * The FragmentsModel instance that this item belongs to.
-     */
-    __publicField(this, "model");
-    __publicField(this, "_localId", null);
-    __publicField(this, "_attributes", null);
-    __publicField(this, "_relations", null);
-    __publicField(this, "_guid", null);
-    __publicField(this, "_category", null);
-    __publicField(this, "_geometry", null);
-    this.model = model;
-    if (typeof id === "number")
-      this._localId = id;
-    if (typeof id === "string")
-      this._guid = id;
-  }
-  /**
-   * Gets the local ID of the item.
-   */
-  async getLocalId() {
-    if (!this._localId) {
-      if (this._guid) {
-        [this._localId] = await this.model.threads.invoke(
-          this.model.modelId,
-          "getLocalIdsByGuids",
-          // @ts-ignore
-          [[this._guid]]
-        );
-      } else {
-        throw new Error("Fragments: Item localId couldn't be get.");
-      }
-    }
-    return this._localId;
-  }
-  /**
-   * Gets all the attributes of the item.
-   */
-  async getAttributes() {
-    if (this._attributes)
-      return this._attributes;
-    const localId = await this.getLocalId();
-    if (localId === null)
-      return null;
-    const data = await this.model.threads.invoke(
-      this.model.modelId,
-      "getItemAttributes",
-      // @ts-ignore
-      [localId]
-    );
-    this._attributes = new ItemAttributes(localId);
-    if (!data) {
-      const changes2 = this.model.attrsChanges.get(localId);
-      if (!(changes2 && changes2.type === "added"))
-        return null;
-      this._attributes.localId = localId;
-      for (const [key, value] of Object.entries(changes2.data))
-        this._attributes.set(key, value);
-      return this._attributes;
-    }
-    const changes = this.model.attrsChanges.get(localId);
-    if (changes && changes.type === "modified") {
-      for (const [key, value] of Object.entries(changes.added))
-        this._attributes.set(key, value);
-    }
-    for (const name in data) {
-      const { value, type } = data[name];
-      if ((changes == null ? void 0 : changes.type) === "modified" && changes.deleted.includes(name))
-        continue;
-      if ((changes == null ? void 0 : changes.type) === "modified" && name in changes.modified) {
-        this._attributes.set(name, changes.modified[name]);
-      } else {
-        this._attributes.set(name, { value, type });
-      }
-    }
-    this._attributes.tracker = this.model.attrsChanges;
-    return this._attributes;
-  }
-  /**
-   * Gets all the relations of the item to other items.
-   */
-  async getRelations() {
-    if (this._relations)
-      return this._relations;
-    const localId = await this.getLocalId();
-    if (localId === null)
-      return null;
-    const data = await this.model.threads.invoke(
-      this.model.modelId,
-      "getItemRelations",
-      // @ts-ignore
-      [localId]
-    );
-    if (!data)
-      return null;
-    this._relations = new ItemRelations(localId);
-    this._relations.onItemsRequested = async (ids) => {
-      const items = [];
-      for (const id of ids) {
-        const item = this.model.getItem(id);
-        if (!item)
-          continue;
-        items.push(item);
-      }
-      return items;
-    };
-    const changes = this.model.relsChanges.get(localId);
-    if (changes && changes.type === "modified") {
-      for (const [key, value] of Object.entries(changes.added))
-        this._relations.set(key, value);
-    }
-    for (const [relation, localIds] of Object.entries(data)) {
-      if ((changes == null ? void 0 : changes.type) === "modified" && changes.deleted.has(relation))
-        continue;
-      if ((changes == null ? void 0 : changes.type) === "modified" && relation in changes.modified) {
-        const data2 = /* @__PURE__ */ new Set([...changes.modified[relation], ...localIds]);
-        this._relations.set(relation, new Set(data2));
-      } else {
-        this._relations.set(relation, new Set(localIds));
-      }
-    }
-    this._relations.tracker = this.model.relsChanges;
-    return this._relations;
-  }
-  /**
-   * Gets the GUID of the item.
-   */
-  async getGuid() {
-    if (!this._guid) {
-      const localId = await this.getLocalId();
-      if (localId === null)
-        return null;
-      [this._guid] = await this.model.threads.invoke(
-        this.model.modelId,
-        "getGuidsByLocalIds",
-        // @ts-ignore
-        [[localId]]
-      );
-    }
-    return this._guid;
-  }
-  /**
-   * Gets the category of the item.
-   */
-  async getCategory() {
-    if (!this._category) {
-      const localId = await this.getLocalId();
-      if (localId === null)
-        return null;
-      this._category = await this.model.threads.invoke(
-        this.model.modelId,
-        "getItemCategory",
-        // @ts-ignore
-        [localId]
-      );
-    }
-    return this._category;
-  }
-  async getGeometry() {
-    if (this._geometry)
-      return this._geometry;
-    const localId = await this.getLocalId();
-    if (localId === null)
-      return null;
-    const geometry = new ItemGeometry(this.model, localId);
-    return geometry;
-  }
-  /**
-   * Gets all the data of the item.
-   */
-  async getData(collector = []) {
-    var _a2;
-    const localId = await this.getLocalId();
-    if (localId == null)
-      return {};
-    collector.push(localId);
-    const attrs = (_a2 = await this.getAttributes()) == null ? void 0 : _a2.object;
-    const rels = await this.getRelations();
-    const relAttrs = {};
-    if (rels) {
-      for (const key of rels.keys()) {
-        const keyItems = [];
-        relAttrs[key] = keyItems;
-        const relItems = await rels.getItems(key);
-        if (!relItems)
-          continue;
-        for (const item of relItems) {
-          const itemId = await item.getLocalId();
-          if (!itemId)
-            continue;
-          if (collector.find((id) => id === itemId) !== void 0) {
-            continue;
-          }
-          collector.push(itemId);
-          const itemAttrs = await item.getData(collector);
-          if (!itemAttrs)
-            continue;
-          keyItems.push(itemAttrs);
-        }
-      }
-    }
-    const data = { ...attrs, ...relAttrs };
-    return data;
-  }
-}
-class ItemsManager {
-  getItem(model, id) {
-    return new Item(model, id);
-  }
-  async getItemsData(model, ids, config) {
-    return model.threads.invoke(model.modelId, "getItemsData", [
-      ids,
-      config
-    ]);
-  }
-  async getItemsChildren(model, ids) {
-    return model.threads.invoke(model.modelId, "getItemsChildren", [
-      ids
-    ]);
-  }
-}
-class ViewManager {
-  constructor() {
-    __publicField(this, "getClippingPlanesEvent", () => []);
-    __publicField(this, "currentCamera", null);
-    __publicField(this, "_tempMatrix", new THREE.Matrix4());
-    __publicField(this, "_tempVec", new THREE.Vector3());
-    __publicField(this, "_tempFrustum", new THREE.Frustum());
-    __publicField(this, "_updateCameraPositionEvent", () => {
-    });
-    __publicField(this, "_updateCameraFrustumEvent", () => {
-    });
-    __publicField(this, "_updateFOVEvent", () => {
-    });
-    __publicField(this, "_updateOrthoSizeEvent", () => {
-    });
-  }
-  async refreshView(model, meshes) {
-    const fov = this.setup(meshes, model);
-    const frustum = CameraUtils.transform(this._tempFrustum, this._tempMatrix);
-    const request = this.newViewRequest(frustum, fov, model);
-    await model.threads.fetch(request);
-  }
-  useCamera(camera) {
-    const projScreenMatrix = new THREE.Matrix4();
-    this.setCameraPosition(camera);
-    this.setCameraFrustum(camera, projScreenMatrix);
-    this.setFov(camera);
-    this.setOrtho();
-    this.currentCamera = camera;
-  }
-  async setLodMode(model, lodMode) {
-    return model.threads.invoke(model.modelId, "setLodMode", [
-      lodMode
-    ]);
-  }
-  getOrthoSize() {
-    let orthoSize = this._updateOrthoSizeEvent();
-    if (orthoSize) {
-      const modelScale = this._tempMatrix.getMaxScaleOnAxis();
-      orthoSize *= modelScale;
-    }
-    return orthoSize;
-  }
-  setup(meshes, model) {
-    meshes.requests.clean(model.modelId);
-    this._tempMatrix.copy(model.object.matrixWorld).invert();
-    this._updateCameraPositionEvent(this._tempVec);
-    this._updateCameraFrustumEvent(this._tempFrustum);
-    const fov = this._updateFOVEvent();
-    return fov;
-  }
-  newViewRequest(frustum, fov, model) {
-    const view = this.newView(frustum, fov, model);
-    const request = {};
-    request.class = MultiThreadingRequestClass.REFRESH_VIEW;
-    request.modelId = model.modelId;
-    request.cameraFrustum = frustum;
-    request.view = view;
-    return request;
-  }
-  newView(frustum, fov, model) {
-    const view = {};
-    view.cameraFrustum = frustum;
-    view.cameraPosition = this._tempVec.applyMatrix4(this._tempMatrix);
-    view.fov = fov;
-    view.orthogonalDimension = this.getOrthoSize();
-    view.viewSize = Math.max(window.innerWidth, window.innerHeight);
-    view.graphicThreshold = GPU.estimateCapacity();
-    view.graphicQuality = model.graphicsQuality * -1.5 + 2;
-    view.clippingPlanes = this.getPlanes();
-    view.modelPlacement = model.object.matrixWorld;
-    return view;
-  }
-  setOrtho() {
-    this._updateOrthoSizeEvent = () => {
-      return void 0;
-    };
-  }
-  setFov(camera) {
-    this._updateFOVEvent = () => {
-      if (camera instanceof THREE.PerspectiveCamera) {
-        return camera.fov;
-      }
-      return void 0;
-    };
-  }
-  getPlanes() {
-    const planes = [];
-    const originalPlanes = this.getClippingPlanesEvent();
-    for (const plane of originalPlanes) {
-      const cloned = plane.clone();
-      cloned.applyMatrix4(this._tempMatrix);
-      planes.push(cloned);
-    }
-    return planes;
-  }
-  setCameraPosition(camera) {
-    this._updateCameraPositionEvent = (position) => {
-      position.copy(camera.position);
-    };
-  }
-  setCameraFrustum(camera, projScreenMatrix) {
-    this._updateCameraFrustumEvent = (frustum) => {
-      camera.updateProjectionMatrix();
-      camera.updateWorldMatrix(true, true);
-      const { projectionMatrix, matrixWorldInverse } = camera;
-      projScreenMatrix.multiplyMatrices(projectionMatrix, matrixWorldInverse);
-      frustum.setFromProjectionMatrix(projScreenMatrix);
-    };
-  }
-}
-class RaycastManager {
-  constructor() {
-    __publicField(this, "_caster", new THREE.Raycaster());
-    __publicField(this, "_ray", new THREE.Ray());
-    __publicField(this, "_frustum", new THREE.Frustum());
-    __publicField(this, "_inverseTransform", new THREE.Matrix4());
-    __publicField(this, "_t", new THREE.Plane());
-    __publicField(this, "_r", new THREE.Plane());
-    __publicField(this, "_b", new THREE.Plane());
-    __publicField(this, "_l", new THREE.Plane());
-    __publicField(this, "_n", new THREE.Plane());
-    __publicField(this, "_f", new THREE.Plane());
-    __publicField(this, "_tl", new THREE.Vector3());
-    __publicField(this, "_tr", new THREE.Vector3());
-    __publicField(this, "_bl", new THREE.Vector3());
-    __publicField(this, "_br", new THREE.Vector3());
-    __publicField(this, "_tln", new THREE.Vector3());
-    __publicField(this, "_brn", new THREE.Vector3());
-    __publicField(this, "_tlp", new THREE.Vector2());
-    __publicField(this, "_brp", new THREE.Vector2());
-    __publicField(this, "distance", 10);
-  }
-  async raycast(model, data) {
-    const { frustum, ray } = this.getRayAndFrustum(data);
-    const request = this.getRequest(model, frustum, ray);
-    if (!request)
-      return null;
-    const response = await model.threads.fetch(request);
-    if (response.results && response.results.length) {
-      const [firstHit] = response.results;
-      return this.getResult({
-        hit: firstHit,
-        frustum,
-        ray,
-        model
-      });
-    }
-    return null;
-  }
-  async raycastAll(model, data) {
-    const { frustum, ray } = this.getRayAndFrustum(data);
-    const request = this.getRequest(model, frustum, ray);
-    if (!request)
-      return null;
-    request.returnAll = true;
-    const allResults = [];
-    const response = await model.threads.fetch(request);
-    if (response.results && response.results.length) {
-      for (const hit of response.results) {
-        allResults.push(
-          this.getResult({
-            hit,
-            frustum,
-            ray,
-            model
-          })
-        );
-      }
-      return allResults;
-    }
-    return null;
-  }
-  async rectangleRaycast(model, meshes, data) {
-    const frustum = this.getFrustum(data);
-    const request = this.getRequest(model, frustum);
-    if (!request)
-      return null;
-    request.fullyIncluded = data.fullyIncluded;
-    const response = await model.threads.fetch(request);
-    if (response.localIds && response.localIds.length) {
-      return this.newRectangleCastResponse(response, meshes);
-    }
-    return null;
-  }
-  async raycastWithSnapping(model, data) {
-    const { frustum, ray } = this.getRayAndFrustum(data);
-    const request = this.getRequest(model, frustum, ray);
-    if (!request)
-      return null;
-    request.snappingClass = data.snappingClasses;
-    const response = await model.threads.fetch(request);
-    if (response.results) {
-      return this.newRaycastSnapResult(response, frustum, ray, model);
-    }
-    return null;
-  }
-  screenRectToFrustum(screenTopLeft, screenBottomRight, container, camera) {
-    this.screenToCast(screenTopLeft, container, this._tlp);
-    this.screenToCast(screenBottomRight, container, this._brp);
-    this.setVectors(camera);
-    this.setPlanes(camera);
-    return this.newFrustum();
-  }
-  screenToCasterPoint(point, viewer, camera) {
-    const casterPoint = this.screenToCast(point, viewer);
-    this._caster.setFromCamera(casterPoint, camera);
-    return this._caster.ray.clone();
-  }
-  setPlanes(camera) {
-    this.setBasePoints();
-    camera.getWorldDirection(this._n.normal);
-    this.setEnds(camera);
-  }
-  setVectors(camera) {
-    this.setVector(this._tl, this._tlp, this._tlp, 1, camera);
-    this.setVector(this._tr, this._brp, this._tlp, 1, camera);
-    this.setVector(this._bl, this._tlp, this._brp, 1, camera);
-    this.setVector(this._br, this._brp, this._brp, 1, camera);
-    this.setVector(this._tln, this._tlp, this._tlp, 0, camera);
-    this.setVector(this._brn, this._brp, this._brp, 0, camera);
-  }
-  newFrustum() {
-    return new THREE.Frustum(
-      this._t,
-      this._b,
-      this._l,
-      this._r,
-      this._f,
-      this._n
-    );
-  }
-  setEnds(camera) {
-    if (camera instanceof THREE.OrthographicCamera) {
-      const camPos = camera.position;
-      const normalDotPos = this._n.normal.dot(camPos);
-      this._n.constant = -(normalDotPos + camera.near);
-      this._f.constant = -(normalDotPos - camera.far);
-    } else {
-      this._n.constant = camera.position.length();
-      this._f.constant = Infinity;
-    }
-    this._f.normal = this._n.normal;
-  }
-  screenToCast(p, element, result = new THREE.Vector2()) {
-    const rect = element.getBoundingClientRect();
-    const scaleX = rect.width / element.clientWidth;
-    const scaleY = rect.height / element.clientHeight;
-    const x = (p.x - rect.left) / scaleX;
-    const y = (p.y - rect.top) / scaleY;
-    result.x = x / element.clientWidth * 2 - 1;
-    result.y = -(y / element.clientHeight) * 2 + 1;
-    return result;
-  }
-  setVector(v1, v2, v3, value, camera) {
-    v1.set(v2.x, v3.y, value);
-    v1.unproject(camera);
-  }
-  setPlane(plane, v1, v2, v3) {
-    plane.setFromCoplanarPoints(v1, v2, v3);
-  }
-  setBasePoints() {
-    this.setPlane(this._t, this._tln, this._tl, this._tr);
-    this.setPlane(this._r, this._brn, this._tr, this._br);
-    this.setPlane(this._b, this._brn, this._br, this._bl);
-    this.setPlane(this._l, this._tln, this._bl, this._tl);
-  }
-  setupRay(ray, message) {
-    if (ray) {
-      this._ray.copy(ray);
-      this._ray.applyMatrix4(this._inverseTransform);
-      message.ray = this._ray;
-    }
-  }
-  setupMatrix(object) {
-    this._inverseTransform.copy(object.matrixWorld);
-    this._inverseTransform.invert();
-  }
-  getRequest(model, frustum, ray) {
-    const { object, box, modelId } = model;
-    const collidesModel = frustum.intersectsBox(box);
-    if (collidesModel) {
-      return this.newCastRequest(object, modelId, ray, frustum);
-    }
-    return null;
-  }
-  getRayAndFrustum(data) {
-    this.updateCamera(data.camera);
-    const { bottomLeft, topRight } = this.getCorners(data.mouse);
-    const ray = this.screenToCasterPoint(data.mouse, data.dom, data.camera);
-    const frustum = this.screenRectToFrustum(
-      bottomLeft,
-      topRight,
-      data.dom,
-      data.camera
-    );
-    return { ray, frustum };
-  }
-  getFrustum(data) {
-    this.updateCamera(data.camera);
-    return this.screenRectToFrustum(
-      data.topLeft,
-      data.bottomRight,
-      data.dom,
-      data.camera
-    );
-  }
-  getCorners(mouse) {
-    const bottomLeft = mouse.clone().subScalar(this.distance);
-    const topRight = mouse.clone().addScalar(this.distance);
-    return { bottomLeft, topRight };
-  }
-  getResult(data) {
-    const { hit, frustum, ray, model } = data;
-    const result = {};
-    this.setPoint(model, hit, result);
-    this.setNormal(model, hit, result);
-    this.setDistance(model, hit, result);
-    this.setRayDistance(model, hit, result);
-    this.setBasicHitData(model, hit, result, ray, frustum);
-    this.setSnapEdge(model, hit, result, "snappedEdgeP1");
-    this.setSnapEdge(model, hit, result, "snappedEdgeP2");
-    result.facePoints = hit.facePoints;
-    result.faceIndices = hit.faceIndices;
-    return result;
-  }
-  updateCamera(camera) {
-    camera.updateProjectionMatrix();
-    camera.updateWorldMatrix(true, true);
-  }
-  newCastRequest(object, modelId, ray, frustum) {
-    this.setupMatrix(object);
-    const request = {};
-    request.class = MultiThreadingRequestClass.RAYCAST;
-    request.modelId = modelId;
-    this.setupRay(ray, request);
-    CameraUtils.transform(frustum, this._inverseTransform, this._frustum);
-    request.frustum = this._frustum;
-    return request;
-  }
-  setSnapEdge(model, hit, result, key) {
-    if (hit[key]) {
-      const edge = new THREE.Vector3();
-      edge.copy(hit[key]);
-      edge.applyMatrix4(model.object.matrixWorld);
-      result[key] = edge;
-    } else {
-      result[key] = void 0;
-    }
-  }
-  setNormal(model, hit, result) {
-    if (hit.normal) {
-      const normal = new THREE.Vector3();
-      normal.copy(hit.normal);
-      normal.transformDirection(model.object.matrixWorld);
-      normal.normalize();
-      result.normal = normal;
-      return;
-    }
-    result.normal = void 0;
-  }
-  setDistance(model, hit, result) {
-    const cameraDist = Math.sqrt(hit.cameraSquaredDistance);
-    const modelScale = model.object.matrixWorld.getMaxScaleOnAxis();
-    result.distance = cameraDist * modelScale;
-  }
-  setPoint(model, hit, result) {
-    const point = new THREE.Vector3();
-    point.copy(hit.point);
-    point.applyMatrix4(model.object.matrixWorld);
-    result.point = point;
-  }
-  newRaycastSnapResult(response, frustum, ray, model) {
-    const results = [];
-    for (const hit of response.results) {
-      const result = this.getResult({ hit, frustum, ray, model });
-      results.push(result);
-    }
-    return results;
-  }
-  newRectangleCastResponse(response, meshes) {
-    const result = {
-      localIds: response.localIds,
-      fragments: meshes.list.get(response.modelId)
-    };
-    return result;
-  }
-  setRayDistance(model, hit, result) {
-    if (hit.raySquaredDistance !== void 0) {
-      const modelScale = model.object.matrixWorld.getMaxScaleOnAxis();
-      const rayDist = Math.sqrt(hit.raySquaredDistance);
-      result.rayDistance = rayDist * modelScale;
-      return;
-    }
-    result.rayDistance = void 0;
-  }
-  setBasicHitData(model, hit, result, ray, frustum) {
-    result.itemId = hit.itemId;
-    result.localId = hit.localId;
-    result.object = model.object;
-    result.fragments = model;
-    result.ray = ray;
-    result.frustum = frustum;
-    result.representationClass = hit.representationClass;
-    result.snappingClass = hit.snappingClass;
-  }
-}
-class VisibilityManager {
-  async resetVisible(model) {
-    await model.threads.invoke(model.modelId, "resetVisible");
-  }
-  async getItemsByVisibility(model, visible) {
-    return model.threads.invoke(model.modelId, "getItemsByVisibility", [
-      visible
-    ]);
-  }
-  async getVisible(model, localIds) {
-    return model.threads.invoke(model.modelId, "getVisible", [
-      localIds
-    ]);
-  }
-}
-class LodShaders {
-}
-__publicField(LodShaders, "vertex", `
-            #include <common>
-            #include <clipping_planes_pars_vertex>
-
-            attribute float itemFilter;
-            uniform vec2 lodSize;
-            attribute vec3 itemFirst;
-            attribute vec3 itemLast;
-
-            float lodWidth = 2.0;
-            
-            void cutLodLine(const in vec4 first, inout vec4 second ) {
-                float projValue1 = projectionMatrix[2][2];
-                float projValue2 = projectionMatrix[3][2];
-                float approxResult = -(projValue2 / projValue1) / 2.0;
-                float diff1 = approxResult - first.z;
-                float diff2 = second.z - first.z;
-                float cutFilter = diff1 / diff2;
-                second.xyz = mix(first.xyz, second.xyz, cutFilter);
-            }
-                
-            varying float vHighlight;
-
-            void main() {
-                if (itemFilter == 0.0) {
-                    gl_Position = vec4(0,0,0,0);
-                    return;
-                }
-
-                vHighlight = itemFilter > 1.5 ? 1.0 : 0.0;
-
-                vec4 rawFirst = vec4(itemFirst, 1.0);
-                vec4 rawLast = vec4(itemLast, 1.0);
-                vec4 first = modelViewMatrix * rawFirst;
-                vec4 last = modelViewMatrix * rawLast;
-                
-                bool lodPerspective = projectionMatrix[2][3] == -1.0;
-                if (lodPerspective) {
-                    bool firstCut = first.z < 0.0 && last.z >= 0.0;
-                    bool lastCut = last.z < 0.0 && first.z >= 0.0;
-                    if (firstCut) {
-                        cutLodLine( first, last );
-                    } else if (lastCut) {
-                        cutLodLine( last, first );
-                    }
-                }
-
-                vec4 firstCut = projectionMatrix * first;
-                vec4 lastCut = projectionMatrix * last;
-                vec3 firstNdc = firstCut.xyz / firstCut.w;
-                vec3 lastNdc = lastCut.xyz / lastCut.w;
-
-                vec2 lodOrientation = lastNdc.xy - firstNdc.xy;
-
-                float lodRatio = lodSize.x / lodSize.y;
-                lodOrientation.x *= lodRatio;
-                lodOrientation = normalize(lodOrientation);
-                
-                vec2 lodDistance = vec2(lodOrientation.y, - lodOrientation.x);
-                lodOrientation.x /= lodRatio;
-                lodDistance.x /= lodRatio;
-
-                if (position.x < 0.0) { 
-                    lodDistance *= - 1.0;
-                }
-
-                if (position.y < 0.0) {
-                    lodDistance += -lodOrientation;
-                } else if (position.y > 1.0) {
-                    lodDistance += lodOrientation;
-                }
-
-                lodDistance *= lodWidth;
-                lodDistance /= lodSize.y;
-
-                bool isFirst = position.y < 0.5;
-                vec4 lodPosition = isFirst ? firstCut : lastCut;
-                lodDistance *= lodPosition.w;
-                lodPosition.xy += lodDistance;
-                gl_Position = lodPosition;
-
-                vec4 mvPosition = isFirst ? first : last;
-                #include <clipping_planes_vertex>
-            }
-    `);
-__publicField(LodShaders, "fragment", `
-            #include <common>
-            #include <clipping_planes_pars_fragment>
-
-            uniform vec3 lodColor;
-            uniform float lodOpacity;
-            uniform vec3 highlightColor;
-            uniform float highlightOpacity;
-
-            varying float vHighlight;
-
-            void main() {
-                #include <clipping_planes_fragment>
-                vec3 color = mix(lodColor, highlightColor, vHighlight);
-                float alpha = mix(lodOpacity, highlightOpacity, vHighlight);
-                gl_FragColor = vec4(color, alpha);
-                #include <colorspace_fragment>
-            }
-    `);
-const _LodHelper = class _LodHelper {
-  static setupLodMeshResize(mesh) {
-    mesh.onBeforeRender = (renderer) => {
-      renderer.getSize(mesh.material[0].lodSize);
-    };
-  }
-  static setupLodAttributes(geometry) {
-    geometry.setIndex(_LodHelper.indices);
-    geometry.setAttribute("position", _LodHelper.vertices);
-  }
-  static setLodBuffer(lodGeometry, data, onFinish) {
-    let itemFirst = lodGeometry.getItemFirst();
-    let itemLast = lodGeometry.getItemLast();
-    let dataBuffer = this.setItemFirst(lodGeometry, itemFirst, data, itemLast);
-    const result = this.resetAttributes(itemFirst, dataBuffer, data, itemLast);
-    ({ itemFirst, dataBuffer, itemLast } = result);
-    this.setupFinish(onFinish, dataBuffer);
-    lodGeometry.setAttribute("itemFirst", itemFirst);
-    lodGeometry.setAttribute("itemLast", itemLast);
-  }
-  static setLodVisibility(lodGeometry, visible) {
-    const itemFilter = this.setupItemFilter(lodGeometry);
-    this.applyVisibilityState(lodGeometry, visible, itemFilter);
-    itemFilter.needsUpdate = true;
-  }
-  static getInterAttribute(geometry, name) {
-    return geometry.getAttribute(name);
-  }
-  static computeLodSphere(geometry) {
-    if (!geometry.boundingSphere) {
-      return;
-    }
-    const itemFirst = geometry.getItemFirst();
-    if (itemFirst) {
-      const midPoint = _LodHelper.getLodMidPoint(geometry, itemFirst);
-      const radius = _LodHelper.getLodRadius(midPoint, itemFirst);
-      geometry.boundingSphere.radius = radius;
-    }
-  }
-  static newLodMaterialParams(parameters) {
-    const customUniforms = {
-      lodColor: { value: new THREE.Color(parameters.color) },
-      lodSize: { value: new THREE.Vector2(1, 1) },
-      lodOpacity: { value: parameters.opacity ?? 1 },
-      highlightColor: { value: new THREE.Color(1, 1, 1) },
-      highlightOpacity: { value: 1 }
-    };
-    const uniforms = THREE.UniformsUtils.merge([
-      THREE.UniformsLib.common,
-      customUniforms
-    ]);
-    const transparent = parameters.transparent ?? false;
-    return {
-      uniforms,
-      transparent,
-      vertexShader: LodShaders.vertex,
-      fragmentShader: LodShaders.fragment
-    };
-  }
-  static setLodFilter(geometry, data) {
-    const itemFilter = geometry.getItemFilter();
-    const bufferData = itemFilter.array;
-    for (let i = 0; i < data.position.length; ++i) {
-      const first = data.position[i] / 2;
-      const size = data.size[i] / 2;
-      if (size === 4294967295) {
-        bufferData.fill(1, first);
-      } else {
-        bufferData.fill(1, first, first + size);
-      }
-    }
-    itemFilter.needsUpdate = true;
-  }
-  static setLodHighlight(geometry, data) {
-    const itemFilter = geometry.getItemFilter();
-    const bufferData = itemFilter.array;
-    for (let i = 0; i < data.position.length; ++i) {
-      const first = data.position[i] / 2;
-      const size = data.size[i] / 2;
-      if (size === 4294967295) {
-        bufferData.fill(2, first);
-      } else {
-        bufferData.fill(2, first, first + size);
-      }
-    }
-    itemFilter.needsUpdate = true;
-  }
-  static getInstancedAttribute(geometry, name) {
-    return geometry.getAttribute(name);
-  }
-  static computeLodBox(geometry) {
-    if (!geometry.boundingBox) {
-      return;
-    }
-    const position = geometry.getItemFirst();
-    if (position) {
-      const buffer = position.data.array;
-      geometry.boundingBox.setFromArray(buffer);
-      return;
-    }
-    geometry.boundingBox.makeEmpty();
-  }
-  static setDataBuffer(dataBuffer, itemFirst, data) {
-    dataBuffer = itemFirst.data;
-    dataBuffer.array = data;
-    dataBuffer.needsUpdate = true;
-    return dataBuffer;
-  }
-  static disposeAllData(geometry) {
-    delete geometry.attributes.itemFilter;
-    delete geometry.attributes.position;
-    geometry.index = null;
-    geometry.dispose();
-    _LodHelper.setupLodAttributes(geometry);
-  }
-  static setItemFirst(lodGeometry, itemFirst, data, itemLast) {
-    let dataBuffer = null;
-    if (itemFirst) {
-      const sizeMatch = data.length === itemFirst.data.array.length;
-      if (sizeMatch) {
-        dataBuffer = this.setDataBuffer(dataBuffer, itemFirst, data);
-      } else {
-        itemFirst = void 0;
-        this.disposeAllData(lodGeometry);
-      }
-    }
-    return dataBuffer;
-  }
-  static setupFinish(onFinish, dataBuffer) {
-    if (onFinish) {
-      dataBuffer.onUploadCallback = onFinish;
-    }
-  }
-  static resetAttributes(itemFirst, dataBuffer, data, itemLast) {
-    if (!itemFirst) {
-      dataBuffer = new THREE.InstancedInterleavedBuffer(data, 6, 1);
-      itemFirst = new THREE.InterleavedBufferAttribute(dataBuffer, 3, 0);
-      itemLast = new THREE.InterleavedBufferAttribute(dataBuffer, 3, 3);
-    }
-    return { itemFirst, dataBuffer, itemLast };
-  }
-  static setupItemFilter(lodGeometry) {
-    const itemFirst = lodGeometry.getItemFirst();
-    const size = itemFirst.count;
-    let itemFilter = lodGeometry.getItemFilter();
-    if (itemFilter) {
-      itemFilter.array.fill(0);
-    } else {
-      itemFilter = new THREE.InstancedBufferAttribute(new Uint8Array(size), 1);
-      lodGeometry.setAttribute("itemFilter", itemFilter);
-    }
-    return itemFilter;
-  }
-  static applyVisibilityState(lodGeometry, visible, itemFilter) {
-    if (visible === true) {
-      itemFilter.array.fill(1);
-      return;
-    }
-    if (visible) {
-      this.setLodFilter(lodGeometry, visible);
-    }
-  }
-  static getLodMidPoint(geometry, itemFirst) {
-    const midpoint = geometry.boundingSphere.center;
-    this.tempBox.setFromArray(itemFirst.data.array);
-    this.tempBox.getCenter(midpoint);
-    return midpoint;
-  }
-  static getLodRadius(midPoint, itemFirst) {
-    let threshold = 0;
-    const size = itemFirst.data.array.length;
-    for (let i = 0; i < size; i += 3) {
-      const dataBuffer = itemFirst.data.array;
-      _LodHelper.tempVec.fromArray(dataBuffer, i);
-      const distance = midPoint.distanceToSquared(_LodHelper.tempVec);
-      threshold = Math.max(threshold, distance);
-    }
-    return Math.sqrt(threshold);
-  }
-};
-__publicField(_LodHelper, "tempVec", new THREE.Vector3());
-__publicField(_LodHelper, "tempBox", new THREE.Box3());
-// prettier-ignore
-__publicField(_LodHelper, "vertices", new THREE.Float32BufferAttribute(
-  [
-    -1,
-    2,
-    0,
-    1,
-    2,
-    0,
-    -1,
-    1,
-    0,
-    1,
-    1,
-    0,
-    -1,
-    0,
-    0,
-    1,
-    0,
-    0,
-    -1,
-    -1,
-    0,
-    1,
-    -1,
-    0
-  ],
-  3
-));
-// prettier-ignore
-__publicField(_LodHelper, "indices", new THREE.Uint8BufferAttribute(
-  [
-    0,
-    2,
-    1,
-    2,
-    3,
-    1,
-    2,
-    4,
-    3,
-    4,
-    5,
-    3,
-    4,
-    6,
-    5,
-    6,
-    7,
-    5
-  ],
-  1
-));
-let LodHelper = _LodHelper;
-class LODMesh extends THREE.Mesh {
-  constructor(geometry, material) {
-    super(geometry, material);
-    this.geometry = geometry;
-    this.material = material;
-    LodHelper.setupLodMeshResize(this);
-  }
-}
-class LODGeometry extends THREE.InstancedBufferGeometry {
-  constructor() {
-    super();
-    __publicField(this, "isLODGeometry", true);
-    LodHelper.setupLodAttributes(this);
-  }
-  isFiltered() {
-    const filter = this.getItemFilter();
-    return Boolean(filter);
-  }
-  computeBoundingBox() {
-    if (!this.boundingBox) {
-      this.boundingBox = new THREE.Box3();
-    }
-    LodHelper.computeLodBox(this);
-  }
-  applyMatrix4(matrix) {
-    this.applyTransformToBuffers(matrix);
-    this.updateBounds();
-    return this;
-  }
-  computeBoundingSphere() {
-    if (!this.boundingSphere) {
-      this.boundingSphere = new THREE.Sphere();
-    }
-    LodHelper.computeLodSphere(this);
-  }
-  getItemFilter() {
-    return LodHelper.getInstancedAttribute(this, "itemFilter");
-  }
-  getItemLast() {
-    return LodHelper.getInterAttribute(this, "itemLast");
-  }
-  getItemFirst() {
-    return LodHelper.getInterAttribute(this, "itemFirst");
-  }
-  applyTransformToBuffers(matrix) {
-    const first = this.getItemFirst();
-    first.applyMatrix4(matrix);
-    const last = this.getItemLast();
-    last.applyMatrix4(matrix);
-  }
-  updateBounds() {
-    if (this.boundingBox) {
-      this.computeBoundingBox();
-    }
-    if (this.boundingSphere) {
-      this.computeBoundingSphere();
-    }
-  }
-}
-class LodMaterial extends THREE.ShaderMaterial {
-  constructor(parameters) {
-    super(LodHelper.newLodMaterialParams(parameters));
-    __publicField(this, "isLodMaterial", true);
-    __publicField(this, "isLineMaterial", true);
-    this.clipping = true;
-    this.lights = false;
-    this.needsUpdate = true;
-  }
-  get lodSize() {
-    return this.uniforms.lodSize.value;
-  }
-  set lodColor(color) {
-    this.uniforms.lodColor.value = color;
-  }
-  set lodSize(value) {
-    this.uniforms.lodSize.value.copy(value);
-  }
-  get lodColor() {
-    return this.uniforms.lodColor.value;
-  }
-  set lodOpacity(value) {
-    this.uniforms.lodOpacity.value = value;
-  }
-  get lodOpacity() {
-    return this.uniforms.lodOpacity.value;
-  }
-  set highlightColor(color) {
-    this.uniforms.highlightColor.value = color;
-  }
-  get highlightColor() {
-    return this.uniforms.highlightColor.value;
-  }
-  set highlightOpacity(value) {
-    this.uniforms.highlightOpacity.value = value;
-  }
-  get highlightOpacity() {
-    return this.uniforms.highlightOpacity.value;
-  }
-}
-class MaterialManager {
-  constructor() {
-    __publicField(this, "list", new DataMap());
-    __publicField(this, "_modelMaterialMapping", /* @__PURE__ */ new Map());
-    __publicField(this, "_definitions", /* @__PURE__ */ new Map());
-    __publicField(this, "_idGenerator", new CRC());
-    __publicField(this, "white", 4294967295);
-  }
-  static resetColors(definitions) {
-    for (const definition of definitions) {
-      if (!(definition && definition.color))
-        continue;
-      const { color } = definition;
-      if (color.isColor)
-        continue;
-      const { r, g, b } = color;
-      definition.color = new THREE.Color().setRGB(
-        r,
-        g,
-        b,
-        THREE.SRGBColorSpace
-      );
-    }
-  }
-  dispose(modelId) {
-    this._definitions.delete(modelId);
-    const ids = this._modelMaterialMapping.get(modelId);
-    if (!ids)
-      return;
-    for (const id of ids) {
-      const material = this.list.get(id);
-      if (!material)
-        continue;
-      material.dispose();
-      this.list.delete(id);
-    }
-    this._modelMaterialMapping.delete(modelId);
-  }
-  /**
-   * Release a model's slot in the per-model definitions and mapping tables
-   * without disposing the underlying THREE materials in `list`. Used by
-   * `editor.save()` so a fresh model can register under the same modelId
-   * while the outgoing model's tiles still render normally.
-   */
-  releaseModelSlot(modelId) {
-    this._definitions.delete(modelId);
-    this._modelMaterialMapping.delete(modelId);
-  }
-  get(data, request) {
-    const { modelId, objectClass, currentLod, templateId } = request;
-    if (!(modelId && objectClass !== void 0 && currentLod !== void 0)) {
-      throw new Error(
-        "Fragments: material definition information is missing to create the material."
-      );
-    }
-    this._idGenerator.fromMaterialData({
-      modelId,
-      objectClass,
-      currentLod,
-      templateId,
-      ...data
-    });
-    const { value: id } = this._idGenerator;
-    const material = this.getUniqueMaterial(id, data, request);
-    return material;
-  }
-  addDefinitions(modelID, materials) {
-    const definitions = this._definitions.get(modelID);
-    if (definitions) {
-      definitions.push(...materials);
-    } else {
-      this._definitions.set(modelID, materials);
-    }
-  }
-  createHighlights(mesh, request) {
-    const {
-      tileData: { highlightData, highlightIds },
-      modelId,
-      material: index
-    } = request;
-    const { geometry } = mesh;
-    const materials = mesh.material.slice(0, 2);
-    const localMap = /* @__PURE__ */ new Map();
-    const materialDefinitions = this._definitions.get(modelId);
-    if (!materialDefinitions)
-      return materials;
-    for (let i = 0; i < highlightData.position.length; i++) {
-      const highlightIndex = highlightIds[i];
-      this.processHighlight(
-        localMap,
-        highlightIndex,
-        materialDefinitions,
-        index,
-        request,
-        materials
-      );
-      const first = highlightData.position[i];
-      const value = highlightData.size[i];
-      const isWhite = value === this.white;
-      const size = isWhite ? Infinity : value;
-      geometry.addGroup(first, size, localMap.get(highlightIds[i]));
-    }
-    return materials;
-  }
-  getHighlightProps(highlightIndex, originalIndex, modelId) {
-    const materialDefinitions = this._definitions.get(modelId);
-    if (!materialDefinitions)
-      return void 0;
-    const originalDefinition = materialDefinitions[originalIndex];
-    const newDefinition = materialDefinitions[highlightIndex];
-    if (!newDefinition || !originalDefinition)
-      return void 0;
-    const {
-      preserveOriginalMaterial,
-      _explicitProps,
-      ...highlightDefinition
-    } = newDefinition;
-    const combined = { ...originalDefinition };
-    if (preserveOriginalMaterial) {
-      for (const prop of _explicitProps ?? []) {
-        if (highlightDefinition[prop] !== void 0) {
-          combined[prop] = highlightDefinition[prop];
-        }
-      }
-    } else {
-      Object.assign(combined, highlightDefinition);
-    }
-    return combined;
-  }
-  getFromRequest(request) {
-    const { material: index, modelId } = request;
-    const modelMaterials = this._definitions.get(modelId);
-    const definition = modelMaterials == null ? void 0 : modelMaterials[index];
-    if (!definition) {
-      throw new Error(`Fragments: Missing mesh material for index ${index}`);
-    }
-    const material = this.get(definition, request);
-    return material;
-  }
-  newLODMaterial(data, request) {
-    const { data: definition } = data;
-    const color = new THREE.Color(definition.color);
-    if (request.currentLod === CurrentLod.WIRES) {
-      color.multiplyScalar(0.85);
-    }
-    const parameters = {
-      color,
-      ...this.getParameters(definition)
-    };
-    const material = new LodMaterial(parameters);
-    material.userData = { customId: definition.customId };
-    return material;
-  }
-  getParameters(data) {
-    const { opacity, transparent } = data;
-    const isTranslucent = opacity < 1;
-    const parameters = {
-      opacity,
-      transparent: transparent || isTranslucent,
-      clipIntersection: false
-    };
-    return parameters;
-  }
-  new(data, request) {
-    const { objectClass, templateId } = request;
-    let material;
-    if (objectClass === ObjectClass.SHELL) {
-      material = new THREE.MeshLambertMaterial({
-        color: data.color,
-        transparent: data.opacity < 1,
-        opacity: data.opacity,
-        userData: { customId: data.customId, localId: data.localId },
-        depthTest: data.depthTest ?? true,
-        depthWrite: data.depthWrite ?? true,
-        side: data.renderedFaces === 1 ? THREE.DoubleSide : THREE.FrontSide
-      });
-    } else if (objectClass === ObjectClass.LINE) {
-      material = this.newLODMaterial(
-        { data, instancing: templateId !== void 0 },
-        request
-      );
-    } else {
-      throw new Error("Fragments: Unsupported object class");
-    }
-    return material;
-  }
-  addMaterialToModel(modelId, id) {
-    let modelMaterials = this._modelMaterialMapping.get(modelId);
-    if (!modelMaterials) {
-      modelMaterials = /* @__PURE__ */ new Set();
-      this._modelMaterialMapping.set(modelId, modelMaterials);
-    }
-    modelMaterials.add(id);
-  }
-  processHighlight(localMap, highlightIndex, materialDefinitions, index, request, materials) {
-    if (!localMap.has(highlightIndex)) {
-      const originalDefinition = materialDefinitions[index];
-      const newDefinition = materialDefinitions[highlightIndex];
-      const { preserveOriginalMaterial, _explicitProps, ...highlightDefinition } = newDefinition;
-      const combinedDefinition = { ...originalDefinition };
-      if (preserveOriginalMaterial) {
-        for (const prop of _explicitProps ?? []) {
-          if (highlightDefinition[prop] !== void 0) {
-            combinedDefinition[prop] = highlightDefinition[prop];
-          }
-        }
-      } else {
-        Object.assign(combinedDefinition, highlightDefinition);
-      }
-      const material = this.get(combinedDefinition, request);
-      materials.push(material);
-      localMap.set(highlightIndex, materials.length - 1);
-    }
-  }
-  getUniqueMaterial(id, data, request) {
-    const modelId = request.modelId;
-    const material = this.list.get(id);
-    if (material)
-      return material;
-    const newMaterial = this.new(data, request);
-    this.list.set(id, newMaterial);
-    this.addMaterialToModel(modelId, id);
-    return this.list.get(id);
-  }
-}
-class HighlightManager {
-  async getHighlight(model, localIds) {
-    const materials = await model.threads.invoke(
-      model.modelId,
-      "getHighlight",
-      [localIds]
-    );
-    MaterialManager.resetColors(materials);
-    return materials;
-  }
-  async highlight(model, localIds, highlightMaterial) {
-    await model.threads.invoke(model.modelId, "highlight", [
-      localIds,
-      highlightMaterial
-    ]);
-  }
-  async setColor(model, localIds, color) {
-    await model.threads.invoke(model.modelId, "setColor", [localIds, color]);
-  }
-  async resetColor(model, localIds) {
-    await model.threads.invoke(model.modelId, "resetColor", [localIds]);
-  }
-  async setOpacity(model, localIds, opacity) {
-    await model.threads.invoke(model.modelId, "setOpacity", [localIds, opacity]);
-  }
-  async resetOpacity(model, localIds) {
-    await model.threads.invoke(model.modelId, "resetOpacity", [localIds]);
-  }
-  async getHighlightItemIds(model) {
-    return model.threads.invoke(
-      model.modelId,
-      "getHighlightItemIds"
-    );
-  }
-  async resetHighlight(model, localIds) {
-    await model.threads.invoke(model.modelId, "resetHighlight", [localIds]);
-  }
-}
-class SectionManager {
-  async getSection(model, plane, localIds) {
-    const args = [plane, localIds];
-    const result = await model.threads.invoke(
-      model.modelId,
-      "getSection",
-      args
-    );
-    return result;
-  }
-}
 class DataManager {
   async dispose(model, meshes, alignments, grids, options) {
     meshes.list.delete(model.modelId);
@@ -17911,6 +16095,17 @@ class DataManager {
   }
   async getIndexKeys(model, name) {
     return model.threads.invoke(model.modelId, "getIndexKeys", [
+      name
+    ]);
+  }
+  async getIndexKey(model, name, index) {
+    return model.threads.invoke(model.modelId, "getIndexKey", [
+      name,
+      index
+    ]);
+  }
+  async getIndexValues(model, name) {
+    return model.threads.invoke(model.modelId, "getIndexValues", [
       name
     ]);
   }
@@ -18027,17 +16222,24 @@ class DataManager {
     }
   }
 }
-class SequenceManager {
-  async getSequenced(model, result, fromItems, inputs) {
-    const args = [result, fromItems, inputs];
-    const response = await model.threads.invoke(
-      model.modelId,
-      "getSequenced",
-      args
-    );
-    return response;
-  }
-}
+const RENDER_AFFECTING_REQUESTS = /* @__PURE__ */ new Set([
+  EditRequestType.CREATE_MATERIAL,
+  EditRequestType.CREATE_REPRESENTATION,
+  EditRequestType.CREATE_SAMPLE,
+  EditRequestType.CREATE_GLOBAL_TRANSFORM,
+  EditRequestType.CREATE_LOCAL_TRANSFORM,
+  EditRequestType.UPDATE_MATERIAL,
+  EditRequestType.UPDATE_REPRESENTATION,
+  EditRequestType.UPDATE_SAMPLE,
+  EditRequestType.UPDATE_GLOBAL_TRANSFORM,
+  EditRequestType.UPDATE_LOCAL_TRANSFORM,
+  EditRequestType.DELETE_MATERIAL,
+  EditRequestType.DELETE_REPRESENTATION,
+  EditRequestType.DELETE_SAMPLE,
+  EditRequestType.DELETE_GLOBAL_TRANSFORM,
+  EditRequestType.DELETE_LOCAL_TRANSFORM,
+  EditRequestType.DELETE_ITEM
+]);
 class EditHelper {
   constructor(core, connection) {
     __publicField(this, "_deltaModels", {});
@@ -18053,6 +16255,7 @@ class EditHelper {
     if (!model) {
       throw new Error(`Model ${modelId} not found`);
     }
+    const onlyDataEdits = actions.length > 0 && actions.every((action) => !RENDER_AFFECTING_REQUESTS.has(action.type));
     const oldDeltaModels = this._deltaModels[modelId] || [];
     this._deltaModels[modelId] = null;
     if (config.removeRedo) {
@@ -18069,9 +16272,16 @@ class EditHelper {
       }
       action.localId = ids[idsIdx++];
     }
+    if (onlyDataEdits) {
+      this._deltaModels[modelId] = oldDeltaModels.length ? oldDeltaModels : null;
+      return ids;
+    }
     const deltaModel = await this.load(deltaModelBuffer, model);
     this._deltaModels[modelId] = [deltaModel];
     model.deltaModelId = deltaModel.modelId;
+    for (const oldDeltaModel of oldDeltaModels) {
+      oldDeltaModel.object.visible = false;
+    }
     const deletePromises = [];
     for (const oldDeltaModel of oldDeltaModels) {
       deletePromises.push(oldDeltaModel.dispose());
@@ -19565,23 +17775,120 @@ class GridsManager {
   constructor(model) {
     __publicField(this, "model");
     __publicField(this, "_grids", new THREE.Group());
-    __publicField(this, "_gridMaterial", new THREE.LineDashedMaterial({
+    __publicField(this, "_gridMaterial", new THREE.LineDashedMaterial(
+      {
+        color: 16777215,
+        linewidth: 5,
+        depthTest: false,
+        dashSize: 1,
+        gapSize: 0.3
+      }
+    ));
+    __publicField(this, "_labelMaterial", new THREE.MeshPhongMaterial({
       color: 16777215,
-      linewidth: 5,
-      depthTest: false,
-      dashSize: 1,
-      gapSize: 0.3
+      flatShading: true,
+      side: THREE.FrontSide,
+      depthTest: false
     }));
+    __publicField(this, "_labelConfig");
+    __publicField(this, "_labelMap", /* @__PURE__ */ new Map());
     this.model = model;
   }
-  async getGrids() {
+  async getGrids({ labels } = {}) {
+    var _a2;
+    let labelsNeedUpdate = false;
+    let labelsNeedRepositioning = false;
+    if (labels == null ? void 0 : labels.show) {
+      const incomingConfig = {
+        size: 0.2,
+        direction: "ltr",
+        curveSegments: 12,
+        offset: 0.5,
+        ...labels.config,
+        font: labels.font
+      };
+      if (!!this._labelConfig && this._labelConfig.offset !== incomingConfig.offset) {
+        this._labelConfig.offset = incomingConfig.offset;
+        labelsNeedRepositioning = true;
+      }
+      const isEqual = !!this._labelConfig && this._labelConfig.font === incomingConfig.font && this._labelConfig.size === incomingConfig.size && this._labelConfig.direction === incomingConfig.direction && this._labelConfig.curveSegments === incomingConfig.curveSegments;
+      if (!isEqual) {
+        labelsNeedUpdate = true;
+        this._labelConfig = incomingConfig;
+      }
+    } else if (this._labelConfig) {
+      labelsNeedUpdate = true;
+      delete this._labelConfig;
+    }
     if (!this._grids.children.length) {
       await this.constructGrids();
+      labelsNeedUpdate = true;
+    }
+    const axisGroups = [];
+    if (labelsNeedUpdate) {
+      const staleCache = [...this._labelMap];
+      this._labelMap.clear();
+      const pairs = [];
+      this._grids.traverse((object) => {
+        if (object.userData.kind === "label") {
+          const label = object;
+          label.removeFromParent();
+        } else if (this._labelConfig && object.userData.kind === "axis") {
+          const gridAxisGroup = object;
+          const { tag, axis } = gridAxisGroup.userData;
+          const labels2 = this.createGridLabels({
+            tag,
+            axis,
+            config: this._labelConfig
+          });
+          pairs.push([gridAxisGroup, labels2]);
+          axisGroups.push(gridAxisGroup);
+        }
+      });
+      for (const [group, labels2] of pairs) {
+        group.add(...labels2);
+      }
+      for (const [, geometry] of staleCache) {
+        geometry.dispose();
+      }
+    } else if (labelsNeedRepositioning) {
+      this._grids.traverse((object) => {
+        if (object.userData.kind === "axis") {
+          const gridAxisGroup = object;
+          axisGroups.push(gridAxisGroup);
+        }
+      });
+    }
+    for (const group of axisGroups) {
+      const [line, label0, label1] = group.children;
+      const position = line == null ? void 0 : line.geometry.getAttribute("position").array;
+      if (!position)
+        continue;
+      const [m0, m1] = this.getGridLabelMatrices(
+        position,
+        ((_a2 = this._labelConfig) == null ? void 0 : _a2.offset) ?? 0.5
+      );
+      if (label0) {
+        label0.matrix.copy(m0);
+        label0.matrix.decompose(
+          label0.position,
+          label0.quaternion,
+          label0.scale
+        );
+      }
+      if (label1) {
+        label1.matrix.copy(m1);
+        label1.matrix.decompose(
+          label1.position,
+          label1.quaternion,
+          label1.scale
+        );
+      }
     }
     return this._grids;
   }
   /**
-   * The shared `LineDashedMaterial` used for every grid axis. Mutating its
+   * The shared line material used for every grid axis. Mutating its
    * properties (color, opacity, dash sizes, etc.) updates all rendered grid
    * lines without needing to traverse the returned `Object3D`. Replace it
    * with a different material via `setGridMaterial` if you need a different
@@ -19600,6 +17907,32 @@ class GridsManager {
     this._gridMaterial = material;
     this._grids.traverse((child) => {
       if (child instanceof THREE.Line) {
+        child.material = material;
+      }
+    });
+    if (prev !== material)
+      prev.dispose();
+  }
+  /**
+   * The shared material used for every grid axis label. Mutating its
+   * properties (color, opacity, dash sizes, etc.) updates all rendered grid
+   * labels without needing to traverse the returned `Object3D`. Replace it
+   * with a different material via `setGridMaterial` if you need a different
+   * material class.
+   */
+  getLabelMaterial() {
+    return this._labelMaterial;
+  }
+  /**
+   * Replace the shared label material. Walks already-constructed labels and
+   * reassigns their `.material`, then disposes the previous material to
+   * release GPU resources.
+   */
+  setLabelMaterial(material) {
+    const prev = this._labelMaterial;
+    this._labelMaterial = material;
+    this._grids.traverse((child) => {
+      if (child.userData.kind === "label") {
         child.material = material;
       }
     });
@@ -19634,13 +17967,59 @@ class GridsManager {
         new THREE.BufferAttribute(positions, 3)
       );
       const axisLine = new THREE.Line(geometry, this._gridMaterial);
-      axisLine.userData.tag = tag;
-      axisLine.userData.kind = "axis";
-      axisLine.userData.axis = axis;
       axisLine.computeLineDistances();
+      axisLine.userData.tag = tag;
+      axisLine.userData.kind = "line";
+      axisLine.userData.axis = axis;
       axisLine.renderOrder = 1;
-      grid.add(axisLine);
+      const axisGroup = new THREE.Group();
+      axisGroup.userData.tag = tag;
+      axisGroup.userData.kind = "axis";
+      axisGroup.userData.axis = axis;
+      axisGroup.renderOrder = 1;
+      axisGroup.add(axisLine);
+      grid.add(axisGroup);
     }
+  }
+  createGridLabels({
+    tag,
+    axis,
+    config
+  }) {
+    let geometry = this._labelMap.get(tag);
+    if (!geometry) {
+      const { font, size, direction, curveSegments } = config;
+      const shapes = font.generateShapes(tag, size, direction);
+      geometry = new THREE.ShapeGeometry(shapes, curveSegments);
+      geometry.computeBoundingBox();
+      geometry.center();
+      geometry.computeBoundingSphere();
+      this._labelMap.set(tag, geometry);
+    }
+    const mesh0 = new THREE.Mesh(geometry, this._labelMaterial);
+    mesh0.userData.kind = "label";
+    mesh0.userData.tag = tag;
+    mesh0.userData.axis = axis;
+    mesh0.userData.index = 0;
+    mesh0.renderOrder = 1;
+    const mesh1 = new THREE.Mesh(geometry, this._labelMaterial);
+    mesh1.userData.kind = "label";
+    mesh1.userData.tag = tag;
+    mesh1.userData.axis = axis;
+    mesh1.userData.index = 1;
+    mesh1.renderOrder = 1;
+    return [mesh0, mesh1];
+  }
+  getGridLabelMatrices(position, offsetScalar) {
+    const a = new THREE.Vector3().fromArray(position.slice(0, 3));
+    const b = new THREE.Vector3().fromArray(position.slice(-3));
+    const offset = new THREE.Vector3().subVectors(b, a).normalize().multiplyScalar(offsetScalar);
+    const aPos = a.clone().sub(offset);
+    const bPos = b.clone().add(offset);
+    const z = new THREE.Vector3(0, 0, 1);
+    const m0 = new THREE.Matrix4().setPosition(aPos).lookAt(aPos, b, z);
+    const m1 = new THREE.Matrix4().setPosition(bPos).lookAt(bPos, a, z);
+    return [m0, m1];
   }
   dispose() {
     this._grids.removeFromParent();
@@ -19652,6 +18031,2006 @@ class GridsManager {
     }
     this._gridMaterial.dispose();
     this._gridMaterial = void 0;
+    this._labelMaterial.dispose();
+    this._labelMaterial = void 0;
+    delete this._labelConfig;
+    this._labelMap.forEach((geometry) => geometry.dispose());
+    this._labelMap.clear();
+  }
+}
+class LodShaders {
+}
+__publicField(LodShaders, "vertex", `
+            #include <common>
+            #include <clipping_planes_pars_vertex>
+
+            attribute float itemFilter;
+            uniform vec2 lodSize;
+            attribute vec3 itemFirst;
+            attribute vec3 itemLast;
+            attribute vec3 itemHighlightColor;
+
+            float lodWidth = 2.0;
+            
+            void cutLodLine(const in vec4 first, inout vec4 second ) {
+                float projValue1 = projectionMatrix[2][2];
+                float projValue2 = projectionMatrix[3][2];
+                float approxResult = -(projValue2 / projValue1) / 2.0;
+                float diff1 = approxResult - first.z;
+                float diff2 = second.z - first.z;
+                float cutFilter = diff1 / diff2;
+                second.xyz = mix(first.xyz, second.xyz, cutFilter);
+            }
+                
+            varying float vHighlight;
+            varying vec3 vHighlightColor;
+
+            void main() {
+                if (itemFilter == 0.0) {
+                    gl_Position = vec4(0,0,0,0);
+                    return;
+                }
+
+                vHighlight = itemFilter > 1.5 ? 1.0 : 0.0;
+                vHighlightColor = itemHighlightColor;
+
+                vec4 rawFirst = vec4(itemFirst, 1.0);
+                vec4 rawLast = vec4(itemLast, 1.0);
+                vec4 first = modelViewMatrix * rawFirst;
+                vec4 last = modelViewMatrix * rawLast;
+                
+                bool lodPerspective = projectionMatrix[2][3] == -1.0;
+                if (lodPerspective) {
+                    bool firstCut = first.z < 0.0 && last.z >= 0.0;
+                    bool lastCut = last.z < 0.0 && first.z >= 0.0;
+                    if (firstCut) {
+                        cutLodLine( first, last );
+                    } else if (lastCut) {
+                        cutLodLine( last, first );
+                    }
+                }
+
+                vec4 firstCut = projectionMatrix * first;
+                vec4 lastCut = projectionMatrix * last;
+                vec3 firstNdc = firstCut.xyz / firstCut.w;
+                vec3 lastNdc = lastCut.xyz / lastCut.w;
+
+                vec2 lodOrientation = lastNdc.xy - firstNdc.xy;
+
+                float lodRatio = lodSize.x / lodSize.y;
+                lodOrientation.x *= lodRatio;
+                lodOrientation = normalize(lodOrientation);
+                
+                vec2 lodDistance = vec2(lodOrientation.y, - lodOrientation.x);
+                lodOrientation.x /= lodRatio;
+                lodDistance.x /= lodRatio;
+
+                if (position.x < 0.0) { 
+                    lodDistance *= - 1.0;
+                }
+
+                if (position.y < 0.0) {
+                    lodDistance += -lodOrientation;
+                } else if (position.y > 1.0) {
+                    lodDistance += lodOrientation;
+                }
+
+                lodDistance *= lodWidth;
+                lodDistance /= lodSize.y;
+
+                bool isFirst = position.y < 0.5;
+                vec4 lodPosition = isFirst ? firstCut : lastCut;
+                lodDistance *= lodPosition.w;
+                lodPosition.xy += lodDistance;
+                gl_Position = lodPosition;
+
+                vec4 mvPosition = isFirst ? first : last;
+                #include <clipping_planes_vertex>
+            }
+    `);
+__publicField(LodShaders, "fragment", `
+            #include <common>
+            #include <clipping_planes_pars_fragment>
+
+            uniform vec3 lodColor;
+            uniform float lodOpacity;
+            uniform vec3 highlightColor;
+            uniform float highlightOpacity;
+
+            varying float vHighlight;
+            varying vec3 vHighlightColor;
+
+            void main() {
+                #include <clipping_planes_fragment>
+                // Per-instance highlight color (carried via the itemHighlightColor
+                // instanced attribute) so that, at LOD/WIRES distance, each item keeps
+                // its own color instead of all collapsing to a single uniform. See #230.
+                vec3 color = mix(lodColor, vHighlightColor, vHighlight);
+                float alpha = mix(lodOpacity, highlightOpacity, vHighlight);
+                gl_FragColor = vec4(color, alpha);
+                #include <colorspace_fragment>
+            }
+    `);
+const _LodHelper = class _LodHelper {
+  static setupLodMeshResize(mesh) {
+    mesh.onBeforeRender = (renderer) => {
+      renderer.getSize(mesh.material[0].lodSize);
+    };
+  }
+  static setupLodAttributes(geometry) {
+    geometry.setIndex(_LodHelper.indices);
+    geometry.setAttribute("position", _LodHelper.vertices);
+  }
+  static setLodBuffer(lodGeometry, data, onFinish) {
+    let itemFirst = lodGeometry.getItemFirst();
+    let itemLast = lodGeometry.getItemLast();
+    let dataBuffer = this.setItemFirst(lodGeometry, itemFirst, data, itemLast);
+    const result = this.resetAttributes(itemFirst, dataBuffer, data, itemLast);
+    ({ itemFirst, dataBuffer, itemLast } = result);
+    this.setupFinish(onFinish, dataBuffer);
+    lodGeometry.setAttribute("itemFirst", itemFirst);
+    lodGeometry.setAttribute("itemLast", itemLast);
+  }
+  static setLodVisibility(lodGeometry, visible) {
+    const itemFilter = this.setupItemFilter(lodGeometry);
+    this.applyVisibilityState(lodGeometry, visible, itemFilter);
+    itemFilter.needsUpdate = true;
+  }
+  static getInterAttribute(geometry, name) {
+    return geometry.getAttribute(name);
+  }
+  static computeLodSphere(geometry) {
+    if (!geometry.boundingSphere) {
+      return;
+    }
+    const itemFirst = geometry.getItemFirst();
+    if (itemFirst) {
+      const midPoint = _LodHelper.getLodMidPoint(geometry, itemFirst);
+      const radius = _LodHelper.getLodRadius(midPoint, itemFirst);
+      geometry.boundingSphere.radius = radius;
+    }
+  }
+  static newLodMaterialParams(parameters) {
+    const customUniforms = {
+      lodColor: { value: new THREE.Color(parameters.color) },
+      lodSize: { value: new THREE.Vector2(1, 1) },
+      lodOpacity: { value: parameters.opacity ?? 1 },
+      highlightColor: { value: new THREE.Color(1, 1, 1) },
+      highlightOpacity: { value: 1 }
+    };
+    const uniforms = THREE.UniformsUtils.merge([
+      THREE.UniformsLib.common,
+      customUniforms
+    ]);
+    const transparent = parameters.transparent ?? false;
+    return {
+      uniforms,
+      transparent,
+      vertexShader: LodShaders.vertex,
+      fragmentShader: LodShaders.fragment
+    };
+  }
+  static setLodFilter(geometry, data) {
+    const itemFilter = geometry.getItemFilter();
+    const bufferData = itemFilter.array;
+    for (let i = 0; i < data.position.length; ++i) {
+      const first = data.position[i] / 2;
+      const size = data.size[i] / 2;
+      if (size === 4294967295) {
+        bufferData.fill(1, first);
+      } else {
+        bufferData.fill(1, first, first + size);
+      }
+    }
+    itemFilter.needsUpdate = true;
+  }
+  static setLodHighlight(geometry, data) {
+    const itemFilter = geometry.getItemFilter();
+    const bufferData = itemFilter.array;
+    for (let i = 0; i < data.position.length; ++i) {
+      const first = data.position[i] / 2;
+      const size = data.size[i] / 2;
+      if (size === 4294967295) {
+        bufferData.fill(2, first);
+      } else {
+        bufferData.fill(2, first, first + size);
+      }
+    }
+    itemFilter.needsUpdate = true;
+  }
+  // Writes a per-instance highlight color over the same chunk ranges that
+  // setLodHighlight flags as highlighted, so each item keeps its own color at
+  // LOD/WIRES distance instead of all collapsing to a single uniform (#230).
+  // `colors[i]` is parallel to `data`'s chunks; undefined entries are skipped.
+  static setLodHighlightColors(geometry, data, colors) {
+    const itemFilter = geometry.getItemFilter();
+    if (!itemFilter)
+      return;
+    const count = itemFilter.count;
+    let colorAttr = this.getInstancedAttribute(geometry, "itemHighlightColor");
+    if (!colorAttr || colorAttr.count !== count) {
+      colorAttr = new THREE.InstancedBufferAttribute(
+        new Float32Array(count * 3).fill(1),
+        3
+      );
+      geometry.setAttribute("itemHighlightColor", colorAttr);
+    }
+    const bufferData = colorAttr.array;
+    for (let i = 0; i < data.position.length; ++i) {
+      const color = colors[i];
+      if (!color)
+        continue;
+      const first = Math.floor(data.position[i] / 2);
+      const size = data.size[i] / 2;
+      const end = size === 4294967295 ? count : Math.min(first + size, count);
+      for (let inst = first; inst < end; ++inst) {
+        bufferData[inst * 3] = color.r;
+        bufferData[inst * 3 + 1] = color.g;
+        bufferData[inst * 3 + 2] = color.b;
+      }
+    }
+    colorAttr.needsUpdate = true;
+  }
+  static getInstancedAttribute(geometry, name) {
+    return geometry.getAttribute(name);
+  }
+  static computeLodBox(geometry) {
+    if (!geometry.boundingBox) {
+      return;
+    }
+    const position = geometry.getItemFirst();
+    if (position) {
+      const buffer = position.data.array;
+      geometry.boundingBox.setFromArray(buffer);
+      return;
+    }
+    geometry.boundingBox.makeEmpty();
+  }
+  static setDataBuffer(dataBuffer, itemFirst, data) {
+    dataBuffer = itemFirst.data;
+    dataBuffer.array = data;
+    dataBuffer.needsUpdate = true;
+    return dataBuffer;
+  }
+  static disposeAllData(geometry) {
+    delete geometry.attributes.itemFilter;
+    delete geometry.attributes.itemHighlightColor;
+    delete geometry.attributes.position;
+    geometry.index = null;
+    geometry.dispose();
+    _LodHelper.setupLodAttributes(geometry);
+  }
+  static setItemFirst(lodGeometry, itemFirst, data, itemLast) {
+    let dataBuffer = null;
+    if (itemFirst) {
+      const sizeMatch = data.length === itemFirst.data.array.length;
+      if (sizeMatch) {
+        dataBuffer = this.setDataBuffer(dataBuffer, itemFirst, data);
+      } else {
+        itemFirst = void 0;
+        this.disposeAllData(lodGeometry);
+      }
+    }
+    return dataBuffer;
+  }
+  static setupFinish(onFinish, dataBuffer) {
+    if (onFinish) {
+      dataBuffer.onUploadCallback = onFinish;
+    }
+  }
+  static resetAttributes(itemFirst, dataBuffer, data, itemLast) {
+    if (!itemFirst) {
+      dataBuffer = new THREE.InstancedInterleavedBuffer(data, 6, 1);
+      itemFirst = new THREE.InterleavedBufferAttribute(dataBuffer, 3, 0);
+      itemLast = new THREE.InterleavedBufferAttribute(dataBuffer, 3, 3);
+    }
+    return { itemFirst, dataBuffer, itemLast };
+  }
+  static setupItemFilter(lodGeometry) {
+    const itemFirst = lodGeometry.getItemFirst();
+    const size = itemFirst.count;
+    let itemFilter = lodGeometry.getItemFilter();
+    if (itemFilter) {
+      itemFilter.array.fill(0);
+    } else {
+      itemFilter = new THREE.InstancedBufferAttribute(new Uint8Array(size), 1);
+      lodGeometry.setAttribute("itemFilter", itemFilter);
+    }
+    return itemFilter;
+  }
+  static applyVisibilityState(lodGeometry, visible, itemFilter) {
+    if (visible === true) {
+      itemFilter.array.fill(1);
+      return;
+    }
+    if (visible) {
+      this.setLodFilter(lodGeometry, visible);
+    }
+  }
+  static getLodMidPoint(geometry, itemFirst) {
+    const midpoint = geometry.boundingSphere.center;
+    this.tempBox.setFromArray(itemFirst.data.array);
+    this.tempBox.getCenter(midpoint);
+    return midpoint;
+  }
+  static getLodRadius(midPoint, itemFirst) {
+    let threshold = 0;
+    const size = itemFirst.data.array.length;
+    for (let i = 0; i < size; i += 3) {
+      const dataBuffer = itemFirst.data.array;
+      _LodHelper.tempVec.fromArray(dataBuffer, i);
+      const distance = midPoint.distanceToSquared(_LodHelper.tempVec);
+      threshold = Math.max(threshold, distance);
+    }
+    return Math.sqrt(threshold);
+  }
+};
+__publicField(_LodHelper, "tempVec", new THREE.Vector3());
+__publicField(_LodHelper, "tempBox", new THREE.Box3());
+// prettier-ignore
+__publicField(_LodHelper, "vertices", new THREE.Float32BufferAttribute(
+  [
+    -1,
+    2,
+    0,
+    1,
+    2,
+    0,
+    -1,
+    1,
+    0,
+    1,
+    1,
+    0,
+    -1,
+    0,
+    0,
+    1,
+    0,
+    0,
+    -1,
+    -1,
+    0,
+    1,
+    -1,
+    0
+  ],
+  3
+));
+// prettier-ignore
+__publicField(_LodHelper, "indices", new THREE.Uint8BufferAttribute(
+  [
+    0,
+    2,
+    1,
+    2,
+    3,
+    1,
+    2,
+    4,
+    3,
+    4,
+    5,
+    3,
+    4,
+    6,
+    5,
+    6,
+    7,
+    5
+  ],
+  1
+));
+let LodHelper = _LodHelper;
+class LODMesh extends THREE.Mesh {
+  constructor(geometry, material) {
+    super(geometry, material);
+    this.geometry = geometry;
+    this.material = material;
+    LodHelper.setupLodMeshResize(this);
+  }
+}
+class LODGeometry extends THREE.InstancedBufferGeometry {
+  constructor() {
+    super();
+    __publicField(this, "isLODGeometry", true);
+    LodHelper.setupLodAttributes(this);
+  }
+  isFiltered() {
+    const filter = this.getItemFilter();
+    return Boolean(filter);
+  }
+  computeBoundingBox() {
+    if (!this.boundingBox) {
+      this.boundingBox = new THREE.Box3();
+    }
+    LodHelper.computeLodBox(this);
+  }
+  applyMatrix4(matrix) {
+    this.applyTransformToBuffers(matrix);
+    this.updateBounds();
+    return this;
+  }
+  computeBoundingSphere() {
+    if (!this.boundingSphere) {
+      this.boundingSphere = new THREE.Sphere();
+    }
+    LodHelper.computeLodSphere(this);
+  }
+  getItemFilter() {
+    return LodHelper.getInstancedAttribute(this, "itemFilter");
+  }
+  getItemLast() {
+    return LodHelper.getInterAttribute(this, "itemLast");
+  }
+  getItemFirst() {
+    return LodHelper.getInterAttribute(this, "itemFirst");
+  }
+  applyTransformToBuffers(matrix) {
+    const first = this.getItemFirst();
+    first.applyMatrix4(matrix);
+    const last = this.getItemLast();
+    last.applyMatrix4(matrix);
+  }
+  updateBounds() {
+    if (this.boundingBox) {
+      this.computeBoundingBox();
+    }
+    if (this.boundingSphere) {
+      this.computeBoundingSphere();
+    }
+  }
+}
+class LodMaterial extends THREE.ShaderMaterial {
+  constructor(parameters) {
+    super(LodHelper.newLodMaterialParams(parameters));
+    __publicField(this, "isLodMaterial", true);
+    __publicField(this, "isLineMaterial", true);
+    this.clipping = true;
+    this.lights = false;
+    this.needsUpdate = true;
+  }
+  get lodSize() {
+    return this.uniforms.lodSize.value;
+  }
+  set lodColor(color) {
+    this.uniforms.lodColor.value = color;
+  }
+  set lodSize(value) {
+    this.uniforms.lodSize.value.copy(value);
+  }
+  get lodColor() {
+    return this.uniforms.lodColor.value;
+  }
+  set lodOpacity(value) {
+    this.uniforms.lodOpacity.value = value;
+  }
+  get lodOpacity() {
+    return this.uniforms.lodOpacity.value;
+  }
+  set highlightColor(color) {
+    this.uniforms.highlightColor.value = color;
+  }
+  get highlightColor() {
+    return this.uniforms.highlightColor.value;
+  }
+  set highlightOpacity(value) {
+    this.uniforms.highlightOpacity.value = value;
+  }
+  get highlightOpacity() {
+    return this.uniforms.highlightOpacity.value;
+  }
+}
+class MaterialManager {
+  constructor() {
+    __publicField(this, "list", new DataMap());
+    __publicField(this, "_modelMaterialMapping", /* @__PURE__ */ new Map());
+    __publicField(this, "_definitions", /* @__PURE__ */ new Map());
+    __publicField(this, "_idGenerator", new CRC());
+    __publicField(this, "white", 4294967295);
+  }
+  static resetColors(definitions) {
+    for (const definition of definitions) {
+      if (!(definition && definition.color))
+        continue;
+      const { color } = definition;
+      if (color.isColor)
+        continue;
+      const { r, g, b } = color;
+      definition.color = new THREE.Color().setRGB(
+        r,
+        g,
+        b,
+        THREE.SRGBColorSpace
+      );
+    }
+  }
+  dispose(modelId) {
+    this._definitions.delete(modelId);
+    const ids = this._modelMaterialMapping.get(modelId);
+    if (!ids)
+      return;
+    for (const id of ids) {
+      const material = this.list.get(id);
+      if (!material)
+        continue;
+      material.dispose();
+      this.list.delete(id);
+    }
+    this._modelMaterialMapping.delete(modelId);
+  }
+  /**
+   * Release a model's slot in the per-model definitions and mapping tables
+   * without disposing the underlying THREE materials in `list`. Used by
+   * `editor.save()` so a fresh model can register under the same modelId
+   * while the outgoing model's tiles still render normally.
+   */
+  releaseModelSlot(modelId) {
+    this._definitions.delete(modelId);
+    this._modelMaterialMapping.delete(modelId);
+  }
+  get(data, request) {
+    const { modelId, objectClass, currentLod, templateId } = request;
+    if (!(modelId && objectClass !== void 0 && currentLod !== void 0)) {
+      throw new Error(
+        "Fragments: material definition information is missing to create the material."
+      );
+    }
+    this._idGenerator.fromMaterialData({
+      modelId,
+      objectClass,
+      currentLod,
+      templateId,
+      ...data
+    });
+    const { value: id } = this._idGenerator;
+    const material = this.getUniqueMaterial(id, data, request);
+    return material;
+  }
+  addDefinitions(modelID, materials) {
+    const definitions = this._definitions.get(modelID);
+    if (definitions) {
+      definitions.push(...materials);
+    } else {
+      this._definitions.set(modelID, materials);
+    }
+  }
+  createHighlights(mesh, request) {
+    const {
+      tileData: { highlightData, highlightIds },
+      modelId,
+      material: index
+    } = request;
+    const { geometry } = mesh;
+    const materials = mesh.material.slice(0, 2);
+    const localMap = /* @__PURE__ */ new Map();
+    const materialDefinitions = this._definitions.get(modelId);
+    if (!materialDefinitions)
+      return materials;
+    for (let i = 0; i < highlightData.position.length; i++) {
+      const highlightIndex = highlightIds[i];
+      this.processHighlight(
+        localMap,
+        highlightIndex,
+        materialDefinitions,
+        index,
+        request,
+        materials
+      );
+      const first = highlightData.position[i];
+      const value = highlightData.size[i];
+      const isWhite = value === this.white;
+      const size = isWhite ? Infinity : value;
+      geometry.addGroup(first, size, localMap.get(highlightIds[i]));
+    }
+    return materials;
+  }
+  getHighlightProps(highlightIndex, originalIndex, modelId) {
+    const materialDefinitions = this._definitions.get(modelId);
+    if (!materialDefinitions)
+      return void 0;
+    const originalDefinition = materialDefinitions[originalIndex];
+    const newDefinition = materialDefinitions[highlightIndex];
+    if (!newDefinition || !originalDefinition)
+      return void 0;
+    const {
+      preserveOriginalMaterial,
+      _explicitProps,
+      ...highlightDefinition
+    } = newDefinition;
+    const combined = { ...originalDefinition };
+    if (preserveOriginalMaterial) {
+      for (const prop of _explicitProps ?? []) {
+        if (highlightDefinition[prop] !== void 0) {
+          combined[prop] = highlightDefinition[prop];
+        }
+      }
+    } else {
+      Object.assign(combined, highlightDefinition);
+    }
+    return combined;
+  }
+  getFromRequest(request) {
+    const { material: index, modelId } = request;
+    const modelMaterials = this._definitions.get(modelId);
+    const definition = modelMaterials == null ? void 0 : modelMaterials[index];
+    if (!definition) {
+      throw new Error(`Fragments: Missing mesh material for index ${index}`);
+    }
+    const material = this.get(definition, request);
+    return material;
+  }
+  newLODMaterial(data, request) {
+    const { data: definition } = data;
+    const color = new THREE.Color(definition.color);
+    if (request.currentLod === CurrentLod.WIRES) {
+      color.multiplyScalar(0.85);
+    }
+    const parameters = {
+      color,
+      ...this.getParameters(definition)
+    };
+    const material = new LodMaterial(parameters);
+    material.userData = { customId: definition.customId };
+    return material;
+  }
+  getParameters(data) {
+    const { opacity, transparent } = data;
+    const isTranslucent = opacity < 1;
+    const parameters = {
+      opacity,
+      transparent: transparent || isTranslucent,
+      clipIntersection: false
+    };
+    return parameters;
+  }
+  new(data, request) {
+    const { objectClass, templateId } = request;
+    let material;
+    if (objectClass === ObjectClass.SHELL) {
+      material = new THREE.MeshLambertMaterial({
+        color: data.color,
+        transparent: data.opacity < 1,
+        opacity: data.opacity,
+        userData: { customId: data.customId, localId: data.localId },
+        depthTest: data.depthTest ?? true,
+        depthWrite: data.depthWrite ?? true,
+        side: data.renderedFaces === 1 ? THREE.DoubleSide : THREE.FrontSide
+      });
+    } else if (objectClass === ObjectClass.LINE) {
+      material = this.newLODMaterial(
+        { data, instancing: templateId !== void 0 },
+        request
+      );
+    } else {
+      throw new Error("Fragments: Unsupported object class");
+    }
+    return material;
+  }
+  addMaterialToModel(modelId, id) {
+    let modelMaterials = this._modelMaterialMapping.get(modelId);
+    if (!modelMaterials) {
+      modelMaterials = /* @__PURE__ */ new Set();
+      this._modelMaterialMapping.set(modelId, modelMaterials);
+    }
+    modelMaterials.add(id);
+  }
+  processHighlight(localMap, highlightIndex, materialDefinitions, index, request, materials) {
+    if (!localMap.has(highlightIndex)) {
+      const originalDefinition = materialDefinitions[index];
+      const newDefinition = materialDefinitions[highlightIndex];
+      const { preserveOriginalMaterial, _explicitProps, ...highlightDefinition } = newDefinition;
+      const combinedDefinition = { ...originalDefinition };
+      if (preserveOriginalMaterial) {
+        for (const prop of _explicitProps ?? []) {
+          if (highlightDefinition[prop] !== void 0) {
+            combinedDefinition[prop] = highlightDefinition[prop];
+          }
+        }
+      } else {
+        Object.assign(combinedDefinition, highlightDefinition);
+      }
+      const material = this.get(combinedDefinition, request);
+      materials.push(material);
+      localMap.set(highlightIndex, materials.length - 1);
+    }
+  }
+  getUniqueMaterial(id, data, request) {
+    const modelId = request.modelId;
+    const material = this.list.get(id);
+    if (material)
+      return material;
+    const newMaterial = this.new(data, request);
+    this.list.set(id, newMaterial);
+    this.addMaterialToModel(modelId, id);
+    return this.list.get(id);
+  }
+}
+class HighlightManager {
+  async getHighlight(model, localIds) {
+    const materials = await model.threads.invoke(
+      model.modelId,
+      "getHighlight",
+      [localIds]
+    );
+    MaterialManager.resetColors(materials);
+    return materials;
+  }
+  async highlight(model, localIds, highlightMaterial) {
+    await model.threads.invoke(model.modelId, "highlight", [
+      localIds,
+      highlightMaterial
+    ]);
+  }
+  async setColor(model, localIds, color) {
+    await model.threads.invoke(model.modelId, "setColor", [localIds, color]);
+  }
+  async resetColor(model, localIds) {
+    await model.threads.invoke(model.modelId, "resetColor", [localIds]);
+  }
+  async setOpacity(model, localIds, opacity) {
+    await model.threads.invoke(model.modelId, "setOpacity", [localIds, opacity]);
+  }
+  async resetOpacity(model, localIds) {
+    await model.threads.invoke(model.modelId, "resetOpacity", [localIds]);
+  }
+  async getHighlightItemIds(model) {
+    return model.threads.invoke(
+      model.modelId,
+      "getHighlightItemIds"
+    );
+  }
+  async resetHighlight(model, localIds) {
+    await model.threads.invoke(model.modelId, "resetHighlight", [localIds]);
+  }
+}
+class ItemAttributes extends Map {
+  /**
+   * Creates a new ItemAttributes instance.
+   * @param localId - The local ID of the item.
+   * @param iterable - An optional iterable of key-value pairs to initialize the map with.
+   */
+  constructor(localId, iterable) {
+    super(iterable);
+    /**
+     * A map of local IDs to their corresponding attribute changes.
+     * This is used to track changes to the attributes over time.
+     */
+    __publicField(this, "tracker", null);
+    /**
+     * The local ID of the item.
+     */
+    __publicField(this, "localId");
+    /**
+     * A function that acts as a guard for adding items to the set.
+     * It determines whether a given value should be allowed to be added to the set.
+     *
+     * @param key - The key of the entry to be checked against the guard.
+     * @param value - The value of the entry to be checked against the guard.
+     * @returns A boolean indicating whether the value should be allowed to be added to the set.
+     *          By default, this function always returns true, allowing all values to be added.
+     *          You can override this behavior by providing a custom implementation.
+     */
+    __publicField(this, "guard", () => true);
+    this.localId = localId;
+  }
+  /**
+   * Gets the attributes as a plain javascript object.
+   */
+  get object() {
+    const attr = {};
+    for (const [key, data] of this.entries()) {
+      attr[key] = data.value;
+    }
+    return attr;
+  }
+  /**
+   * Sets an attribute in the map.
+   * @param key - The key of the attribute to set.
+   * @param attr - The attribute data to set.
+   * @returns The updated map.
+   */
+  set(key, attr) {
+    const guard = this.guard ?? (() => true);
+    const isValid = guard(key, attr);
+    if (!isValid)
+      return this;
+    const value = attr.type !== void 0 ? attr : { value: attr.value, type: this.getType(key) };
+    if (!this.tracker)
+      return super.set(key, value);
+    if (this.localId === null) {
+      console.warn(
+        "Item attributes are missing a valid localId. Changes can't be tracked."
+      );
+      return super.set(key, value);
+    }
+    let itemChanges = this.tracker.get(this.localId);
+    if (!itemChanges) {
+      itemChanges = { type: "modified", added: {}, deleted: [], modified: {} };
+      this.tracker.set(this.localId, itemChanges);
+    }
+    if (itemChanges.type === "added") {
+      itemChanges.data[key] = value;
+    } else if (itemChanges.type === "modified") {
+      if (this.has(key)) {
+        itemChanges.modified[key] = value;
+      } else if (itemChanges.deleted.includes(key)) {
+        itemChanges.deleted = itemChanges.deleted.filter((k) => k !== key);
+        itemChanges.modified[key] = value;
+      } else {
+        itemChanges.added[key] = value;
+      }
+    }
+    return super.set(key, value);
+  }
+  /**
+   * Sets the value of an attribute in the map.
+   * @param key - The key of the attribute to set.
+   * @param value - The value of the attribute to set.
+   * @returns The updated map.
+   */
+  setValue(key, value) {
+    return this.set(key, { value, type: this.getType(key) });
+  }
+  /**
+   * Sets the type of an attribute in the map.
+   * @param key - The key of the attribute to set.
+   * @param type - The type of the attribute to set.
+   * @returns The updated map.
+   */
+  setType(key, type) {
+    const value = this.getValue(key);
+    if (!value)
+      return this;
+    return this.set(key, { value, type });
+  }
+  /**
+   * Deletes an attribute from the map.
+   * @param key - The key of the attribute to delete.
+   * @returns The updated map.
+   */
+  delete(key) {
+    if (!this.tracker)
+      return super.delete(key);
+    const localId = this.get("localId");
+    if (localId === void 0 || typeof localId !== "number") {
+      console.warn(
+        "Item attributes are missing a valid localId. Changes can't be tracked."
+      );
+      if (key === "localId")
+        return false;
+      return super.delete(key);
+    }
+    if (key === "localId")
+      return false;
+    if (!this.has(key))
+      return false;
+    let itemChanges = this.tracker.get(localId);
+    if (!itemChanges) {
+      itemChanges = { type: "modified", added: {}, deleted: [], modified: {} };
+      this.tracker.set(localId, itemChanges);
+    }
+    if (itemChanges.type === "added") {
+      delete itemChanges.data[key];
+    } else if (itemChanges.type === "modified") {
+      if (key in itemChanges.added) {
+        delete itemChanges.added[key];
+      } else if (key in itemChanges.modified) {
+        delete itemChanges.modified[key];
+        itemChanges.deleted.push(key);
+      } else {
+        itemChanges.deleted.push(key);
+      }
+    }
+    return super.delete(key);
+  }
+  /**
+   * Gets the value of an attribute from the map.
+   * @param key - The key of the attribute to get.
+   */
+  getValue(key) {
+    const data = this.get(key);
+    if (!data)
+      return null;
+    return data.value;
+  }
+  /**
+   * Gets the type of an attribute from the map.
+   * @param key - The key of the attribute to get.
+   */
+  getType(key) {
+    var _a2;
+    return (_a2 = this.get(key)) == null ? void 0 : _a2.type;
+  }
+  // async getRelationAttribute(relation: string, attribute: string) {
+  //   return (await this.relations.getItems(relation))?.map((item) =>
+  //     item.getValue(attribute),
+  //   );
+  // }
+}
+class ItemRelations extends Map {
+  /**
+   * Creates a new ItemRelations instance.
+   * @param localId - The local ID of the item.
+   * @param iterable - An optional iterable of key-value pairs to initialize the map with.
+   */
+  constructor(localId, iterable) {
+    super(iterable);
+    /**
+     * A map that tracks the changes to the relations of the item.
+     */
+    __publicField(this, "tracker", null);
+    /**
+     * The local ID of the item.
+     */
+    __publicField(this, "localId");
+    /**
+     * A function that acts as a guard for adding items to the set.
+     * It determines whether a given value should be allowed to be added to the set.
+     *
+     * @param key - The key of the entry to be checked against the guard.
+     * @param value - The value of the entry to be checked against the guard.
+     * @returns A boolean indicating whether the value should be allowed to be added to the set.
+     *          By default, this function always returns true, allowing all values to be added.
+     *          You can override this behavior by providing a custom implementation.
+     */
+    __publicField(this, "guard", () => true);
+    /**
+     * An event handler that is called when items are requested.
+     */
+    __publicField(this, "onItemsRequested", null);
+    this.localId = localId;
+  }
+  get itemChanges() {
+    if (!this.tracker)
+      return null;
+    if (!this.localId) {
+      console.warn("Item relations can't be tracked.");
+      return null;
+    }
+    let itemChanges = this.tracker.get(this.localId);
+    if (!itemChanges) {
+      itemChanges = {
+        type: "modified",
+        added: {},
+        deleted: /* @__PURE__ */ new Set(),
+        removed: {},
+        modified: {}
+      };
+      this.tracker.set(this.localId, itemChanges);
+    }
+    return itemChanges;
+  }
+  /**
+   * Sets a new relation in the map.
+   * @param key - The key of the relation.
+   * @param value - The value of the relation.
+   * @returns The ItemRelations instance.
+   */
+  set(key, value) {
+    const keyExisted = this.has(key);
+    const guard = this.guard ?? (() => true);
+    const isValid = guard(key, value);
+    if (!isValid)
+      return this;
+    const itemChanges = this.itemChanges;
+    if (!itemChanges)
+      return super.set(key, value);
+    if (keyExisted) {
+      itemChanges.modified[key] = value;
+    } else {
+      itemChanges.added[key] = value;
+    }
+    return super.set(key, value);
+  }
+  /**
+   * Adds a new item to a target relation.
+   * @param key - The key of the relation.
+   * @param item - The item to add to the relation.
+   */
+  add(key, item) {
+    var _a2;
+    const keyExisted = this.has(key);
+    let items = this.get(key);
+    if (!items) {
+      items = /* @__PURE__ */ new Set([item]);
+      this.set(key, items);
+      return true;
+    }
+    if (!items || items.has(item))
+      return false;
+    const itemChanges = this.itemChanges;
+    if (!itemChanges) {
+      items.add(item);
+      return true;
+    }
+    if (keyExisted) {
+      if ((_a2 = itemChanges.removed[key]) == null ? void 0 : _a2.has(item)) {
+        itemChanges.removed[key].delete(item);
+        if (itemChanges.removed[key].size === 0)
+          delete itemChanges.removed[key];
+      } else {
+        let modificationChanges = itemChanges.modified[key];
+        if (!modificationChanges) {
+          modificationChanges = /* @__PURE__ */ new Set();
+          itemChanges.modified[key] = modificationChanges;
+        }
+        modificationChanges.add(item);
+      }
+    } else {
+      let addedChanges = itemChanges.added[key];
+      if (!addedChanges) {
+        addedChanges = /* @__PURE__ */ new Set();
+        itemChanges.added[key] = addedChanges;
+      }
+      addedChanges.add(item);
+    }
+    items.add(item);
+    return true;
+  }
+  /**
+   * Removes an item from a target relation.
+   * @param key - The key of the relation.
+   * @param item - The item to remove from the relation.
+   * @returns A boolean indicating whether the item was removed from the relation.
+   */
+  remove(key, item) {
+    var _a2;
+    const items = this.get(key);
+    if (!items)
+      return false;
+    if (!items.has(item))
+      return false;
+    const itemChanges = this.itemChanges;
+    if (!itemChanges)
+      return items.delete(item);
+    if ((_a2 = itemChanges.modified[key]) == null ? void 0 : _a2.has(item)) {
+      itemChanges.modified[key].delete(item);
+      if (itemChanges.modified[key].size === 0)
+        delete itemChanges.modified[key];
+    } else {
+      let removeChanges = itemChanges.removed[key];
+      if (!removeChanges) {
+        removeChanges = /* @__PURE__ */ new Set();
+        itemChanges.removed[key] = removeChanges;
+      }
+      removeChanges.add(item);
+    }
+    return items.delete(item);
+  }
+  /**
+   * Deletes a relation from the map.
+   * @param key - The key of the relation to delete.
+   */
+  delete(key) {
+    if (!this.has(key))
+      return false;
+    const itemChanges = this.itemChanges;
+    if (!itemChanges)
+      return super.delete(key);
+    itemChanges.deleted.add(key);
+    return super.delete(key);
+  }
+  /**
+   * Gets the items of a relation.
+   * @param key - The key of the relation.
+   */
+  async getItems(key) {
+    if (!this.onItemsRequested)
+      return null;
+    const relations = this.get(key);
+    if (!relations)
+      return null;
+    const items = await this.onItemsRequested([...relations]);
+    return items;
+  }
+}
+class ItemGeometry {
+  /**
+   * Creates a new ItemGeometry instance.
+   * @param model - The model that the geometry belongs to.
+   * @param localId - The local ID of the item.
+   */
+  constructor(model, localId) {
+    /**
+     * The model that the geometry belongs to.
+     */
+    __publicField(this, "model");
+    /**
+     * The local ID of the item.
+     */
+    __publicField(this, "localId");
+    __publicField(this, "_indices", null);
+    __publicField(this, "_transform", null);
+    __publicField(this, "_normals", null);
+    __publicField(this, "_positions", null);
+    __publicField(this, "_vertices", null);
+    __publicField(this, "_triangles", null);
+    __publicField(this, "_position", null);
+    __publicField(this, "_box", null);
+    this.model = model;
+    this.localId = localId;
+  }
+  async get() {
+    const [geometries] = await this.model.threads.invoke(
+      this.model.modelId,
+      "getItemsGeometry",
+      [[this.localId]]
+    );
+    for (const geometryData of geometries) {
+      geometryData.transform = new THREE.Matrix4().fromArray(
+        geometryData.transform.elements
+      );
+      const { indices, normals, positions, transform } = geometryData;
+      if (!this._indices)
+        this._indices = [];
+      if (!this._normals)
+        this._normals = [];
+      if (!this._positions)
+        this._positions = [];
+      if (!this._transform)
+        this._transform = [];
+      this._indices.push(indices);
+      this._normals.push(normals);
+      this._positions.push(positions);
+      this._transform.push(transform);
+    }
+    return geometries;
+  }
+  /**
+   * Gets the indices of the item.
+   */
+  async getIndices() {
+    if (this._indices !== null)
+      return this._indices;
+    await this.get();
+    return this._indices;
+  }
+  /**
+   * Gets the transform of the item.
+   */
+  async getTransform() {
+    if (this._transform !== null)
+      return this._transform;
+    await this.get();
+    return this._transform;
+  }
+  /**
+   * Gets the normals of the item.
+   */
+  async getNormals() {
+    if (this._normals !== null)
+      return this._normals;
+    await this.get();
+    return this._normals;
+  }
+  /**
+   * Gets the positions of the item.
+   */
+  async getPositions() {
+    if (this._positions !== null)
+      return this._positions;
+    await this.get();
+    return this._positions;
+  }
+  /**
+   * Gets the vertices of the item.
+   */
+  async getVertices() {
+    if (this._vertices)
+      return this._vertices;
+    const allPositions = await this.getPositions();
+    const allTransforms = await this.getTransform();
+    if (!allPositions || !allTransforms)
+      return this._vertices;
+    this._vertices = [];
+    for (let i = 0; i < allPositions.length; i++) {
+      const positions = allPositions[i];
+      const transform = allTransforms[i];
+      if (!positions || !transform)
+        continue;
+      const currentVertices = [];
+      this._vertices.push(currentVertices);
+      const numVertices = Object.keys(positions).length / 3;
+      const hashes = [];
+      for (let i2 = 0; i2 < numVertices; i2++) {
+        const x = positions[i2 * 3];
+        const y = positions[i2 * 3 + 1];
+        const z = positions[i2 * 3 + 2];
+        if (typeof x !== "number" || typeof y !== "number" || typeof z !== "number") {
+          continue;
+        }
+        const hash = `${x},${y},${z}`;
+        if (hashes.includes(hash))
+          continue;
+        hashes.push(hash);
+        const vertex = new THREE.Vector3(x, y, z);
+        vertex.applyMatrix4(transform);
+        currentVertices.push(vertex);
+      }
+    }
+    return this._vertices;
+  }
+  /**
+   * Gets the triangles of the item.
+   */
+  async getTriangles() {
+    if (this._triangles)
+      return this._triangles;
+    const allIndices = await this.getIndices();
+    const allPositions = await this.getPositions();
+    const allTransforms = await this.getTransform();
+    if (!allIndices || !allPositions || !allTransforms)
+      return this._triangles;
+    this._triangles = [];
+    for (let i = 0; i < allIndices.length; i++) {
+      const indices = allIndices[i];
+      const positions = allPositions[i];
+      const transform = allTransforms[i];
+      if (!indices || !positions || !transform)
+        continue;
+      const currentTriangles = [];
+      this._triangles.push(currentTriangles);
+      for (let i2 = 0; i2 < indices.length; i2 += 3) {
+        const a = indices[i2];
+        const b = indices[i2 + 1];
+        const c = indices[i2 + 2];
+        const v1 = new THREE.Vector3(
+          positions[a * 3],
+          positions[a * 3 + 1],
+          positions[a * 3 + 2]
+        );
+        const v2 = new THREE.Vector3(
+          positions[b * 3],
+          positions[b * 3 + 1],
+          positions[b * 3 + 2]
+        );
+        const v3 = new THREE.Vector3(
+          positions[c * 3],
+          positions[c * 3 + 1],
+          positions[c * 3 + 2]
+        );
+        v1.applyMatrix4(transform);
+        v2.applyMatrix4(transform);
+        v3.applyMatrix4(transform);
+        currentTriangles.push(new THREE.Triangle(v1, v2, v3));
+      }
+    }
+    return this._triangles;
+  }
+  /**
+   * Gets the position of the item.
+   */
+  async getPosition() {
+    if (!this._position) {
+      if (this.localId === null)
+        return null;
+      this._position = await this.model.getPositions([this.localId]);
+    }
+    return this._position;
+  }
+  /**
+   * Gets the box of the item.
+   */
+  async getBox() {
+    if (!this._box) {
+      if (this.localId === null)
+        return null;
+      this._box = await this.model.getBoxes([this.localId]);
+    }
+    return this._box;
+  }
+  /**
+   * Sets the visibility of the item.
+   * @param visible - Whether the item should be visible.
+   */
+  async setVisibility(visible) {
+    await this.model.setVisible([this.localId], visible);
+  }
+  /**
+   * Gets the visibility of the item.
+   */
+  async getVisibility() {
+    const [result] = await this.model.getVisible([this.localId]);
+    return result;
+  }
+}
+class Item {
+  /**
+   * Creates a new Item instance.
+   * @param model - The FragmentsModel instance that this item belongs to.
+   * @param id - The identifier for the item, which can be either a number or a string.
+   */
+  constructor(model, id) {
+    /**
+     * The FragmentsModel instance that this item belongs to.
+     */
+    __publicField(this, "model");
+    __publicField(this, "_localId", null);
+    __publicField(this, "_attributes", null);
+    __publicField(this, "_relations", null);
+    __publicField(this, "_guid", null);
+    __publicField(this, "_category", null);
+    __publicField(this, "_geometry", null);
+    this.model = model;
+    if (typeof id === "number")
+      this._localId = id;
+    if (typeof id === "string")
+      this._guid = id;
+  }
+  /**
+   * Gets the local ID of the item.
+   */
+  async getLocalId() {
+    if (!this._localId) {
+      if (this._guid) {
+        [this._localId] = await this.model.threads.invoke(
+          this.model.modelId,
+          "getLocalIdsByGuids",
+          // @ts-ignore
+          [[this._guid]]
+        );
+      } else {
+        throw new Error("Fragments: Item localId couldn't be get.");
+      }
+    }
+    return this._localId;
+  }
+  /**
+   * Gets all the attributes of the item.
+   */
+  async getAttributes() {
+    if (this._attributes)
+      return this._attributes;
+    const localId = await this.getLocalId();
+    if (localId === null)
+      return null;
+    const data = await this.model.threads.invoke(
+      this.model.modelId,
+      "getItemAttributes",
+      // @ts-ignore
+      [localId]
+    );
+    this._attributes = new ItemAttributes(localId);
+    if (!data) {
+      const changes2 = this.model.attrsChanges.get(localId);
+      if (!(changes2 && changes2.type === "added"))
+        return null;
+      this._attributes.localId = localId;
+      for (const [key, value] of Object.entries(changes2.data))
+        this._attributes.set(key, value);
+      return this._attributes;
+    }
+    const changes = this.model.attrsChanges.get(localId);
+    if (changes && changes.type === "modified") {
+      for (const [key, value] of Object.entries(changes.added))
+        this._attributes.set(key, value);
+    }
+    for (const name in data) {
+      const { value, type } = data[name];
+      if ((changes == null ? void 0 : changes.type) === "modified" && changes.deleted.includes(name))
+        continue;
+      if ((changes == null ? void 0 : changes.type) === "modified" && name in changes.modified) {
+        this._attributes.set(name, changes.modified[name]);
+      } else {
+        this._attributes.set(name, { value, type });
+      }
+    }
+    this._attributes.tracker = this.model.attrsChanges;
+    return this._attributes;
+  }
+  /**
+   * Gets all the relations of the item to other items.
+   */
+  async getRelations() {
+    if (this._relations)
+      return this._relations;
+    const localId = await this.getLocalId();
+    if (localId === null)
+      return null;
+    const data = await this.model.threads.invoke(
+      this.model.modelId,
+      "getItemRelations",
+      // @ts-ignore
+      [localId]
+    );
+    if (!data)
+      return null;
+    this._relations = new ItemRelations(localId);
+    this._relations.onItemsRequested = async (ids) => {
+      const items = [];
+      for (const id of ids) {
+        const item = this.model.getItem(id);
+        if (!item)
+          continue;
+        items.push(item);
+      }
+      return items;
+    };
+    const changes = this.model.relsChanges.get(localId);
+    if (changes && changes.type === "modified") {
+      for (const [key, value] of Object.entries(changes.added))
+        this._relations.set(key, value);
+    }
+    for (const [relation, localIds] of Object.entries(data)) {
+      if ((changes == null ? void 0 : changes.type) === "modified" && changes.deleted.has(relation))
+        continue;
+      if ((changes == null ? void 0 : changes.type) === "modified" && relation in changes.modified) {
+        const data2 = /* @__PURE__ */ new Set([...changes.modified[relation], ...localIds]);
+        this._relations.set(relation, new Set(data2));
+      } else {
+        this._relations.set(relation, new Set(localIds));
+      }
+    }
+    this._relations.tracker = this.model.relsChanges;
+    return this._relations;
+  }
+  /**
+   * Gets the GUID of the item.
+   */
+  async getGuid() {
+    if (!this._guid) {
+      const localId = await this.getLocalId();
+      if (localId === null)
+        return null;
+      [this._guid] = await this.model.threads.invoke(
+        this.model.modelId,
+        "getGuidsByLocalIds",
+        // @ts-ignore
+        [[localId]]
+      );
+    }
+    return this._guid;
+  }
+  /**
+   * Gets the category of the item.
+   */
+  async getCategory() {
+    if (!this._category) {
+      const localId = await this.getLocalId();
+      if (localId === null)
+        return null;
+      this._category = await this.model.threads.invoke(
+        this.model.modelId,
+        "getItemCategory",
+        // @ts-ignore
+        [localId]
+      );
+    }
+    return this._category;
+  }
+  async getGeometry() {
+    if (this._geometry)
+      return this._geometry;
+    const localId = await this.getLocalId();
+    if (localId === null)
+      return null;
+    const geometry = new ItemGeometry(this.model, localId);
+    return geometry;
+  }
+  /**
+   * Gets all the data of the item.
+   */
+  async getData(collector = []) {
+    var _a2;
+    const localId = await this.getLocalId();
+    if (localId == null)
+      return {};
+    collector.push(localId);
+    const attrs = (_a2 = await this.getAttributes()) == null ? void 0 : _a2.object;
+    const rels = await this.getRelations();
+    const relAttrs = {};
+    if (rels) {
+      for (const key of rels.keys()) {
+        const keyItems = [];
+        relAttrs[key] = keyItems;
+        const relItems = await rels.getItems(key);
+        if (!relItems)
+          continue;
+        for (const item of relItems) {
+          const itemId = await item.getLocalId();
+          if (!itemId)
+            continue;
+          if (collector.find((id) => id === itemId) !== void 0) {
+            continue;
+          }
+          collector.push(itemId);
+          const itemAttrs = await item.getData(collector);
+          if (!itemAttrs)
+            continue;
+          keyItems.push(itemAttrs);
+        }
+      }
+    }
+    const data = { ...attrs, ...relAttrs };
+    return data;
+  }
+}
+class ItemsManager {
+  getItem(model, id) {
+    return new Item(model, id);
+  }
+  async getItemsData(model, ids, config) {
+    return model.threads.invoke(model.modelId, "getItemsData", [
+      ids,
+      config
+    ]);
+  }
+  async getItemsChildren(model, ids) {
+    return model.threads.invoke(model.modelId, "getItemsChildren", [
+      ids
+    ]);
+  }
+}
+class RaycastManager {
+  constructor() {
+    __publicField(this, "_caster", new THREE.Raycaster());
+    __publicField(this, "_ray", new THREE.Ray());
+    __publicField(this, "_frustum", new THREE.Frustum());
+    __publicField(this, "_inverseTransform", new THREE.Matrix4());
+    __publicField(this, "_t", new THREE.Plane());
+    __publicField(this, "_r", new THREE.Plane());
+    __publicField(this, "_b", new THREE.Plane());
+    __publicField(this, "_l", new THREE.Plane());
+    __publicField(this, "_n", new THREE.Plane());
+    __publicField(this, "_f", new THREE.Plane());
+    __publicField(this, "_tl", new THREE.Vector3());
+    __publicField(this, "_tr", new THREE.Vector3());
+    __publicField(this, "_bl", new THREE.Vector3());
+    __publicField(this, "_br", new THREE.Vector3());
+    __publicField(this, "_tln", new THREE.Vector3());
+    __publicField(this, "_brn", new THREE.Vector3());
+    __publicField(this, "_tlp", new THREE.Vector2());
+    __publicField(this, "_brp", new THREE.Vector2());
+    __publicField(this, "distance", 10);
+  }
+  async raycast(model, data) {
+    const { frustum, ray } = this.getRayAndFrustum(data);
+    const request = this.getRequest(model, frustum, ray);
+    if (!request)
+      return null;
+    const response = await model.threads.fetch(request);
+    if (response.results && response.results.length) {
+      const [firstHit] = response.results;
+      return this.getResult({
+        hit: firstHit,
+        frustum,
+        ray,
+        model
+      });
+    }
+    return null;
+  }
+  async raycastAll(model, data) {
+    const { frustum, ray } = this.getRayAndFrustum(data);
+    const request = this.getRequest(model, frustum, ray);
+    if (!request)
+      return null;
+    request.returnAll = true;
+    const allResults = [];
+    const response = await model.threads.fetch(request);
+    if (response.results && response.results.length) {
+      for (const hit of response.results) {
+        allResults.push(
+          this.getResult({
+            hit,
+            frustum,
+            ray,
+            model
+          })
+        );
+      }
+      return allResults;
+    }
+    return null;
+  }
+  async rectangleRaycast(model, meshes, data) {
+    const frustum = this.getFrustum(data);
+    const request = this.getRequest(model, frustum);
+    if (!request)
+      return null;
+    request.fullyIncluded = data.fullyIncluded;
+    const response = await model.threads.fetch(request);
+    if (response.localIds && response.localIds.length) {
+      return this.newRectangleCastResponse(response, meshes);
+    }
+    return null;
+  }
+  async raycastWithSnapping(model, data) {
+    const { frustum, ray } = this.getRayAndFrustum(data);
+    const request = this.getRequest(model, frustum, ray);
+    if (!request)
+      return null;
+    request.snappingClass = data.snappingClasses;
+    const response = await model.threads.fetch(request);
+    if (response.results) {
+      return this.newRaycastSnapResult(response, frustum, ray, model);
+    }
+    return null;
+  }
+  screenRectToFrustum(screenTopLeft, screenBottomRight, container, camera) {
+    this.screenToCast(screenTopLeft, container, this._tlp);
+    this.screenToCast(screenBottomRight, container, this._brp);
+    this.setVectors(camera);
+    this.setPlanes(camera);
+    return this.newFrustum();
+  }
+  screenToCasterPoint(point, viewer, camera) {
+    const casterPoint = this.screenToCast(point, viewer);
+    this._caster.setFromCamera(casterPoint, camera);
+    return this._caster.ray.clone();
+  }
+  setPlanes(camera) {
+    this.setBasePoints();
+    camera.getWorldDirection(this._n.normal);
+    this.setEnds(camera);
+  }
+  setVectors(camera) {
+    this.setVector(this._tl, this._tlp, this._tlp, 1, camera);
+    this.setVector(this._tr, this._brp, this._tlp, 1, camera);
+    this.setVector(this._bl, this._tlp, this._brp, 1, camera);
+    this.setVector(this._br, this._brp, this._brp, 1, camera);
+    this.setVector(this._tln, this._tlp, this._tlp, 0, camera);
+    this.setVector(this._brn, this._brp, this._brp, 0, camera);
+  }
+  newFrustum() {
+    return new THREE.Frustum(
+      this._t,
+      this._b,
+      this._l,
+      this._r,
+      this._f,
+      this._n
+    );
+  }
+  setEnds(camera) {
+    if (camera instanceof THREE.OrthographicCamera) {
+      const camPos = camera.position;
+      const normalDotPos = this._n.normal.dot(camPos);
+      this._n.constant = -(normalDotPos + camera.near);
+      this._f.constant = -(normalDotPos - camera.far);
+    } else {
+      this._n.constant = camera.position.length();
+      this._f.constant = Infinity;
+    }
+    this._f.normal = this._n.normal;
+  }
+  screenToCast(p, element, result = new THREE.Vector2()) {
+    const rect = element.getBoundingClientRect();
+    const scaleX = rect.width / element.clientWidth;
+    const scaleY = rect.height / element.clientHeight;
+    const x = (p.x - rect.left) / scaleX;
+    const y = (p.y - rect.top) / scaleY;
+    result.x = x / element.clientWidth * 2 - 1;
+    result.y = -(y / element.clientHeight) * 2 + 1;
+    return result;
+  }
+  setVector(v1, v2, v3, value, camera) {
+    v1.set(v2.x, v3.y, value);
+    v1.unproject(camera);
+  }
+  setPlane(plane, v1, v2, v3) {
+    plane.setFromCoplanarPoints(v1, v2, v3);
+  }
+  setBasePoints() {
+    this.setPlane(this._t, this._tln, this._tl, this._tr);
+    this.setPlane(this._r, this._brn, this._tr, this._br);
+    this.setPlane(this._b, this._brn, this._br, this._bl);
+    this.setPlane(this._l, this._tln, this._bl, this._tl);
+  }
+  setupRay(ray, message) {
+    if (ray) {
+      this._ray.copy(ray);
+      this._ray.applyMatrix4(this._inverseTransform);
+      message.ray = this._ray;
+    }
+  }
+  setupMatrix(object) {
+    this._inverseTransform.copy(object.matrixWorld);
+    this._inverseTransform.invert();
+  }
+  getRequest(model, frustum, ray) {
+    const { object, box, modelId } = model;
+    const collidesModel = frustum.intersectsBox(box);
+    if (collidesModel) {
+      return this.newCastRequest(object, modelId, ray, frustum);
+    }
+    return null;
+  }
+  getRayAndFrustum(data) {
+    this.updateCamera(data.camera);
+    const { bottomLeft, topRight } = this.getCorners(data.mouse);
+    const ray = this.screenToCasterPoint(data.mouse, data.dom, data.camera);
+    const frustum = this.screenRectToFrustum(
+      bottomLeft,
+      topRight,
+      data.dom,
+      data.camera
+    );
+    return { ray, frustum };
+  }
+  getFrustum(data) {
+    this.updateCamera(data.camera);
+    return this.screenRectToFrustum(
+      data.topLeft,
+      data.bottomRight,
+      data.dom,
+      data.camera
+    );
+  }
+  getCorners(mouse) {
+    const bottomLeft = mouse.clone().subScalar(this.distance);
+    const topRight = mouse.clone().addScalar(this.distance);
+    return { bottomLeft, topRight };
+  }
+  getResult(data) {
+    const { hit, frustum, ray, model } = data;
+    const result = {};
+    this.setPoint(model, hit, result);
+    this.setNormal(model, hit, result);
+    this.setDistance(model, hit, result);
+    this.setRayDistance(model, hit, result);
+    this.setBasicHitData(model, hit, result, ray, frustum);
+    this.setSnapEdge(model, hit, result, "snappedEdgeP1");
+    this.setSnapEdge(model, hit, result, "snappedEdgeP2");
+    result.facePoints = hit.facePoints;
+    result.faceIndices = hit.faceIndices;
+    return result;
+  }
+  updateCamera(camera) {
+    camera.updateProjectionMatrix();
+    camera.updateWorldMatrix(true, true);
+  }
+  newCastRequest(object, modelId, ray, frustum) {
+    this.setupMatrix(object);
+    const request = {};
+    request.class = MultiThreadingRequestClass.RAYCAST;
+    request.modelId = modelId;
+    this.setupRay(ray, request);
+    CameraUtils.transform(frustum, this._inverseTransform, this._frustum);
+    request.frustum = this._frustum;
+    return request;
+  }
+  setSnapEdge(model, hit, result, key) {
+    if (hit[key]) {
+      const edge = new THREE.Vector3();
+      edge.copy(hit[key]);
+      edge.applyMatrix4(model.object.matrixWorld);
+      result[key] = edge;
+    } else {
+      result[key] = void 0;
+    }
+  }
+  setNormal(model, hit, result) {
+    if (hit.normal) {
+      const normal = new THREE.Vector3();
+      normal.copy(hit.normal);
+      normal.transformDirection(model.object.matrixWorld);
+      normal.normalize();
+      result.normal = normal;
+      return;
+    }
+    result.normal = void 0;
+  }
+  setDistance(model, hit, result) {
+    const cameraDist = Math.sqrt(hit.cameraSquaredDistance);
+    const modelScale = model.object.matrixWorld.getMaxScaleOnAxis();
+    result.distance = cameraDist * modelScale;
+  }
+  setPoint(model, hit, result) {
+    const point = new THREE.Vector3();
+    point.copy(hit.point);
+    point.applyMatrix4(model.object.matrixWorld);
+    result.point = point;
+  }
+  newRaycastSnapResult(response, frustum, ray, model) {
+    const results = [];
+    for (const hit of response.results) {
+      const result = this.getResult({ hit, frustum, ray, model });
+      results.push(result);
+    }
+    return results;
+  }
+  newRectangleCastResponse(response, meshes) {
+    const result = {
+      localIds: response.localIds,
+      fragments: meshes.list.get(response.modelId)
+    };
+    return result;
+  }
+  setRayDistance(model, hit, result) {
+    if (hit.raySquaredDistance !== void 0) {
+      const modelScale = model.object.matrixWorld.getMaxScaleOnAxis();
+      const rayDist = Math.sqrt(hit.raySquaredDistance);
+      result.rayDistance = rayDist * modelScale;
+      return;
+    }
+    result.rayDistance = void 0;
+  }
+  setBasicHitData(model, hit, result, ray, frustum) {
+    result.itemId = hit.itemId;
+    result.localId = hit.localId;
+    result.object = model.object;
+    result.fragments = model;
+    result.ray = ray;
+    result.frustum = frustum;
+    result.representationClass = hit.representationClass;
+    result.snappingClass = hit.snappingClass;
+  }
+}
+class SectionManager {
+  async getSection(model, plane, localIds) {
+    const args = [plane, localIds];
+    const result = await model.threads.invoke(
+      model.modelId,
+      "getSection",
+      args
+    );
+    return result;
+  }
+}
+class SequenceManager {
+  async getSequenced(model, result, fromItems, inputs) {
+    const args = [result, fromItems, inputs];
+    const response = await model.threads.invoke(
+      model.modelId,
+      "getSequenced",
+      args
+    );
+    return response;
+  }
+}
+class SetupManager {
+  async setup(model, bbox, modelData, raw, config) {
+    const message = this.getCreateModelMessage(model, modelData, raw, config);
+    const data = this.formatModelData(modelData);
+    const result = await model.threads.fetch(message, data);
+    this.updateBox(bbox, result);
+  }
+  formatModelData(modelData) {
+    if (modelData instanceof ArrayBuffer) {
+      return [modelData];
+    }
+    return void 0;
+  }
+  updateBox(bbox, result) {
+    bbox.min.copy(result.boundingBox.min);
+    bbox.max.copy(result.boundingBox.max);
+  }
+  getCreateModelMessage(model, modelData, raw, config) {
+    return {
+      class: MultiThreadingRequestClass.CREATE_MODEL,
+      modelId: model.modelId,
+      modelData,
+      raw,
+      config
+    };
+  }
+}
+class ViewManager {
+  constructor() {
+    __publicField(this, "getClippingPlanesEvent", () => []);
+    __publicField(this, "currentCamera", null);
+    __publicField(this, "_tempMatrix", new THREE.Matrix4());
+    __publicField(this, "_tempVec", new THREE.Vector3());
+    __publicField(this, "_tempFrustum", new THREE.Frustum());
+    __publicField(this, "_updateCameraPositionEvent", () => {
+    });
+    __publicField(this, "_updateCameraFrustumEvent", () => {
+    });
+    __publicField(this, "_updateFOVEvent", () => {
+    });
+    __publicField(this, "_updateOrthoSizeEvent", () => {
+    });
+  }
+  async refreshView(model, meshes) {
+    const fov = this.setup(meshes, model);
+    const frustum = CameraUtils.transform(this._tempFrustum, this._tempMatrix);
+    const request = this.newViewRequest(frustum, fov, model);
+    await model.threads.fetch(request);
+  }
+  useCamera(camera) {
+    const projScreenMatrix = new THREE.Matrix4();
+    this.setCameraPosition(camera);
+    this.setCameraFrustum(camera, projScreenMatrix);
+    this.setFov(camera);
+    this.setOrtho();
+    this.currentCamera = camera;
+  }
+  async setLodMode(model, lodMode) {
+    return model.threads.invoke(model.modelId, "setLodMode", [
+      lodMode
+    ]);
+  }
+  getOrthoSize() {
+    let orthoSize = this._updateOrthoSizeEvent();
+    if (orthoSize) {
+      const modelScale = this._tempMatrix.getMaxScaleOnAxis();
+      orthoSize *= modelScale;
+    }
+    return orthoSize;
+  }
+  setup(meshes, model) {
+    meshes.requests.clean(model.modelId);
+    this._tempMatrix.copy(model.object.matrixWorld).invert();
+    this._updateCameraPositionEvent(this._tempVec);
+    this._updateCameraFrustumEvent(this._tempFrustum);
+    const fov = this._updateFOVEvent();
+    return fov;
+  }
+  newViewRequest(frustum, fov, model) {
+    const view = this.newView(frustum, fov, model);
+    const request = {};
+    request.class = MultiThreadingRequestClass.REFRESH_VIEW;
+    request.modelId = model.modelId;
+    request.cameraFrustum = frustum;
+    request.view = view;
+    return request;
+  }
+  newView(frustum, fov, model) {
+    const view = {};
+    view.cameraFrustum = frustum;
+    view.cameraPosition = this._tempVec.applyMatrix4(this._tempMatrix);
+    view.fov = fov;
+    view.orthogonalDimension = this.getOrthoSize();
+    view.viewSize = Math.max(window.innerWidth, window.innerHeight);
+    view.graphicThreshold = GPU.estimateCapacity();
+    view.graphicQuality = model.graphicsQuality * -1.5 + 2;
+    view.clippingPlanes = this.getPlanes();
+    view.modelPlacement = model.object.matrixWorld;
+    return view;
+  }
+  setOrtho() {
+    this._updateOrthoSizeEvent = () => {
+      return void 0;
+    };
+  }
+  setFov(camera) {
+    this._updateFOVEvent = () => {
+      if (camera instanceof THREE.PerspectiveCamera) {
+        return camera.fov;
+      }
+      return void 0;
+    };
+  }
+  getPlanes() {
+    const planes = [];
+    const originalPlanes = this.getClippingPlanesEvent();
+    for (const plane of originalPlanes) {
+      const cloned = plane.clone();
+      cloned.applyMatrix4(this._tempMatrix);
+      planes.push(cloned);
+    }
+    return planes;
+  }
+  setCameraPosition(camera) {
+    this._updateCameraPositionEvent = (position) => {
+      position.copy(camera.position);
+    };
+  }
+  setCameraFrustum(camera, projScreenMatrix) {
+    this._updateCameraFrustumEvent = (frustum) => {
+      camera.updateProjectionMatrix();
+      camera.updateWorldMatrix(true, true);
+      const { projectionMatrix, matrixWorldInverse } = camera;
+      projScreenMatrix.multiplyMatrices(projectionMatrix, matrixWorldInverse);
+      frustum.setFromProjectionMatrix(projScreenMatrix);
+    };
+  }
+}
+class VisibilityManager {
+  async resetVisible(model) {
+    await model.threads.invoke(model.modelId, "resetVisible");
+  }
+  async getItemsByVisibility(model, visible) {
+    return model.threads.invoke(model.modelId, "getItemsByVisibility", [
+      visible
+    ]);
+  }
+  async getVisible(model, localIds) {
+    return model.threads.invoke(model.modelId, "getVisible", [
+      localIds
+    ]);
   }
 }
 const _FragmentsModel = class _FragmentsModel {
@@ -19894,6 +20273,19 @@ const _FragmentsModel = class _FragmentsModel {
    */
   async getIndexKeys(name) {
     return this._dataManager.getIndexKeys(this, name);
+  }
+  /**
+   * Get key at given index.
+   * Useful for keys-only indexes but valid for any mode.
+   */
+  getIndexKey(name, index) {
+    return this._dataManager.getIndexKey(this, name, index);
+  }
+  /**
+   * Get the values of an index. Useful for inverse lookups.
+   */
+  getIndexValues(name) {
+    return this._dataManager.getIndexValues(this, name);
   }
   /**
    * Test whether a key exists in the named index without resolving its value.
@@ -20216,17 +20608,25 @@ const _FragmentsModel = class _FragmentsModel {
   /**
    * Get the grids of the model (if any).
    *
-   * Returns a `THREE.Group` with one child per grid (each child carries
-   * `userData.id = localId` and `userData.kind = "grid"`). Each grid's
-   * children are `THREE.Line` instances with `userData.kind = "axis"`,
-   * `userData.tag` (the axis label), and `userData.axis` ("uAxes",
-   * "vAxes", or "wAxes").
+   * Returns a `THREE.Group` with one child per grid (each child is a `THREE.Group`
+   * that carries `userData.id = localId` and `userData.kind = "grid"`).
+   *
+   * Each grid's children are `THREE.Group` instances with `userData.kind = "axis"`,
+   * acting as an axis container.
+   * A `THREE.LINE` instance with `userData.kind = "line"` is appended to it.
+   *
+   * When opting in to showing labels, two `THREE.SHAPE` instances with
+   * `userData.kind = "label"` and `userData.index` (the label's index, `0` or `1`)
+   * are appended to the axis container.
+   *
+   * All grid's descendants (`"axis"`, `"line"`, `"label"`) carry `userData.tag` (the axis label value)
+   * and `userData.axis` (`"uAxes"`, `"vAxes"`, or `"wAxes"`).
    */
-  async getGrids() {
-    return this._gridsManager.getGrids();
+  async getGrids(config) {
+    return this._gridsManager.getGrids(config);
   }
   /**
-   * The shared `LineDashedMaterial` used to render every grid axis line.
+   * The shared material used to render every grid axis line.
    * Mutating its properties (color, opacity, dash sizes, etc.) updates all
    * rendered grid lines immediately. Use `setGridMaterial` to swap to a
    * different material instance.
@@ -20240,6 +20640,22 @@ const _FragmentsModel = class _FragmentsModel {
    */
   setGridMaterial(material) {
     this._gridsManager.setGridMaterial(material);
+  }
+  /**
+   * The shared material used to render every grid axis label.
+   * Mutating its properties (color, opacity, dash sizes, etc.) updates all
+   * rendered grid labels immediately. Use `setGridLabelMaterial` to swap to a
+   * different material instance.
+   */
+  getGridLabelMaterial() {
+    return this._gridsManager.getLabelMaterial();
+  }
+  /**
+   * Replace the shared grid label material. The previous material is disposed
+   * after the swap.
+   */
+  setGridLabelMaterial(material) {
+    this._gridsManager.setLabelMaterial(material);
   }
   /**
    * Sets a camera for the model. The model will use it to load tiles dinamically depending on the users view
@@ -20733,22 +21149,39 @@ class LODManager {
   }
   applyHighlight(mesh, request) {
     const {
-      tileData: { highlightIds },
+      tileData: { highlightIds, highlightData },
       modelId,
       material: index
     } = request;
-    const material = mesh.material[0];
-    const definition = this._materials.getHighlightProps(
-      highlightIds[0],
-      index,
-      modelId
-    );
-    if (!definition)
+    if (!highlightData || !highlightIds)
       return;
-    const color = new THREE.Color(definition.color);
-    material.highlightColor = color;
-    material.highlightOpacity = definition.opacity;
-    material.transparent = definition.opacity < 1 || material.transparent;
+    const material = mesh.material[0];
+    const colors = [];
+    let opacity = material.highlightOpacity;
+    let transparent = material.transparent;
+    let opacitySet = false;
+    for (let i = 0; i < highlightIds.length; ++i) {
+      const definition = this._materials.getHighlightProps(
+        highlightIds[i],
+        index,
+        modelId
+      );
+      if (!definition) {
+        colors.push(void 0);
+        continue;
+      }
+      colors.push(
+        definition.color ? new THREE.Color(definition.color) : void 0
+      );
+      if (!opacitySet) {
+        opacity = definition.opacity;
+        opacitySet = true;
+      }
+      transparent = definition.opacity < 1 || transparent;
+    }
+    LodHelper.setLodHighlightColors(mesh.geometry, highlightData, colors);
+    material.highlightOpacity = opacity;
+    material.transparent = transparent;
   }
   processMesh(mesh, request) {
     const { geometry } = mesh;
@@ -28727,6 +29160,7 @@ class ThreadModelCreator extends ThreadController {
       config
     );
     this.thread.list.set(modelId, model);
+    this.thread.controllerManager.updater.start();
     notify("parsing", 1);
     throwIfAborted();
     await model.setupData((progress) => {
@@ -28911,19 +29345,49 @@ class ThreadUpdater {
     __publicField(this, "_thread");
     __publicField(this, "_updateThreshold", 16);
     __publicField(this, "_updateDelay", 128);
-    this._thread = thread2;
-    const updateAll = () => {
+    __publicField(this, "_running", false);
+    __publicField(this, "_timeout", null);
+    __publicField(this, "_tick", () => {
+      this._timeout = null;
+      if (!this._running)
+        return;
+      if (this._thread.list.size === 0) {
+        this._running = false;
+        return;
+      }
       const updated = this.updateAllModels();
       const delay = updated ? this._updateDelay : 0;
-      setTimeout(updateAll, delay);
-    };
-    updateAll();
+      this.schedule(delay);
+    });
+    this._thread = thread2;
+  }
+  // Starts the update loop if it is not already running. Idempotent. Called
+  // when a model is registered so the loop resumes after it stopped itself
+  // while idle. The loop is no longer started at construction time, so merely
+  // importing the library (e.g. for an IFC conversion task) does not spin a
+  // perpetual timer. See #234.
+  start() {
+    if (this._running)
+      return;
+    this._running = true;
+    this.schedule(0);
+  }
+  // Stops the loop and clears any pending timer. Safe to call repeatedly.
+  stop() {
+    this._running = false;
+    if (this._timeout !== null) {
+      clearTimeout(this._timeout);
+      this._timeout = null;
+    }
   }
   setUpdateDelay(delay) {
     if (typeof delay !== "number" || !Number.isFinite(delay) || delay < 0) {
       return;
     }
     this._updateDelay = delay;
+  }
+  schedule(delay) {
+    this._timeout = setTimeout(this._tick, delay);
   }
   updateAllModels() {
     const start = performance.now();
@@ -29091,9 +29555,187 @@ class RaycastController {
     if (!lookup) {
       return [];
     }
-    const itemIds = lookup.collideFrustum(planes, frustum, fullyInside);
-    const raycastedItemIds = this.filterVisible(itemIds);
+    const itemIds = lookup.collideFrustum(planes, frustum, false);
+    let raycastedItemIds = this.filterVisible(itemIds);
+    if (raycastedItemIds.length) {
+      raycastedItemIds = this.narrowPhaseFrustum(
+        raycastedItemIds,
+        frustum,
+        planes,
+        fullyInside
+      );
+    }
     return this.localIdsFromItemIds(raycastedItemIds);
+  }
+  // Filters broad-phase sample candidates by testing their real geometry
+  // against the selection frustum (+ clipping planes). Mirrors the section/clip
+  // generator: builds a transient BVH per representation (cached for this call)
+  // and shapecasts it; the frustum is moved into each sample's local space so
+  // instanced items that share one local geometry are handled by transform.
+  // fullyInside === true keeps only items whose geometry is entirely inside;
+  // false keeps items whose geometry touches the selection.
+  narrowPhaseFrustum(sampleIds, frustum, clipPlanes, fullyInside) {
+    var _a2;
+    const worldPlanes = clipPlanes && clipPlanes.length ? [...frustum.planes, ...clipPlanes] : frustum.planes;
+    const geomCache = /* @__PURE__ */ new Map();
+    const result = [];
+    const start = performance.now();
+    let exceeded = false;
+    for (const sampleId of sampleIds) {
+      if (exceeded) {
+        result.push(sampleId);
+        continue;
+      }
+      const box = this._boxes.get(sampleId);
+      if (CameraUtils.isIncluded(box, worldPlanes)) {
+        result.push(sampleId);
+        continue;
+      }
+      if (this.sampleMatchesFrustum(
+        sampleId,
+        frustum,
+        clipPlanes,
+        fullyInside,
+        geomCache
+      )) {
+        result.push(sampleId);
+      }
+      exceeded = this.isTimeExceeded(start);
+    }
+    for (const [, geometries] of geomCache) {
+      for (const geometry of geometries) {
+        (_a2 = geometry.disposeBoundsTree) == null ? void 0 : _a2.call(geometry);
+        geometry.dispose();
+      }
+    }
+    return result;
+  }
+  sampleMatchesFrustum(sampleId, frustum, clipPlanes, fullyInside, geomCache) {
+    const sample = this._meshes.samples(sampleId, this._temp.sample);
+    if (!sample)
+      return !fullyInside;
+    const reprId = sample.representation();
+    TransformHelper.get(this._temp.sample, this._meshes, this._temp.m1);
+    this._temp.m2.copy(this._temp.m1).invert();
+    let geometries = geomCache.get(reprId);
+    if (!geometries) {
+      geometries = this.buildSampleGeometries(sampleId);
+      geomCache.set(reprId, geometries);
+    }
+    if (geometries.length === 0)
+      return !fullyInside;
+    const localPlanes = this.toLocalPlanes(frustum, clipPlanes, this._temp.m2);
+    if (fullyInside) {
+      for (const geometry of geometries) {
+        if (!this.geometryFullyInside(geometry, localPlanes)) {
+          return false;
+        }
+      }
+      return true;
+    }
+    for (const geometry of geometries) {
+      if (this.geometryIntersectsPlanes(geometry, localPlanes)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  // True only if every vertex of the geometry is inside every plane.
+  geometryFullyInside(geometry, planes) {
+    const position = geometry.getAttribute("position");
+    const array = position.array;
+    const vertex = this._temp.v1;
+    for (let i = 0; i < array.length; i += 3) {
+      vertex.set(array[i], array[i + 1], array[i + 2]);
+      for (const plane of planes) {
+        if (plane.distanceToPoint(vertex) < 0) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+  buildSampleGeometries(sampleId) {
+    const geometries = [];
+    const sampleGeom = this._tiles.fetchSample(sampleId, CurrentLod.GEOMETRY);
+    MiscHelper.forEach(sampleGeom.geometries, (geometryData) => {
+      if (!geometryData.indexBuffer || !geometryData.positionBuffer) {
+        return;
+      }
+      const geometry = new THREE.BufferGeometry();
+      geometry.setIndex(Array.from(geometryData.indexBuffer));
+      geometry.setAttribute(
+        "position",
+        new THREE.BufferAttribute(geometryData.positionBuffer, 3)
+      );
+      geometry.computeBoundsTree();
+      geometries.push(geometry);
+    });
+    return geometries;
+  }
+  toLocalPlanes(frustum, clipPlanes, toLocal) {
+    const local = [];
+    this.pushLocalPlanes(frustum.planes, toLocal, local);
+    if (clipPlanes) {
+      this.pushLocalPlanes(clipPlanes, toLocal, local);
+    }
+    return local;
+  }
+  pushLocalPlanes(planes, toLocal, out) {
+    for (const plane of planes) {
+      if (!Number.isFinite(plane.constant)) {
+        continue;
+      }
+      out.push(new THREE.Plane().copy(plane).applyMatrix4(toLocal));
+    }
+  }
+  geometryIntersectsPlanes(geometry, planes) {
+    let hit = false;
+    geometry.boundsTree.shapecast({
+      intersectsBounds: (box) => CameraUtils.collides(box, planes),
+      intersectsTriangle: (tri) => {
+        if (this.triangleIntersectsFrustum(tri, planes)) {
+          hit = true;
+          return true;
+        }
+        return false;
+      }
+    });
+    return hit;
+  }
+  // Exact triangle-vs-frustum test by clipping. The frustum is the intersection
+  // of its plane half-spaces, so clipping the triangle polygon against every
+  // plane (Sutherland-Hodgman) yields exactly triangle ∩ frustum. Non-empty
+  // result means they really intersect. This avoids the false positives a
+  // "not fully outside any single plane" test gives on large triangles.
+  triangleIntersectsFrustum(tri, planes) {
+    let poly = [tri.a, tri.b, tri.c];
+    for (const plane of planes) {
+      poly = this.clipPolygonByPlane(poly, plane);
+      if (poly.length === 0) {
+        return false;
+      }
+    }
+    return poly.length > 0;
+  }
+  // Clips a convex polygon to the inside (distance >= 0) half-space of a plane.
+  clipPolygonByPlane(poly, plane) {
+    const out = [];
+    const count = poly.length;
+    for (let i = 0; i < count; i++) {
+      const current = poly[i];
+      const next = poly[(i + 1) % count];
+      const dCurrent = plane.distanceToPoint(current);
+      const dNext = plane.distanceToPoint(next);
+      if (dCurrent >= 0) {
+        out.push(current);
+      }
+      if (dCurrent >= 0 !== dNext >= 0) {
+        const t = dCurrent / (dCurrent - dNext);
+        out.push(new THREE.Vector3().lerpVectors(current, next, t));
+      }
+    }
+    return out;
   }
   snapCastEdges(data, snaps) {
     const results = [];
@@ -29287,16 +29929,19 @@ class RaycastController {
       if ("facePoints" in result) {
         const sample = this._meshes.samples(id, this._temp.sample);
         TransformHelper.get(sample, this._meshes, this._temp.m3);
-        for (let i = 0; i < result.facePoints.length; i += 3) {
-          const x = result.facePoints[i];
-          const y = result.facePoints[i + 1];
-          const z = result.facePoints[i + 2];
+        const sourceFacePoints = result.facePoints;
+        const transformedFacePoints = new Float64Array(sourceFacePoints.length);
+        for (let i = 0; i < sourceFacePoints.length; i += 3) {
+          const x = sourceFacePoints[i];
+          const y = sourceFacePoints[i + 1];
+          const z = sourceFacePoints[i + 2];
           this._temp.v1.set(x, y, z);
           this._temp.v1.applyMatrix4(this._temp.m3);
-          result.facePoints[i] = this._temp.v1.x;
-          result.facePoints[i + 1] = this._temp.v1.y;
-          result.facePoints[i + 2] = this._temp.v1.z;
+          transformedFacePoints[i] = this._temp.v1.x;
+          transformedFacePoints[i + 1] = this._temp.v1.y;
+          transformedFacePoints[i + 2] = this._temp.v1.z;
         }
+        result.facePoints = transformedFacePoints;
       }
       result.sampleId = id;
       result.itemId = this._temp.sample.item();
@@ -32226,6 +32871,13 @@ class VirtualPropertiesController {
     __publicField(this, "_spatialStructure", null);
     __publicField(this, "_virtualModel");
     __publicField(this, "_relations", /* @__PURE__ */ new Map());
+    // Memoized localId → array index lookups. The flatbuffer accessors return
+    // a fresh TypedArray view on every call, so the caches are keyed by the
+    // underlying buffer and length instead of array identity. Without these,
+    // every getItemAttributes/getItemRelations call does a linear indexOf scan,
+    // which makes bulk reads (e.g. getItemsData over all psets) O(n²).
+    __publicField(this, "_localIdIndexCache", null);
+    __publicField(this, "_relationsItemIndexCache", null);
     this._virtualModel = virtualModel;
     this._model = virtualModel.data;
     this._boxes = boxes;
@@ -32272,6 +32924,34 @@ class VirtualPropertiesController {
         itemInfo.guid = guid;
       }
     }
+  }
+  indexOfLocalId(localId) {
+    const arr = this._model.localIdsArray();
+    if (!arr)
+      return void 0;
+    let cache = this._localIdIndexCache;
+    if (!cache || cache.length !== arr.length || cache.buffer !== arr.buffer) {
+      const map = /* @__PURE__ */ new Map();
+      for (let i = 0; i < arr.length; i++)
+        map.set(arr[i], i);
+      cache = { buffer: arr.buffer, length: arr.length, map };
+      this._localIdIndexCache = cache;
+    }
+    return cache.map.get(localId) ?? -1;
+  }
+  indexOfRelationsItem(localId) {
+    const arr = this._model.relationsItemsArray();
+    if (!arr)
+      return void 0;
+    let cache = this._relationsItemIndexCache;
+    if (!cache || cache.length !== arr.length || cache.buffer !== arr.buffer) {
+      const map = /* @__PURE__ */ new Map();
+      for (let i = 0; i < arr.length; i++)
+        map.set(arr[i], i);
+      cache = { buffer: arr.buffer, length: arr.length, map };
+      this._relationsItemIndexCache = cache;
+    }
+    return cache.map.get(localId) ?? -1;
   }
   getAllLocalIds() {
     return this._model.localIdsArray() ?? [];
@@ -32607,13 +33287,12 @@ class VirtualPropertiesController {
   //   return result;
   // }
   getItemAttributes(id) {
-    var _a2;
     const isLocalId = typeof id === "number";
     const localId = isLocalId ? id : this.getLocalIdsByGuids([id])[0];
     if (localId === null) {
       return null;
     }
-    const index = (_a2 = this._model.localIdsArray()) == null ? void 0 : _a2.indexOf(localId);
+    const index = this.indexOfLocalId(localId);
     if (index === void 0 || index === -1) {
       const data2 = {};
       for (let i = this._virtualModel.requests.length - 1; i >= 0; i--) {
@@ -32782,7 +33461,6 @@ class VirtualPropertiesController {
     return result;
   }
   getItemRelations(id) {
-    var _a2;
     const isLocalId = typeof id === "number";
     const localId = isLocalId ? id : this.getLocalIdsByGuids([id])[0];
     for (let i = this._virtualModel.requests.length - 1; i >= 0; i--) {
@@ -32797,7 +33475,7 @@ class VirtualPropertiesController {
       return null;
     }
     const relations = this._relations.get(localId) ?? {};
-    const index = (_a2 = this._model.relationsItemsArray()) == null ? void 0 : _a2.indexOf(localId);
+    const index = this.indexOfRelationsItem(localId);
     if (index === void 0 || index === -1) {
       return Object.keys(relations).length > 0 ? relations : null;
     }
@@ -33312,6 +33990,21 @@ class VirtualIndexesController {
     if (!entry)
       return null;
     return entry.info.keyType === "number" ? this.materializeNumberKeys(entry) : this.materializeStringKeys(entry);
+  }
+  getKey(name, index) {
+    const entry = this.resolve(name);
+    if (!entry)
+      return null;
+    return entry.info.keyType === "number" ? this.materializeNumberKeys(entry)[index] ?? null : this.readStringKey(entry.source, index);
+  }
+  getValues(name) {
+    const entry = this.resolve(name);
+    if (!entry)
+      return null;
+    if (entry.info.valueType === "none")
+      return null;
+    const inverse = this.inverseMap(entry);
+    return Array.from(inverse.keys());
   }
   /**
    * Test whether a key exists in the named index without resolving its value.
@@ -34929,6 +35622,12 @@ class VirtualFragmentsModel {
   getIndexKeys(name) {
     return this.indexes.getKeys(name);
   }
+  getIndexKey(name, index) {
+    return this.indexes.getKey(name, index);
+  }
+  getIndexValues(name) {
+    return this.indexes.getValues(name);
+  }
   hasIndexEntry(name, key) {
     return this.indexes.has(name, key);
   }
@@ -35211,10 +35910,10 @@ class VirtualFragmentsModel {
       });
     }
     const { model } = EditUtils.edit(this.data, requests, {
-      raw: true,
+      raw,
       delta: true
     });
-    return raw ? model : pako.deflate(model);
+    return model;
   }
   dispose() {
     this.tiles.dispose();
@@ -35259,14 +35958,14 @@ class VirtualFragmentsModel {
     this.tiles.update(time);
     return this.tiles.tilesUpdated;
   }
-  edit(requests) {
+  edit(requests, raw = true) {
     const ids = EditUtils.solveIds(requests, this._nextId);
     this._nextId += ids.length;
     for (const request of requests) {
       this.requests.push(request);
     }
     const { model, items } = EditUtils.edit(this.data, this.requests, {
-      raw: true,
+      raw,
       delta: true
     });
     this._visibilityHelper.clearHiddenForEdit();
@@ -35278,13 +35977,13 @@ class VirtualFragmentsModel {
     this._requestsForRedo = [];
     this._nextId = this.getMaxLocalId();
   }
-  save() {
+  save(raw = true) {
     this.requests.push({
       type: EditRequestType.UPDATE_MAX_LOCAL_ID,
       localId: this._nextId
     });
     const { model } = EditUtils.edit(this.data, this.requests, {
-      raw: true,
+      raw,
       delta: false
     });
     return model;
@@ -35485,13 +36184,16 @@ class VirtualFragmentsModel {
 class SingleThreadedFragmentsModel {
   /**
    * The constructor of the fragments model.
+   * @param raw - Whether `modelData` is raw (uncompressed) or deflated. If
+   * omitted, it is auto-detected from the buffer (see {@link isRawBuffer}).
    */
-  constructor(modelId, modelData, raw = false) {
+  constructor(modelId, modelData, raw) {
     __publicField(this, "_modelId");
     __publicField(this, "_virtualModel");
     this._modelId = modelId;
+    const isRaw = raw ?? isRawBuffer(modelData);
     let data = modelData;
-    if (!raw) {
+    if (!isRaw) {
       data = pako.inflate(modelData);
     }
     this._virtualModel = new VirtualFragmentsModel(
@@ -35562,6 +36264,19 @@ class SingleThreadedFragmentsModel {
    */
   getIndexKeys(name) {
     return this._virtualModel.getIndexKeys(name);
+  }
+  /**
+   * Get key at given index.
+   * Useful for keys-only indexes but valid for any mode.
+   */
+  getIndexKey(name, index) {
+    return this._virtualModel.getIndexKey(name, index);
+  }
+  /**
+   * Get the values of an index. Useful for inverse lookups.
+   */
+  getIndexValues(name) {
+    return this._virtualModel.getIndexValues(name);
   }
   /**
    * Test whether a key exists in the named index without resolving its value.
@@ -35640,7 +36355,7 @@ class SingleThreadedFragmentsModel {
    * @param ids - The IDs of the items to look up.
    */
   getItemsChildren(ids) {
-    this._virtualModel.getItemsChildren(ids);
+    return this._virtualModel.getItemsChildren(ids);
   }
   /**
    * Get all the data of the specified items.
@@ -35807,11 +36522,12 @@ class SingleThreadedFragmentsModel {
    * Apply a batch of edit requests. Accumulates onto this model's
    * pending-edit history; call {@link save} to flatten them into a new
    * committed buffer or {@link reset} to discard.
-   * @returns The delta flatbuffer bytes and the local IDs assigned to
+   * @param [raw] whether to return the raw buffer or the the result of {@link pako.deflate}. Defaults to `true`.
+   * @returns The delta raw/deflated flatbuffer bytes and the local IDs assigned to
    * any newly-created items.
    */
-  edit(requests) {
-    return this._virtualModel.edit(requests);
+  edit(requests, raw = true) {
+    return this._virtualModel.edit(requests, raw);
   }
   /** Discard all pending edits on this model. */
   reset() {
@@ -35819,10 +36535,11 @@ class SingleThreadedFragmentsModel {
   }
   /**
    * Flatten the current pending-edit history into a new committed buffer.
-   * @returns The raw flatbuffer bytes of the updated model.
+   * @param [raw] whether to return the raw buffer or the the result of {@link pako.deflate}. Defaults to `true`.
+   * @returns The raw/deflated flatbuffer bytes of the updated model.
    */
-  save() {
-    return this._virtualModel.save();
+  save(raw = true) {
+    return this._virtualModel.save(raw);
   }
   /** Undo the last edit. */
   undo() {
@@ -36127,9 +36844,6 @@ const _FragmentsModels = class _FragmentsModels {
    *
    * @param workerURL - The URL of the worker script that will handle the fragments processing. If omitted, it falls back to the worker bundled with the package (only works with bundlers that can resolve `new URL("./Worker/worker.mjs", import.meta.url)`).
    * @param options - Optional configuration.
-   * @param options.classicWorker - If true, creates classic (non-module) workers. Use together with `toClassicWorker()`.
-   * @param options.maxWorkers - Effective max worker cap. Defaults to `navigator.hardwareConcurrency - 3`, floored at 2. Set explicitly for CI environments or when you know your workload.
-   * @param options.threadGroups - Reserved worker capacity per named thread group. Workers are spawned lazily (nothing is spawned until the first load targets a pool). A model loaded with `threadGroup: "x"` always lands on group "x"'s pool; default-pool loads never touch a reserved worker. The sum of group sizes must leave at least one slot for the default pool, otherwise init throws.
    */
   constructor(workerURL, options) {
     /**
@@ -36251,7 +36965,7 @@ const _FragmentsModels = class _FragmentsModels {
     if (_FragmentsModels._workerPromise)
       return _FragmentsModels._workerPromise;
     _FragmentsModels._workerPromise = (async () => {
-      const url = `https://unpkg.com/@thatopen/fragments@${"3.4.5"}/dist/worker/worker.mjs`;
+      const url = `https://unpkg.com/@thatopen/fragments@${"3.4.6"}/dist/worker/worker.mjs`;
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(
@@ -36292,7 +37006,7 @@ const _FragmentsModels = class _FragmentsModels {
    * @param options - Configuration options for loading the model.
    * @param options.modelId - Unique identifier for the model.
    * @param options.camera - Optional camera to use for model culling and LOD.
-   * @param options.raw - If true, loads raw (uncompressed) data. Default is false.
+   * @param options.raw - Whether the buffer is raw (uncompressed) or deflated. If omitted, it is auto-detected from the buffer (see {@link isRawBuffer}).
    * @param options.userData - Optional custom data to attach to the model.
    * @param options.virtualModelConfig - Optional configuration for virtual model setup.
    * @returns Promise resolving to the loaded FragmentsModel instance.
@@ -36324,9 +37038,11 @@ const _FragmentsModels = class _FragmentsModels {
     if (options.onProgress) {
       this._progressCallbacks.set(options.modelId, options.onProgress);
     }
+    const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+    const raw = options.raw ?? isRawBuffer(bytes);
     try {
       this.models.list.set(model.modelId, model);
-      await model._setup(buffer, options.raw, virtualModelConfig);
+      await model._setup(buffer, raw, virtualModelConfig);
       if (this.settings.autoCoordinate) {
         const coordinates = await model.getCoordinates();
         if (this.baseCoordinates === null) {
@@ -36888,16 +37604,17 @@ class IfcPropertyProcessor {
           if (!(relatingKey && relatedKey))
             continue;
           const relatingAttr = attrs[relatingKey];
-          if ((relatingAttr == null ? void 0 : relatingAttr.value) == null)
+          if (!relatingAttr || relatingAttr.value === void 0 || relatingAttr.value === null) {
             continue;
+          }
           const relatingID = relatingAttr.value;
           const rawRelatedIDs = attrs[relatedKey];
-          if (rawRelatedIDs == null)
-            continue;
           let relatedIDs = [];
           if (Array.isArray(rawRelatedIDs)) {
-            relatedIDs = rawRelatedIDs.filter((r) => r != null && r.value != null).map(({ value }) => value);
-          } else if (rawRelatedIDs.value != null) {
+            relatedIDs = rawRelatedIDs.filter(
+              (related) => related && related.value !== void 0 && related.value !== null
+            ).map(({ value }) => value);
+          } else if (rawRelatedIDs && rawRelatedIDs.value !== void 0 && rawRelatedIDs.value !== null) {
             relatedIDs = [rawRelatedIDs.value];
           }
           if (relatedIDs.length === 0)
@@ -36909,9 +37626,6 @@ class IfcPropertyProcessor {
         } catch (e) {
           console.log(`Problem reading relations for ${expressID}`);
           console.log(e);
-          await new Promise((resolve) => {
-            setTimeout(resolve, 100);
-          });
           continue;
         }
       }
@@ -38594,15 +39308,8 @@ class IfcGeometryProcessor {
       const { color } = materialIDMap.get(key);
       const [r, g, b, a] = color;
       materialsLocalIds.push(nextId++);
-      Material.createMaterial(
-        builder,
-        r,
-        g,
-        b,
-        a,
-        RenderedFaces.ONE,
-        0
-      );
+      const renderedFaces = this._serializer.doubleSidedMaterials ? RenderedFaces.TWO : RenderedFaces.ONE;
+      Material.createMaterial(builder, r, g, b, a, renderedFaces, 0);
     }
     const materials = builder.endVector();
     let sampleCount = 0;
@@ -39045,6 +39752,7 @@ const ifcClasses = {
     WEBIFC.IFCSIGN,
     WEBIFC.IFCPAVEMENT,
     WEBIFC.IFCROAD,
+    WEBIFC.IFCBRIDGE,
     WEBIFC.IFCBRIDGEPART
   ])
 };
@@ -39148,6 +39856,15 @@ class IfcImporter {
      * and it is always given in meters.
      */
     __publicField(this, "replaceSiteElevation", true);
+    /**
+     * Whether the generated materials should render both faces (double-sided)
+     * instead of just the front face.
+     * @remarks Some exporters (e.g. certain Revit pipelines) produce geometry
+     * whose winding is not consistent, so front-face-only rendering can hide
+     * those faces. Enable this to render both sides. Defaults to false
+     * (front-face only) to match the previous behavior.
+     */
+    __publicField(this, "doubleSidedMaterials", false);
     /**
      * If set, ignores the items that are further away to the origin than this value.
      * Keep in mind that if your IFC is correctly georreferenced, this value should never
@@ -40042,6 +40759,7 @@ export {
   ifcGeometriesMap,
   ifcRelationsMap,
   isIndexRequest,
+  isRawBuffer,
   limitOf2Bytes,
   split,
   toClassicWorker
