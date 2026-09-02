@@ -33183,13 +33183,12 @@ class VirtualPropertiesController {
         continue;
       let category = ((_a2 = this._items.get(localId)) == null ? void 0 : _a2.category) ?? null;
       if (category === null) {
-        for (let i = this._virtualModel.requests.length - 1; i >= 0; i--) {
-          const request = this._virtualModel.requests[i];
-          if (request.type === EditRequestType.CREATE_ITEM) {
-            if (request.localId === localId) {
-              category = request.data.category;
-            }
-          }
+        const created = this._virtualModel.requestIndex.first(
+          localId,
+          EditRequestType.CREATE_ITEM
+        );
+        if (created) {
+          category = created.data.category;
         }
       }
       result.push(category);
@@ -33386,22 +33385,22 @@ class VirtualPropertiesController {
     if (localId === null) {
       return null;
     }
+    const edited = this._virtualModel.requestIndex.latest(
+      localId,
+      EditRequestType.CREATE_ITEM,
+      // DO NOT remove this or editing created items break
+      // if you have problems with this, contact Antonio
+      EditRequestType.UPDATE_ITEM
+    );
     const index = this.indexOfLocalId(localId);
     if (index === void 0 || index === -1) {
-      const data2 = {};
-      for (let i = this._virtualModel.requests.length - 1; i >= 0; i--) {
-        const request = this._virtualModel.requests[i];
-        if (request.type === EditRequestType.CREATE_ITEM || // DO NOT remove this or editing created items break
-        // if you have problems with this, contact Antonio
-        request.type === EditRequestType.UPDATE_ITEM) {
-          if (request.localId === localId) {
-            for (const name in request.data.data) {
-              const found = request.data.data[name];
-              data2[name] = { value: found.value, type: found.type };
-            }
-            return data2;
-          }
+      if (edited) {
+        const data2 = {};
+        for (const name in edited.data.data) {
+          const found = edited.data.data[name];
+          data2[name] = { value: found.value, type: found.type };
         }
+        return data2;
       }
       return null;
     }
@@ -33410,17 +33409,12 @@ class VirtualPropertiesController {
       return null;
     }
     const data = {};
-    for (let i = this._virtualModel.requests.length - 1; i >= 0; i--) {
-      const request = this._virtualModel.requests[i];
-      if (request.type === EditRequestType.UPDATE_ITEM || request.type === EditRequestType.CREATE_ITEM) {
-        if (request.localId === localId) {
-          for (const name in request.data.data) {
-            const found = request.data.data[name];
-            data[name] = { value: found.value, type: found.type };
-          }
-          return data;
-        }
+    if (edited) {
+      for (const name in edited.data.data) {
+        const found = edited.data.data[name];
+        data[name] = { value: found.value, type: found.type };
       }
+      return data;
     }
     for (let j = 0; j < buffer.dataLength(); j++) {
       const attr = buffer.data(j);
@@ -33469,13 +33463,7 @@ class VirtualPropertiesController {
       return this._itemDataCache.get(id);
     }
     const localId = typeof id === "number" ? id : this._guidToLocalIdMap.get(id) ?? null;
-    const deletedItems = /* @__PURE__ */ new Set();
-    for (const request of this._virtualModel.requests) {
-      if (request.type === EditRequestType.DELETE_ITEM) {
-        deletedItems.add(request.localId);
-      }
-    }
-    if (localId === null || deletedItems.has(localId)) {
+    if (localId === null || this._virtualModel.requestIndex.deletedItems.has(localId)) {
       return {};
     }
     const [category] = this.getItemsCategories([localId]);
@@ -33500,6 +33488,7 @@ class VirtualPropertiesController {
     }
     if (relations) {
       const itemRels = this.getItemRelations(id);
+      const { deletedItems } = this._virtualModel.requestIndex;
       for (const [key, localIds] of Object.entries(itemRels ?? {})) {
         for (const localId2 of localIds) {
           if (deletedItems.has(localId2)) {
@@ -33557,16 +33546,16 @@ class VirtualPropertiesController {
   getItemRelations(id) {
     const isLocalId = typeof id === "number";
     const localId = isLocalId ? id : this.getLocalIdsByGuids([id])[0];
-    for (let i = this._virtualModel.requests.length - 1; i >= 0; i--) {
-      const request = this._virtualModel.requests[i];
-      if (request.type === EditRequestType.UPDATE_RELATION || request.type === EditRequestType.CREATE_RELATION) {
-        if (request.localId === localId) {
-          return request.data.data;
-        }
-      }
-    }
     if (localId === null) {
       return null;
+    }
+    const edited = this._virtualModel.requestIndex.latest(
+      localId,
+      EditRequestType.UPDATE_RELATION,
+      EditRequestType.CREATE_RELATION
+    );
+    if (edited) {
+      return edited.data.data;
     }
     const relations = this._relations.get(localId) ?? {};
     const index = this.indexOfRelationsItem(localId);
@@ -33813,38 +33802,37 @@ class VirtualPropertiesController {
       }
     } else {
       for (const localId of missingItemsToIterate) {
-        for (let i = this._virtualModel.requests.length - 1; i >= 0; i--) {
-          const request = this._virtualModel.requests[i];
-          if (request.type === EditRequestType.CREATE_ITEM) {
-            if (request.localId !== localId)
-              continue;
-            const data = {};
-            for (const name2 in request.data.data) {
-              const found = request.data.data[name2];
-              data[name2] = { value: found.value, type: found.type };
-            }
-            let itemPasses = false;
-            for (const [
-              attrName,
-              { value: val, type: typeValue }
-            ] of Object.entries(data)) {
-              const pass = this.checkAttribute(
-                {
-                  name: attrName,
-                  value: val,
-                  type: typeValue
-                },
-                { name, value, type }
-              );
-              if (pass) {
-                itemPasses = true;
-                break;
-              }
-            }
-            if (negate ? !itemPasses : itemPasses) {
-              res.push(localId);
-            }
+        const created = this._virtualModel.requestIndex.latest(
+          localId,
+          EditRequestType.CREATE_ITEM
+        );
+        if (!created)
+          continue;
+        const data = {};
+        for (const name2 in created.data.data) {
+          const found = created.data.data[name2];
+          data[name2] = { value: found.value, type: found.type };
+        }
+        let itemPasses = false;
+        for (const [
+          attrName,
+          { value: val, type: typeValue }
+        ] of Object.entries(data)) {
+          const pass = this.checkAttribute(
+            {
+              name: attrName,
+              value: val,
+              type: typeValue
+            },
+            { name, value, type }
+          );
+          if (pass) {
+            itemPasses = true;
+            break;
           }
+        }
+        if (negate ? !itemPasses : itemPasses) {
+          res.push(localId);
         }
       }
     }
@@ -35688,6 +35676,119 @@ class ItemsHelper {
     }
   }
 }
+class EditRequestIndex {
+  constructor() {
+    /** Local ids with a pending DELETE_ITEM request. */
+    __publicField(this, "deletedItems", /* @__PURE__ */ new Set());
+    __publicField(this, "_byLocalId", /* @__PURE__ */ new Map());
+    __publicField(this, "_deleteCounts", /* @__PURE__ */ new Map());
+    __publicField(this, "_source", null);
+    __publicField(this, "_size", 0);
+  }
+  /**
+   * Makes sure the index reflects `requests`. Cheap when the tracked array is
+   * unchanged; rebuilds when it was replaced or its length drifted.
+   */
+  sync(requests) {
+    if (this._source === requests && this._size === requests.length) {
+      return;
+    }
+    this.rebuild(requests);
+  }
+  rebuild(requests) {
+    this._byLocalId.clear();
+    this._deleteCounts.clear();
+    this.deletedItems.clear();
+    this._source = requests;
+    this._size = 0;
+    for (const request of requests) {
+      this.push(request);
+    }
+  }
+  /** Registers a request that was just appended to the tracked array. */
+  push(request) {
+    this._size++;
+    const localId = this.localIdOf(request);
+    if (localId === void 0) {
+      return;
+    }
+    let list = this._byLocalId.get(localId);
+    if (!list) {
+      list = [];
+      this._byLocalId.set(localId, list);
+    }
+    list.push(request);
+    if (request.type === EditRequestType.DELETE_ITEM && typeof localId === "number") {
+      this._deleteCounts.set(
+        localId,
+        (this._deleteCounts.get(localId) ?? 0) + 1
+      );
+      this.deletedItems.add(localId);
+    }
+  }
+  /** Unregisters a request that was just removed from the tracked array. */
+  pop(request) {
+    this._size--;
+    const localId = this.localIdOf(request);
+    if (localId === void 0) {
+      return;
+    }
+    const list = this._byLocalId.get(localId);
+    if (list) {
+      for (let i = list.length - 1; i >= 0; i--) {
+        if (list[i] === request) {
+          list.splice(i, 1);
+          break;
+        }
+      }
+      if (list.length === 0) {
+        this._byLocalId.delete(localId);
+      }
+    }
+    if (request.type === EditRequestType.DELETE_ITEM && typeof localId === "number") {
+      const count = (this._deleteCounts.get(localId) ?? 1) - 1;
+      if (count > 0) {
+        this._deleteCounts.set(localId, count);
+      } else {
+        this._deleteCounts.delete(localId);
+        this.deletedItems.delete(localId);
+      }
+    }
+  }
+  /** Newest pending request of one of the given types targeting `localId`. */
+  latest(localId, ...types) {
+    const list = this._byLocalId.get(localId);
+    if (!list) {
+      return void 0;
+    }
+    for (let i = list.length - 1; i >= 0; i--) {
+      const request = list[i];
+      if (types.includes(request.type)) {
+        return request;
+      }
+    }
+    return void 0;
+  }
+  /** Oldest pending request of one of the given types targeting `localId`. */
+  first(localId, ...types) {
+    const list = this._byLocalId.get(localId);
+    if (!list) {
+      return void 0;
+    }
+    for (const request of list) {
+      if (types.includes(request.type)) {
+        return request;
+      }
+    }
+    return void 0;
+  }
+  localIdOf(request) {
+    if (isIndexRequest(request)) {
+      return void 0;
+    }
+    return request.localId;
+  }
+}
 class VirtualFragmentsModel {
   constructor(modelId, data, connection, config) {
     __publicField(this, "data");
@@ -35700,6 +35801,7 @@ class VirtualFragmentsModel {
     __publicField(this, "boxes");
     __publicField(this, "indexes");
     __publicField(this, "requests", []);
+    __publicField(this, "_requestIndex", new EditRequestIndex());
     __publicField(this, "_raycastHelper", new RaycastHelper());
     __publicField(this, "_coordinatesHelper", new CoordinatesHelper());
     __publicField(this, "_highlightHelper", new HighlightHelper());
@@ -36088,11 +36190,20 @@ class VirtualFragmentsModel {
     this.tiles.update(time);
     return this.tiles.tilesUpdated;
   }
+  /**
+   * Per-localId lookup over the pending requests, used by the property reads
+   * instead of scanning the whole requests list per item.
+   */
+  get requestIndex() {
+    this._requestIndex.sync(this.requests);
+    return this._requestIndex;
+  }
   edit(requests, raw = true) {
     const ids = EditUtils.solveIds(requests, this._nextId);
     this._nextId += ids.length;
     for (const request of requests) {
       this.requests.push(request);
+      this._requestIndex.push(request);
     }
     const { model, items } = EditUtils.edit(this.data, this.requests, {
       raw,
@@ -36105,13 +36216,16 @@ class VirtualFragmentsModel {
   reset() {
     this.requests = [];
     this._requestsForRedo = [];
+    this._requestIndex.rebuild(this.requests);
     this._nextId = this.getMaxLocalId();
   }
   save(raw = true) {
-    this.requests.push({
+    const request = {
       type: EditRequestType.UPDATE_MAX_LOCAL_ID,
       localId: this._nextId
-    });
+    };
+    this.requests.push(request);
+    this._requestIndex.push(request);
     const { model } = EditUtils.edit(this.data, this.requests, {
       raw,
       delta: false
@@ -36126,6 +36240,7 @@ class VirtualFragmentsModel {
     if (!lastRequest) {
       return;
     }
+    this._requestIndex.pop(lastRequest);
     this._requestsForRedo.unshift(lastRequest);
   }
   redo() {
@@ -36137,6 +36252,7 @@ class VirtualFragmentsModel {
       return;
     }
     this.requests.push(lastUndoneRequest);
+    this._requestIndex.push(lastUndoneRequest);
   }
   getRequests() {
     return {
@@ -36147,6 +36263,7 @@ class VirtualFragmentsModel {
   setRequests(data) {
     if (data.requests) {
       this.requests = data.requests;
+      this._requestIndex.rebuild(this.requests);
     }
     if (data.undoneRequests) {
       this._requestsForRedo = data.undoneRequests;
@@ -36169,6 +36286,7 @@ class VirtualFragmentsModel {
         this._requestsForRedo.push(allRequests[i]);
       }
     }
+    this._requestIndex.rebuild(this.requests);
   }
   getMaterialsIds() {
     const ids = EditUtils.getMaterialsIds(this.data);

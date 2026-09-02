@@ -961,6 +961,45 @@ export declare class Editor {
 export declare type EditRequest = UpdateRequest | CreateRequest | DeleteRequest | IndexRequest;
 
 /**
+ * Incremental lookup structures over the pending edit requests of a
+ * VirtualFragmentsModel.
+ *
+ * Property reads used to scan the whole `requests` array once per item, so a
+ * bulk read of N items with E pending requests cost O(N × E). This index keeps
+ * the requests grouped by the localId they target (in push order) plus the
+ * set of deleted items, so each per-item lookup is O(k) in the number of
+ * requests for that item.
+ *
+ * The owner keeps it in sync on push / undo / redo; any operation that
+ * replaces the requests array (reset, history selection, restoring saved
+ * requests) rebuilds it. `sync()` is the safety net for the tracked array
+ * being swapped or mutated behind the index's back.
+ */
+declare class EditRequestIndex {
+    /** Local ids with a pending DELETE_ITEM request. */
+    readonly deletedItems: Set<number>;
+    private _byLocalId;
+    private _deleteCounts;
+    private _source;
+    private _size;
+    /**
+     * Makes sure the index reflects `requests`. Cheap when the tracked array is
+     * unchanged; rebuilds when it was replaced or its length drifted.
+     */
+    sync(requests: EditRequest[]): void;
+    rebuild(requests: EditRequest[]): void;
+    /** Registers a request that was just appended to the tracked array. */
+    push(request: EditRequest): void;
+    /** Unregisters a request that was just removed from the tracked array. */
+    pop(request: EditRequest): void;
+    /** Newest pending request of one of the given types targeting `localId`. */
+    latest<T extends EditRequestType>(localId: number | string, ...types: T[]): RequestOfType<T> | undefined;
+    /** Oldest pending request of one of the given types targeting `localId`. */
+    first<T extends EditRequestType>(localId: number | string, ...types: T[]): RequestOfType<T> | undefined;
+    private localIdOf;
+}
+
+/**
  * Types of edit requests.
  */
 export declare enum EditRequestType {
@@ -4628,6 +4667,10 @@ export declare enum RepresentationClass {
     CIRCLE_EXTRUSION = 2
 }
 
+declare type RequestOfType<T extends EditRequestType> = Extract<EditRequest, {
+    type: T;
+}>;
+
 /**
  * Manages a list of requests for the MeshManager.
  */
@@ -5440,6 +5483,7 @@ declare class VirtualFragmentsModel {
     boxes: VirtualBoxController;
     indexes: VirtualIndexesController;
     requests: EditRequest[];
+    private _requestIndex;
     private _raycastHelper;
     private _coordinatesHelper;
     private _highlightHelper;
@@ -5568,6 +5612,11 @@ declare class VirtualFragmentsModel {
     getBBoxes(items: number[]): THREE.Box3;
     traverse(itemIds: number[], onItem: (itemId: number, index: number) => void): void;
     update(time: number): boolean;
+    /**
+     * Per-localId lookup over the pending requests, used by the property reads
+     * instead of scanning the whole requests list per item.
+     */
+    get requestIndex(): EditRequestIndex;
     edit(requests: EditRequest[], raw?: boolean): {
         deltaModelBuffer: Uint8Array;
         ids: number[];
