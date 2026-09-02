@@ -11482,19 +11482,16 @@ function applyChangesToIds(actions, ids, key, addCreatedElements) {
   const resultSet = new Set(ids);
   const deleteType = EditRequestType[`DELETE_${key}`];
   const createType = EditRequestType[`CREATE_${key}`];
-  if (actions) {
-    for (const action of actions) {
-      if (action.type === deleteType) {
-        resultSet.delete(action.localId);
-        continue;
-      }
-      if (addCreatedElements && action.type === createType) {
-        resultSet.add(action.localId);
-      }
+  for (const action of actions) {
+    if (action.type === deleteType) {
+      resultSet.delete(action.localId);
+      continue;
     }
-    return Array.from(resultSet);
+    if (addCreatedElements && action.type === createType) {
+      resultSet.add(action.localId);
+    }
   }
-  return ids;
+  return Array.from(resultSet);
 }
 class EditUtils {
 }
@@ -13048,91 +13045,7 @@ async function toClassicWorker(workerURL) {
   const blob = new Blob([classic], { type: "text/javascript" });
   return URL.createObjectURL(blob);
 }
-const ELEMENT_TYPES = /* @__PURE__ */ new Set([
-  "IFCWALL",
-  "IFCWALLSTANDARDCASE",
-  "IFCWALLELEMENTEDCASE",
-  "IFCSLAB",
-  "IFCSLABSTANDARDCASE",
-  "IFCSLABELEMENTEDCASE",
-  "IFCBEAM",
-  "IFCBEAMSTANDARDCASE",
-  "IFCCOLUMN",
-  "IFCCOLUMNSTANDARDCASE",
-  "IFCDOOR",
-  "IFCDOORSTANDARDCASE",
-  "IFCWINDOW",
-  "IFCWINDOWSTANDARDCASE",
-  "IFCROOF",
-  "IFCSTAIR",
-  "IFCSTAIRFLIGHT",
-  "IFCRAMP",
-  "IFCRAMPFLIGHT",
-  "IFCCURTAINWALL",
-  "IFCCOVERING",
-  "IFCRAILING",
-  "IFCPLATE",
-  "IFCPLATESTANDARDCASE",
-  "IFCMEMBER",
-  "IFCMEMBERSTANDARDCASE",
-  "IFCFOOTING",
-  "IFCPILE",
-  "IFCFURNISHINGELEMENT",
-  "IFCSANITARYTERMINAL",
-  "IFCFLOWSEGMENT",
-  "IFCFLOWTERMINAL",
-  "IFCFLOWCONTROLLER",
-  "IFCFLOWFITTING",
-  "IFCFLOWMOVINGDEVICE",
-  "IFCFLOWSTORAGEDEVICE",
-  "IFCFLOWTREATMENTDEVICE",
-  "IFCENERGYCONVERSIONDEVICE",
-  "IFCDISTRIBUTIONFLOWELEMENT",
-  "IFCDISTRIBUTIONCONTROLELEMENT",
-  "IFCDISTRIBUTIONELEMENT",
-  "IFCDISTRIBUTIONPORT",
-  "IFCBUILDINGELEMENTPROXY",
-  "IFCBUILDINGELEMENTPART",
-  "IFCOPENINGELEMENT",
-  "IFCSPACE",
-  "IFCTRANSPORTELEMENT",
-  "IFCVIRTUALELEMENT",
-  "IFCSHADINGDEVICE",
-  "IFCCHIMNEY",
-  "IFCGEOGRAPHICELEMENT",
-  "IFCPROXY",
-  "IFCMECHANICALFASTENER"
-]);
-const SPATIAL_TYPES = /* @__PURE__ */ new Set([
-  "IFCPROJECT",
-  "IFCSITE",
-  "IFCBUILDING",
-  "IFCBUILDINGSTOREY"
-]);
-const listIdxByType = (type) => {
-  switch (type) {
-    case "IFCRELAGGREGATES":
-      return 5;
-    case "IFCRELCONNECTSWITHREALIZINGELEMENTS":
-      return 7;
-    case "IFCPRESENTATIONLAYERASSIGNMENT":
-      return 2;
-    default:
-      return 4;
-  }
-};
-const shouldRewriteType = (type) => {
-  if (type === "IFCRELVOIDSELEMENT")
-    return false;
-  if (type === "IFCRELFILLSELEMENT")
-    return false;
-  if (type.startsWith("IFCREL"))
-    return true;
-  if (type === "IFCPRESENTATIONLAYERASSIGNMENT")
-    return true;
-  return false;
-};
-function extractId(raw) {
+function extractLineMeta(raw) {
   if (raw.charCodeAt(0) !== 35)
     return null;
   let id = 0;
@@ -13234,80 +13147,156 @@ function extractArgsString(raw) {
     return null;
   return raw.substring(idx + 1, lastParen);
 }
-function forEachLine(fsLike, filePath, callback) {
-  const CHUNK = 8 * 1024 * 1024;
-  const fd = fsLike.openSync(filePath, "r");
-  const readBuf = Buffer.allocUnsafe(CHUNK);
-  let tail = "";
-  let bytesRead;
-  while ((bytesRead = fsLike.readSync(fd, readBuf, 0, CHUNK, null)) > 0) {
-    const chunk = readBuf.toString("utf-8", 0, bytesRead);
-    let start = 0;
-    let idx = chunk.indexOf("\n");
-    if (idx !== -1) {
-      let end = idx;
-      if (end > 0 && chunk.charCodeAt(end - 1) === 13)
-        end--;
-      callback(
-        tail ? tail + chunk.substring(start, end) : chunk.substring(start, end)
-      );
-      tail = "";
-      start = idx + 1;
-    } else {
-      tail += chunk;
-      continue;
-    }
-    while ((idx = chunk.indexOf("\n", start)) !== -1) {
-      let end = idx;
-      if (end > start && chunk.charCodeAt(end - 1) === 13)
-        end--;
-      callback(chunk.substring(start, end));
-      start = idx + 1;
-    }
-    if (start < chunk.length)
-      tail = chunk.substring(start);
+const crCharCode = 13;
+const nl = "\n";
+class IfcDecoderStream extends TransformStream {
+  constructor(encoding = "utf-8") {
+    let tail = "";
+    const decoder = new TextDecoder(encoding);
+    super({
+      transform(chunk, controller) {
+        const text = decoder.decode(chunk, { stream: true });
+        if (!text)
+          return;
+        let start = 0;
+        let idx = text.indexOf(nl);
+        if (idx !== -1) {
+          let end = idx;
+          if (end > 0 && text.charCodeAt(end - 1) === crCharCode)
+            end--;
+          controller.enqueue(
+            tail ? tail + text.substring(start, end) : text.substring(start, end)
+          );
+          tail = "";
+          start = idx + 1;
+          idx = text.indexOf(nl, start);
+        } else {
+          tail += text;
+          return;
+        }
+        while (idx !== -1) {
+          let end = idx;
+          if (end > start && text.charCodeAt(end - 1) === crCharCode)
+            end--;
+          controller.enqueue(text.substring(start, end));
+          start = idx + 1;
+          idx = text.indexOf(nl, start);
+        }
+        if (start < text.length)
+          tail = text.substring(start);
+      },
+      flush(controller) {
+        const remaining = decoder.decode();
+        const full = tail + remaining;
+        if (full)
+          controller.enqueue(full);
+      }
+    });
   }
-  if (tail)
-    callback(tail);
-  fsLike.closeSync(fd);
 }
-class BufferedWriter {
-  constructor(fsLike, filePath, bufSize) {
-    __publicField(this, "filePath");
-    __publicField(this, "fsLike");
-    __publicField(this, "fd");
-    __publicField(this, "buf");
-    __publicField(this, "pos");
-    __publicField(this, "bufSize");
-    this.filePath = filePath;
-    this.fsLike = fsLike;
-    this.fd = fsLike.openSync(filePath, "w");
-    this.buf = Buffer.allocUnsafe(bufSize);
-    this.pos = 0;
-    this.bufSize = bufSize;
-  }
-  write(str) {
-    const bytes = Buffer.byteLength(str, "utf-8");
-    if (this.pos + bytes > this.bufSize) {
-      this.flush();
-      if (bytes > this.bufSize) {
-        this.fsLike.writeSync(this.fd, str);
+async function* streamAsyncIterator(stream) {
+  const reader = stream.getReader();
+  let drained = false;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        drained = true;
         return;
       }
+      yield value;
     }
-    this.pos += this.buf.write(str, this.pos, "utf-8");
-  }
-  flush() {
-    if (this.pos > 0) {
-      this.fsLike.writeSync(this.fd, this.buf, 0, this.pos);
-      this.pos = 0;
-    }
-  }
-  close() {
-    this.flush();
-    this.fsLike.closeSync(this.fd);
+  } finally {
+    if (!drained)
+      await reader.cancel().catch(() => {
+      });
+    reader.releaseLock();
   }
 }
+const ELEMENT_TYPES = /* @__PURE__ */ new Set([
+  "IFCWALL",
+  "IFCWALLSTANDARDCASE",
+  "IFCWALLELEMENTEDCASE",
+  "IFCSLAB",
+  "IFCSLABSTANDARDCASE",
+  "IFCSLABELEMENTEDCASE",
+  "IFCBEAM",
+  "IFCBEAMSTANDARDCASE",
+  "IFCCOLUMN",
+  "IFCCOLUMNSTANDARDCASE",
+  "IFCDOOR",
+  "IFCDOORSTANDARDCASE",
+  "IFCWINDOW",
+  "IFCWINDOWSTANDARDCASE",
+  "IFCROOF",
+  "IFCSTAIR",
+  "IFCSTAIRFLIGHT",
+  "IFCRAMP",
+  "IFCRAMPFLIGHT",
+  "IFCCURTAINWALL",
+  "IFCCOVERING",
+  "IFCRAILING",
+  "IFCPLATE",
+  "IFCPLATESTANDARDCASE",
+  "IFCMEMBER",
+  "IFCMEMBERSTANDARDCASE",
+  "IFCFOOTING",
+  "IFCPILE",
+  "IFCFURNISHINGELEMENT",
+  "IFCSANITARYTERMINAL",
+  "IFCFLOWSEGMENT",
+  "IFCFLOWTERMINAL",
+  "IFCFLOWCONTROLLER",
+  "IFCFLOWFITTING",
+  "IFCFLOWMOVINGDEVICE",
+  "IFCFLOWSTORAGEDEVICE",
+  "IFCFLOWTREATMENTDEVICE",
+  "IFCENERGYCONVERSIONDEVICE",
+  "IFCDISTRIBUTIONFLOWELEMENT",
+  "IFCDISTRIBUTIONCONTROLELEMENT",
+  "IFCDISTRIBUTIONELEMENT",
+  "IFCDISTRIBUTIONPORT",
+  "IFCBUILDINGELEMENTPROXY",
+  "IFCBUILDINGELEMENTPART",
+  "IFCOPENINGELEMENT",
+  "IFCSPACE",
+  "IFCTRANSPORTELEMENT",
+  "IFCVIRTUALELEMENT",
+  "IFCSHADINGDEVICE",
+  "IFCCHIMNEY",
+  "IFCGEOGRAPHICELEMENT",
+  "IFCPROXY",
+  "IFCMECHANICALFASTENER"
+]);
+const SPATIAL_TYPES = /* @__PURE__ */ new Set([
+  "IFCPROJECT",
+  "IFCSITE",
+  "IFCBUILDING",
+  "IFCBUILDINGSTOREY"
+]);
+const listIdxByType = (type) => {
+  switch (type) {
+    case "IFCRELAGGREGATES":
+      return 5;
+    case "IFCRELCONNECTSWITHREALIZINGELEMENTS":
+      return 7;
+    case "IFCPRESENTATIONLAYERASSIGNMENT":
+      return 2;
+    default:
+      return 4;
+  }
+};
+const shouldRewriteType = (type) => {
+  if (type === "IFCRELVOIDSELEMENT")
+    return false;
+  if (type === "IFCRELFILLSELEMENT")
+    return false;
+  if (type.startsWith("IFCREL"))
+    return true;
+  if (type === "IFCPRESENTATIONLAYERASSIGNMENT")
+    return true;
+  return false;
+};
 class LineIndex {
   constructor() {
     __publicField(this, "types", []);
@@ -13367,6 +13356,15 @@ class LineIndex {
   getRaw(id) {
     return this.specialRaws.get(id);
   }
+  getAll(types) {
+    const allElementIds = /* @__PURE__ */ new Set();
+    for (let id = 0; id <= this.maxId; id++) {
+      const type = this.getType(id);
+      if (type && types.has(type))
+        allElementIds.add(id);
+    }
+    return allElementIds;
+  }
   free() {
     this.types = null;
     this._refBuf = null;
@@ -13374,56 +13372,6 @@ class LineIndex {
     this._refLen = null;
     this.specialRaws = null;
   }
-}
-function parseIfc(fsLike, filePath) {
-  const header = [];
-  const footer = [];
-  const index = new LineIndex();
-  let section = "header";
-  let accumulator = "";
-  let lineCount = 0;
-  console.time("parse");
-  forEachLine(fsLike, filePath, (line) => {
-    if (section === "header") {
-      header.push(line);
-      if (line.trim() === "DATA;")
-        section = "data";
-      return;
-    }
-    if (section === "data") {
-      const trimmed = line.trim();
-      if (trimmed === "ENDSEC;") {
-        if (accumulator) {
-          const info = extractId(accumulator);
-          if (info) {
-            const refs = extractRefs(accumulator, info.id);
-            index.set(info.id, info.type, refs, accumulator);
-            lineCount++;
-          }
-          accumulator = "";
-        }
-        section = "footer";
-        footer.push(line);
-        return;
-      }
-      accumulator += (accumulator ? " " : "") + trimmed;
-      if (accumulator.charCodeAt(accumulator.length - 1) === 59) {
-        const info = extractId(accumulator);
-        if (info) {
-          const refs = extractRefs(accumulator, info.id);
-          index.set(info.id, info.type, refs, accumulator);
-          lineCount++;
-        }
-        accumulator = "";
-      }
-      return;
-    }
-    footer.push(line);
-  });
-  index.finalize();
-  console.timeEnd("parse");
-  console.log(`  Parsed ${lineCount} data lines (max id: ${index.maxId})`);
-  return { header, footer, index };
 }
 function collectDeps(startId, index, visited, allElementIds) {
   const stack = [startId];
@@ -13550,6 +13498,38 @@ function buildAggregateMap(index, allElementIds) {
   }
   return { parentToChildren, childToParent, aggregateRelIds };
 }
+function traverseSpatialStructure(index) {
+  const spatialIds = /* @__PURE__ */ new Set();
+  for (let id = 0; id <= index.maxId; id++) {
+    const type = index.getType(id);
+    if (type && SPATIAL_TYPES.has(type))
+      spatialIds.add(id);
+  }
+  const sharedIds = /* @__PURE__ */ new Set();
+  for (const sid of spatialIds) {
+    collectDepsAll(sid, index, sharedIds);
+  }
+  for (let id = 0; id <= index.maxId; id++) {
+    const type = index.getType(id);
+    if (type === "IFCRELAGGREGATES") {
+      const raw = index.getRaw(id);
+      const argsStr = extractArgsString(raw);
+      if (argsStr) {
+        const args = splitIfcArgs(argsStr);
+        if (args.length >= 6) {
+          const relatingId = parseHashRef(args[4]);
+          if (relatingId && spatialIds.has(relatingId)) {
+            const listRefs = extractRefs(args[5]);
+            if (listRefs.every((r) => spatialIds.has(r))) {
+              collectDepsAll(id, index, sharedIds);
+            }
+          }
+        }
+      }
+    }
+  }
+  return sharedIds;
+}
 function addToSetMap(map, key, value) {
   if (!map.has(key))
     map.set(key, /* @__PURE__ */ new Set());
@@ -13670,405 +13650,70 @@ function resolveStyles(fileIds, index, styleMaps, allElementIds) {
     }
   }
 }
-function split(deps, inputPath, numGroups, outputDir) {
-  const { fs, path } = deps;
-  if (!fs.existsSync(inputPath)) {
-    console.error(`File not found: ${inputPath}`);
-    process.exit(1);
-  }
-  const resolvedOutputDir = outputDir || path.join(path.dirname(inputPath), "output");
-  fs.mkdirSync(resolvedOutputDir, { recursive: true });
-  const { header, footer, index } = parseIfc(fs, inputPath);
-  console.time("spatial");
-  const spatialIds = /* @__PURE__ */ new Set();
-  for (let id = 0; id <= index.maxId; id++) {
-    const type = index.getType(id);
-    if (type && SPATIAL_TYPES.has(type))
-      spatialIds.add(id);
-  }
-  const sharedIds = /* @__PURE__ */ new Set();
-  for (const sid of spatialIds) {
-    collectDepsAll(sid, index, sharedIds);
-  }
-  for (let id = 0; id <= index.maxId; id++) {
-    const type = index.getType(id);
-    if (type === "IFCRELAGGREGATES") {
-      const raw = index.getRaw(id);
-      const argsStr = extractArgsString(raw);
-      if (argsStr) {
-        const args = splitIfcArgs(argsStr);
-        if (args.length >= 6) {
-          const relatingId = parseHashRef(args[4]);
-          if (relatingId && spatialIds.has(relatingId)) {
-            const listRefs = extractRefs(args[5]);
-            if (listRefs.every((r) => spatialIds.has(r))) {
-              collectDepsAll(id, index, sharedIds);
-            }
-          }
-        }
+class IdGroupIndex {
+  constructor(groupsData, maxId) {
+    __publicField(this, "starts");
+    __publicField(this, "members");
+    __publicField(this, "maxId");
+    const starts = new Uint32Array(maxId + 2);
+    let total = 0;
+    for (const groupData of groupsData) {
+      for (const id of groupData.fileIds) {
+        if (id < 0 || id > maxId)
+          continue;
+        starts[id + 1] += 1;
+        total += 1;
       }
     }
-  }
-  console.timeEnd("spatial");
-  console.log(`  Shared infrastructure: ${sharedIds.size} lines`);
-  console.time("voidfill");
-  const vfMap = buildVoidFillMap(index);
-  console.timeEnd("voidfill");
-  console.log(
-    `  Void rels: ${vfMap.wallToOpenings.size} walls with openings, ${vfMap.fillerToOpening.size} fillers`
-  );
-  console.time("stylemaps");
-  const styleMaps = buildStyleMaps(index);
-  console.timeEnd("stylemaps");
-  console.log(
-    `  Style maps: ${styleMaps.geomToStyledItems.size} styled geometries, ${styleMaps.materialToDefReps.size} material representations`
-  );
-  console.time("classify");
-  const allElementIds = /* @__PURE__ */ new Set();
-  for (let id = 0; id <= index.maxId; id++) {
-    const type = index.getType(id);
-    if (type && ELEMENT_TYPES.has(type))
-      allElementIds.add(id);
-  }
-  console.timeEnd("classify");
-  console.log(`  Found ${allElementIds.size} building elements`);
-  console.time("aggregate");
-  const aggMap = buildAggregateMap(index, allElementIds);
-  console.timeEnd("aggregate");
-  console.log(
-    `  Aggregate rels: ${aggMap.parentToChildren.size} parents, ${aggMap.childToParent.size} children`
-  );
-  console.time("cluster");
-  const clusters = [];
-  const assigned = /* @__PURE__ */ new Set();
-  for (const eid of allElementIds) {
-    if (assigned.has(eid))
-      continue;
-    const cluster = getCluster(eid, vfMap, aggMap);
-    const elementCluster = /* @__PURE__ */ new Set();
-    for (const cid of cluster) {
-      if (allElementIds.has(cid))
-        elementCluster.add(cid);
-    }
-    clusters.push(elementCluster);
-    for (const cid of elementCluster)
-      assigned.add(cid);
-  }
-  console.timeEnd("cluster");
-  console.log(`  Built ${clusters.length} clusters`);
-  console.time("distribute");
-  const groups = Array.from(
-    { length: numGroups },
-    () => /* @__PURE__ */ new Set()
-  );
-  const clusterOrder = clusters.map((_, i) => i).sort((a, b) => clusters[b].size - clusters[a].size);
-  const groupSizes = new Array(numGroups).fill(0);
-  for (const ci of clusterOrder) {
-    let minIdx = 0;
-    for (let g = 1; g < numGroups; g++) {
-      if (groupSizes[g] < groupSizes[minIdx])
-        minIdx = g;
-    }
-    for (const id of clusters[ci])
-      groups[minIdx].add(id);
-    groupSizes[minIdx] += clusters[ci].size;
-  }
-  console.timeEnd("distribute");
-  console.time("index-rels");
-  const relEntries = [];
-  for (let id = 0; id <= index.maxId; id++) {
-    const type = index.getType(id);
-    if (type && shouldRewriteType(type)) {
-      const raw = index.getRaw(id);
-      const argsStr = extractArgsString(raw);
-      if (!argsStr)
-        continue;
-      const args = splitIfcArgs(argsStr);
-      const listIdx = listIdxByType(type);
-      if (args.length <= listIdx)
-        continue;
-      const listRefs = extractRefs(args[listIdx]);
-      if (listRefs.length === 0)
-        continue;
-      const idMatch = raw.match(/^(#\d+\s*=\s*)/);
-      if (!idMatch)
-        continue;
-      relEntries.push({
-        id,
-        type,
-        args,
-        listIdx,
-        listRefs,
-        idPrefix: idMatch[1]
-      });
-    }
-  }
-  console.timeEnd("index-rels");
-  console.log(`  Found ${relEntries.length} relationship lines to process`);
-  console.time("resolve");
-  const groupsData = [];
-  for (let g = 0; g < numGroups; g++) {
-    const groupElementIds = groups[g];
-    if (groupElementIds.size === 0) {
-      groupsData.push(null);
-      console.log(`  Group ${g + 1}: SKIPPED (empty)`);
-      continue;
-    }
-    const fileIds = new Set(sharedIds);
-    for (const eid of groupElementIds) {
-      collectDeps(eid, index, fileIds, allElementIds);
-    }
-    for (const eid of groupElementIds) {
-      const rels = vfMap.relLineIds.get(eid);
-      if (rels) {
-        for (const rid of rels) {
-          collectDeps(rid, index, fileIds, allElementIds);
-        }
-      }
-      const aggRels = aggMap.aggregateRelIds.get(eid);
-      if (aggRels) {
-        for (const rid of aggRels) {
-          collectDeps(rid, index, fileIds, allElementIds);
-        }
+    for (let i = 1; i < starts.length; i++)
+      starts[i] += starts[i - 1];
+    const members = new Uint32Array(total);
+    const cursor = starts.slice();
+    for (let g = 0; g < groupsData.length; g++) {
+      for (const id of groupsData[g].fileIds) {
+        if (id < 0 || id > maxId)
+          continue;
+        members[cursor[id]] = g;
+        cursor[id] += 1;
       }
     }
-    resolveStyles(fileIds, index, styleMaps, allElementIds);
-    const rewrittenLines = /* @__PURE__ */ new Map();
-    for (const rel of relEntries) {
-      const filtered = rel.listRefs.filter((r) => groupElementIds.has(r));
-      if (filtered.length === 0)
-        continue;
-      const newList = `(${filtered.map((r) => `#${r}`).join(",")})`;
-      const newArgs = [...rel.args];
-      newArgs[rel.listIdx] = newList;
-      const rewritten = `${rel.idPrefix}${rel.type}(${newArgs.join(",")});`;
-      rewrittenLines.set(rel.id, rewritten);
-      fileIds.add(rel.id);
-      const refs = index.getRefs(rel.id);
-      if (refs) {
-        for (const rid of refs) {
-          if (!allElementIds.has(rid)) {
-            collectDeps(rid, index, fileIds, allElementIds);
-          }
-        }
-      }
-    }
-    const totalIds = fileIds.size;
-    groupsData.push({
-      fileIds,
-      rewrittenLines,
-      elementCount: groupElementIds.size,
-      totalIds,
-      fileName: path.join(
-        resolvedOutputDir,
-        `split_${String(g + 1).padStart(3, "0")}.ifc`
-      )
-    });
-    console.log(
-      `  Group ${g + 1}: ${groupElementIds.size} elements, ${totalIds} total IDs`
-    );
+    this.starts = starts;
+    this.members = members;
+    this.maxId = maxId;
   }
-  console.timeEnd("resolve");
-  const maxParsedId = index.maxId;
-  index.free();
-  console.time("build-mask");
-  const idGroupMask = new Uint32Array(maxParsedId + 1);
-  for (let g = 0; g < numGroups; g++) {
-    const groupData = groupsData[g];
-    if (!groupData)
-      continue;
-    const bit = 1 << g;
-    for (const id of groupData.fileIds) {
-      idGroupMask[id] |= bit;
-    }
+  /**
+   * Positions in `groupsData` of the groups that include `id`, ascending.
+   * Empty if none.
+   */
+  groupsOf(id) {
+    if (id < 0 || id > this.maxId)
+      return new Uint32Array(0);
+    return this.members.subarray(this.starts[id], this.starts[id + 1]);
   }
-  console.timeEnd("build-mask");
-  console.time("write");
-  writeOutputFiles(deps, inputPath, header, footer, groupsData, idGroupMask);
-  console.timeEnd("write");
-  console.log("\nDone!");
-  return new Map(
-    groupsData.filter((g) => !!g).map((g) => [g.fileName, g.fileIds])
-  );
 }
-function extract(deps, inputPath, elementIds, outputPath) {
-  const { fs, path } = deps;
-  if (!fs.existsSync(inputPath)) {
-    console.error(`File not found: ${inputPath}`);
-    process.exit(1);
-  }
-  const outputDir = path.dirname(outputPath);
-  fs.mkdirSync(outputDir, { recursive: true });
-  const { header, footer, index } = parseIfc(fs, inputPath);
-  console.time("spatial");
-  const spatialIds = /* @__PURE__ */ new Set();
-  for (let id = 0; id <= index.maxId; id++) {
-    const type = index.getType(id);
-    if (type && SPATIAL_TYPES.has(type))
-      spatialIds.add(id);
-  }
-  const sharedIds = /* @__PURE__ */ new Set();
-  for (const sid of spatialIds) {
-    collectDepsAll(sid, index, sharedIds);
-  }
-  for (let id = 0; id <= index.maxId; id++) {
-    const type = index.getType(id);
-    if (type === "IFCRELAGGREGATES") {
-      const raw = index.getRaw(id);
-      const argsStr = extractArgsString(raw);
-      if (argsStr) {
-        const args = splitIfcArgs(argsStr);
-        if (args.length >= 6) {
-          const relatingId = parseHashRef(args[4]);
-          if (relatingId && spatialIds.has(relatingId)) {
-            const listRefs = extractRefs(args[5]);
-            if (listRefs.every((r) => spatialIds.has(r))) {
-              collectDepsAll(id, index, sharedIds);
-            }
-          }
-        }
-      }
-    }
-  }
-  console.timeEnd("spatial");
-  const vfMap = buildVoidFillMap(index);
-  const styleMaps = buildStyleMaps(index);
-  const allElementIds = /* @__PURE__ */ new Set();
-  for (let id = 0; id <= index.maxId; id++) {
-    const type = index.getType(id);
-    if (type && ELEMENT_TYPES.has(type))
-      allElementIds.add(id);
-  }
-  const requestedIds = /* @__PURE__ */ new Set();
-  for (const eid of elementIds) {
-    if (allElementIds.has(eid)) {
-      requestedIds.add(eid);
-    } else if (index.has(eid)) {
-      console.warn(
-        `  Warning: #${eid} exists but is not a building element (type: ${index.getType(eid)}), skipping`
-      );
-    } else {
-      console.warn(`  Warning: #${eid} not found in file, skipping`);
-    }
-  }
-  if (requestedIds.size === 0) {
-    console.error("No valid element IDs to extract.");
+async function emitSplitLine(writers, raw, groupsData, idGroups) {
+  if (raw.charCodeAt(0) !== 35)
     return;
-  }
-  console.log(`  Extracting ${requestedIds.size} elements`);
-  const aggMap = buildAggregateMap(index, allElementIds);
-  const groupElementIds = new Set(requestedIds);
-  for (const eid of requestedIds) {
-    const cluster = getCluster(eid, vfMap, aggMap);
-    for (const cid of cluster) {
-      if (allElementIds.has(cid))
-        groupElementIds.add(cid);
+  let id = 0;
+  for (let i = 1; i < raw.length; i++) {
+    const c = raw.charCodeAt(i);
+    if (c >= 48 && c <= 57) {
+      id = id * 10 + (c - 48);
+    } else {
+      break;
     }
   }
-  if (groupElementIds.size > requestedIds.size) {
-    console.log(
-      `  Expanded to ${groupElementIds.size} elements (void/fill + aggregation coupling)`
-    );
-  }
-  const fileIds = new Set(sharedIds);
-  for (const eid of groupElementIds) {
-    collectDeps(eid, index, fileIds, allElementIds);
-  }
-  for (const eid of groupElementIds) {
-    const rels = vfMap.relLineIds.get(eid);
-    if (rels) {
-      for (const rid of rels)
-        collectDeps(rid, index, fileIds, allElementIds);
-    }
-    const aggRels = aggMap.aggregateRelIds.get(eid);
-    if (aggRels) {
-      for (const rid of aggRels)
-        collectDeps(rid, index, fileIds, allElementIds);
-    }
-  }
-  resolveStyles(fileIds, index, styleMaps, allElementIds);
-  const rewrittenLines = /* @__PURE__ */ new Map();
-  for (let id = 0; id <= index.maxId; id++) {
-    const type = index.getType(id);
-    if (type && shouldRewriteType(type)) {
-      const raw = index.getRaw(id);
-      const argsStr = extractArgsString(raw);
-      if (!argsStr)
-        continue;
-      const args = splitIfcArgs(argsStr);
-      const listIdx = listIdxByType(type);
-      if (args.length <= listIdx)
-        continue;
-      const listRefs = extractRefs(args[listIdx]);
-      if (listRefs.length === 0)
-        continue;
-      const filtered = listRefs.filter((r) => groupElementIds.has(r));
-      if (filtered.length === 0)
-        continue;
-      const idMatch = raw.match(/^(#\d+\s*=\s*)/);
-      if (!idMatch)
-        continue;
-      const newList = `(${filtered.map((r) => `#${r}`).join(",")})`;
-      const newArgs = [...args];
-      newArgs[listIdx] = newList;
-      rewrittenLines.set(id, `${idMatch[1]}${type}(${newArgs.join(",")});`);
-      fileIds.add(id);
-      const refs = index.getRefs(id);
-      if (refs) {
-        for (const rid of refs) {
-          if (!allElementIds.has(rid))
-            collectDeps(rid, index, fileIds, allElementIds);
-        }
-      }
-    }
-  }
-  console.log(`  Total lines in output: ${fileIds.size}`);
-  index.free();
-  const includeSet = new Set(fileIds);
-  console.time("write");
-  const bw = new BufferedWriter(fs, outputPath, 4 * 1024 * 1024);
-  bw.write(`${header.join("\n")}
+  if (id === 0)
+    return;
+  const groups = idGroups.groupsOf(id);
+  for (let i = 0; i < groups.length; i++) {
+    const g = groups[i];
+    const line = groupsData[g].rewrittenLines.get(id) ?? raw;
+    await writers[g].write(`${line}
 `);
-  let section = "header";
-  let accumulator = "";
-  forEachLine(fs, inputPath, (line) => {
-    if (section === "header") {
-      if (line.trim() === "DATA;")
-        section = "data";
-      return;
-    }
-    if (section === "data") {
-      const trimmed = line.trim();
-      if (trimmed === "ENDSEC;") {
-        if (accumulator) {
-          emitSingleLine(accumulator, bw, includeSet, rewrittenLines);
-          accumulator = "";
-        }
-        section = "footer";
-        return;
-      }
-      if (!accumulator && trimmed.charCodeAt(trimmed.length - 1) === 59) {
-        emitSingleLine(trimmed, bw, includeSet, rewrittenLines);
-        return;
-      }
-      accumulator += (accumulator ? " " : "") + trimmed;
-      if (accumulator.charCodeAt(accumulator.length - 1) === 59) {
-        emitSingleLine(accumulator, bw, includeSet, rewrittenLines);
-        accumulator = "";
-      }
-    }
-  });
-  bw.write(`${footer.join("\n")}
-`);
-  bw.close();
-  console.timeEnd("write");
-  const stat = fs.statSync(outputPath);
-  console.log(
-    `  Output: ${groupElementIds.size} elements, ${fileIds.size} total lines, ${(stat.size / 1024 / 1024).toFixed(1)} MB -> ${path.basename(outputPath)}`
-  );
-  console.log("\nDone!");
+  }
 }
-function emitSingleLine(raw, writer, includeSet, rewrittenLines) {
+async function emitExtractLine(writer, raw, includeSet, rewrittenLines) {
   if (raw.charCodeAt(0) !== 35)
     return;
   let id = 0;
@@ -14082,94 +13727,499 @@ function emitSingleLine(raw, writer, includeSet, rewrittenLines) {
   }
   if (id === 0 || !includeSet.has(id))
     return;
-  const line = rewrittenLines.has(id) ? rewrittenLines.get(id) : raw;
-  writer.write(line);
-  writer.write("\n");
+  const line = rewrittenLines.get(id) ?? raw;
+  await writer.write(`${line}
+`);
 }
-function writeOutputFiles(deps, inputPath, header, footer, groupsData, idGroupMask) {
-  const { fs, path } = deps;
-  const numGroups = groupsData.length;
-  const writers = [];
-  const headerStr = `${header.join("\n")}
-`;
-  for (let g = 0; g < numGroups; g++) {
-    const groupData = groupsData[g];
-    if (!groupData) {
-      writers.push(null);
-      continue;
-    }
-    const bw = new BufferedWriter(fs, groupData.fileName, 4 * 1024 * 1024);
-    bw.write(headerStr);
-    writers.push(bw);
+async function abortWriters(writers, reason) {
+  await Promise.allSettled(writers.map(async (writer) => writer.abort(reason)));
+}
+class IfcSplitter {
+  constructor(ifcSplitterIO) {
+    __publicField(this, "io");
+    __publicField(this, "eventTarget");
+    __publicField(this, "onProgress", new Event());
+    __publicField(this, "onSplitsResolved", new Event());
+    /**
+     * Fires from `extract` when an id is missing or has a wrong type
+     */
+    __publicField(this, "onExtractWarning", new Event());
+    this.io = ifcSplitterIO;
+    this.eventTarget = new EventTarget();
   }
-  let section = "header";
-  let accumulator = "";
-  forEachLine(fs, inputPath, (line) => {
-    if (section === "header") {
-      if (line.trim() === "DATA;")
-        section = "data";
-      return;
+  /**
+   * Split an IFC file into N roughly equal groups of building elements.
+   * @param inputPath - Absolute or relative path to the source IFC file.
+   * @param numGroups - Number of output files to produce. Not capped by the
+   * splitter, but note that the write pass holds one open writer per non-empty
+   * group, so the practical ceiling is the process' file descriptor limit.
+   * @param outputPath - Given `groupId` returns output file path.
+   * @returns a map keyed by {@link GroupData.groupId}.
+   * @throws {RangeError} if `numGroups` is not a positive integer.
+   */
+  async split(inputPath, numGroups, outputPath) {
+    if (!Number.isInteger(numGroups) || numGroups < 1) {
+      throw new RangeError(
+        `numGroups must be a positive integer, received ${numGroups}`
+      );
     }
-    if (section === "data") {
-      const trimmed = line.trim();
-      if (trimmed === "ENDSEC;") {
-        if (accumulator) {
-          emitLine(accumulator, writers, groupsData, idGroupMask);
-          accumulator = "";
+    const parseStart = performance.now();
+    const { header, footer, index } = await this.parseIfc(inputPath);
+    this.emitProgressEvent("parse", parseStart);
+    const spatialStart = performance.now();
+    const sharedIds = traverseSpatialStructure(index);
+    this.emitProgressEvent("spatial", spatialStart);
+    const voidFillStart = performance.now();
+    const vfMap = buildVoidFillMap(index);
+    this.emitProgressEvent("void-fill", voidFillStart);
+    const styleMapsStart = performance.now();
+    const styleMaps = buildStyleMaps(index);
+    this.emitProgressEvent("style-maps", styleMapsStart);
+    const classifyStart = performance.now();
+    const allElementIds = index.getAll(ELEMENT_TYPES);
+    this.emitProgressEvent("classify", classifyStart);
+    const aggregateStart = performance.now();
+    const aggMap = buildAggregateMap(index, allElementIds);
+    this.emitProgressEvent("aggregate", aggregateStart);
+    const clusterStart = performance.now();
+    const clusters = [];
+    const assigned = /* @__PURE__ */ new Set();
+    for (const eid of allElementIds) {
+      if (assigned.has(eid))
+        continue;
+      const cluster = getCluster(eid, vfMap, aggMap);
+      const elementCluster = /* @__PURE__ */ new Set();
+      for (const cid of cluster) {
+        if (allElementIds.has(cid))
+          elementCluster.add(cid);
+      }
+      clusters.push(elementCluster);
+      for (const cid of elementCluster)
+        assigned.add(cid);
+    }
+    this.emitProgressEvent("cluster", clusterStart);
+    const distributeStart = performance.now();
+    const groups = Array.from(
+      { length: numGroups },
+      () => /* @__PURE__ */ new Set()
+    );
+    const clusterOrder = clusters.map((_, i) => i).sort((a, b) => clusters[b].size - clusters[a].size);
+    const groupSizes = new Array(numGroups).fill(0);
+    for (const ci of clusterOrder) {
+      let minIdx = 0;
+      for (let g = 1; g < numGroups; g++) {
+        if (groupSizes[g] < groupSizes[minIdx])
+          minIdx = g;
+      }
+      for (const id of clusters[ci])
+        groups[minIdx].add(id);
+      groupSizes[minIdx] += clusters[ci].size;
+    }
+    this.emitProgressEvent("distribute", distributeStart);
+    const relationsStart = performance.now();
+    const relEntries = [];
+    for (let id = 0; id <= index.maxId; id++) {
+      const type = index.getType(id);
+      if (type && shouldRewriteType(type)) {
+        const raw = index.getRaw(id);
+        const argsStr = extractArgsString(raw);
+        if (!argsStr)
+          continue;
+        const args = splitIfcArgs(argsStr);
+        const listIdx = listIdxByType(type);
+        if (args.length <= listIdx)
+          continue;
+        const listRefs = extractRefs(args[listIdx]);
+        if (listRefs.length === 0)
+          continue;
+        const idMatch = raw.match(/^(#\d+\s*=\s*)/);
+        if (!idMatch)
+          continue;
+        relEntries.push({
+          id,
+          type,
+          args,
+          listIdx,
+          listRefs,
+          idPrefix: idMatch[1]
+        });
+      }
+    }
+    this.emitProgressEvent("relations", relationsStart);
+    const resolveStart = performance.now();
+    const groupsData = [];
+    for (let g = 0; g < numGroups; g++) {
+      const groupElementIds = groups[g];
+      if (groupElementIds.size === 0)
+        continue;
+      const fileIds = new Set(sharedIds);
+      for (const eid of groupElementIds) {
+        collectDeps(eid, index, fileIds, allElementIds);
+      }
+      for (const eid of groupElementIds) {
+        const rels = vfMap.relLineIds.get(eid);
+        if (rels) {
+          for (const rid of rels) {
+            collectDeps(rid, index, fileIds, allElementIds);
+          }
         }
-        section = "footer";
-        return;
+        const aggRels = aggMap.aggregateRelIds.get(eid);
+        if (aggRels) {
+          for (const rid of aggRels) {
+            collectDeps(rid, index, fileIds, allElementIds);
+          }
+        }
       }
-      if (!accumulator && trimmed.charCodeAt(trimmed.length - 1) === 59) {
-        emitLine(trimmed, writers, groupsData, idGroupMask);
-        return;
+      resolveStyles(fileIds, index, styleMaps, allElementIds);
+      const rewrittenLines = /* @__PURE__ */ new Map();
+      for (const rel of relEntries) {
+        const filtered = rel.listRefs.filter((r) => groupElementIds.has(r));
+        if (filtered.length === 0)
+          continue;
+        const newList = `(${filtered.map((r) => `#${r}`).join(",")})`;
+        const newArgs = [...rel.args];
+        newArgs[rel.listIdx] = newList;
+        const rewritten = `${rel.idPrefix}${rel.type}(${newArgs.join(",")});`;
+        rewrittenLines.set(rel.id, rewritten);
+        fileIds.add(rel.id);
+        const refs = index.getRefs(rel.id);
+        if (refs) {
+          for (const rid of refs) {
+            if (!allElementIds.has(rid)) {
+              collectDeps(rid, index, fileIds, allElementIds);
+            }
+          }
+        }
       }
-      accumulator += (accumulator ? " " : "") + trimmed;
-      if (accumulator.charCodeAt(accumulator.length - 1) === 59) {
-        emitLine(accumulator, writers, groupsData, idGroupMask);
-        accumulator = "";
-      }
+      const totalIds = fileIds.size;
+      groupsData.push({
+        groupId: g,
+        fileIds,
+        rewrittenLines,
+        elementCount: groupElementIds.size,
+        totalIds,
+        filePath: outputPath(g)
+      });
     }
-  });
-  const footerStr = `${footer.join("\n")}
-`;
-  for (let g = 0; g < numGroups; g++) {
-    const bw = writers[g];
-    if (!bw)
-      continue;
-    bw.write(footerStr);
-    bw.close();
-    const stat = fs.statSync(bw.filePath);
-    const gd = groupsData[g];
-    console.log(
-      `  Group ${g + 1}: ${gd.elementCount} elements, ${gd.totalIds} total lines, ${(stat.size / 1024 / 1024).toFixed(1)} MB -> ${path.basename(bw.filePath)}`
+    this.emitProgressEvent("resolve", resolveStart);
+    this.onSplitsResolved.trigger({ data: groupsData });
+    const maxParsedId = index.maxId;
+    index.free();
+    const buildIndexStart = performance.now();
+    const idGroups = new IdGroupIndex(groupsData, maxParsedId);
+    this.emitProgressEvent("build-index", buildIndexStart);
+    const writeStart = performance.now();
+    await this.writeSplitOutput(
+      inputPath,
+      header,
+      footer,
+      groupsData,
+      idGroups
+    );
+    this.emitProgressEvent("write", writeStart);
+    return new Map(
+      groupsData.map(({ groupId, filePath, fileIds }) => [
+        groupId,
+        { path: filePath, ids: fileIds }
+      ])
     );
   }
-}
-function emitLine(raw, writers, groupsData, idGroupMask) {
-  if (raw.charCodeAt(0) !== 35)
-    return;
-  let id = 0;
-  for (let i = 1; i < raw.length; i++) {
-    const c = raw.charCodeAt(i);
-    if (c >= 48 && c <= 57) {
-      id = id * 10 + (c - 48);
-    } else {
-      break;
+  /**
+   * Extract specific building elements from an IFC file into a new IFC file.
+   * @param inputPath  - Absolute or relative path to the source IFC file.
+   * @param elementIds - Array of IFC entity IDs (`#id`) for the building elements to extract. Non-element or missing IDs are skipped, each reported through {@link onExtractWarning}.
+   * @param outputPath - Path for the output IFC file.
+   * @throws {Error} if none of `elementIds` resolves to a building element. No
+   * output file is produced in that case.
+   */
+  async extract(inputPath, elementIds, outputPath) {
+    const parseStart = performance.now();
+    const { header, footer, index } = await this.parseIfc(inputPath);
+    this.emitProgressEvent("parse", parseStart);
+    const spatialStart = performance.now();
+    const sharedIds = traverseSpatialStructure(index);
+    this.emitProgressEvent("spatial", spatialStart);
+    const voidFillStart = performance.now();
+    const vfMap = buildVoidFillMap(index);
+    this.emitProgressEvent("void-fill", voidFillStart);
+    const styleMapsStart = performance.now();
+    const styleMaps = buildStyleMaps(index);
+    this.emitProgressEvent("style-maps", styleMapsStart);
+    const classifyStart = performance.now();
+    const allElementIds = index.getAll(ELEMENT_TYPES);
+    this.emitProgressEvent("classify", classifyStart);
+    const aggregateStart = performance.now();
+    const aggMap = buildAggregateMap(index, allElementIds);
+    this.emitProgressEvent("aggregate", aggregateStart);
+    const clusterStart = performance.now();
+    const requestedIds = /* @__PURE__ */ new Set();
+    for (const eid of elementIds) {
+      if (allElementIds.has(eid)) {
+        requestedIds.add(eid);
+      } else if (index.has(eid)) {
+        const type = index.getType(eid);
+        this.onExtractWarning.trigger({
+          message: `Skipping #${eid}: type '${type}' is not a building element`,
+          context: { id: eid, type }
+        });
+      } else {
+        this.onExtractWarning.trigger({
+          message: `Skipping #${eid}: not found`,
+          context: { id: eid }
+        });
+      }
+    }
+    if (requestedIds.size === 0) {
+      throw new Error("No valid element IDs found.");
+    }
+    const groupElementIds = new Set(requestedIds);
+    for (const eid of requestedIds) {
+      const cluster = getCluster(eid, vfMap, aggMap);
+      for (const cid of cluster) {
+        if (allElementIds.has(cid))
+          groupElementIds.add(cid);
+      }
+    }
+    this.emitProgressEvent("cluster", clusterStart);
+    const relationsStart = performance.now();
+    const fileIds = new Set(sharedIds);
+    const rewrittenLines = /* @__PURE__ */ new Map();
+    for (let id = 0; id <= index.maxId; id++) {
+      const type = index.getType(id);
+      if (type && shouldRewriteType(type)) {
+        const raw = index.getRaw(id);
+        const argsStr = extractArgsString(raw);
+        if (!argsStr)
+          continue;
+        const args = splitIfcArgs(argsStr);
+        const listIdx = listIdxByType(type);
+        if (args.length <= listIdx)
+          continue;
+        const listRefs = extractRefs(args[listIdx]);
+        if (listRefs.length === 0)
+          continue;
+        const filtered = listRefs.filter((r) => groupElementIds.has(r));
+        if (filtered.length === 0)
+          continue;
+        const idMatch = raw.match(/^(#\d+\s*=\s*)/);
+        if (!idMatch)
+          continue;
+        const newList = `(${filtered.map((r) => `#${r}`).join(",")})`;
+        const newArgs = [...args];
+        newArgs[listIdx] = newList;
+        rewrittenLines.set(id, `${idMatch[1]}${type}(${newArgs.join(",")});`);
+        fileIds.add(id);
+        const refs = index.getRefs(id);
+        if (refs) {
+          for (const rid of refs) {
+            if (!allElementIds.has(rid))
+              collectDeps(rid, index, fileIds, allElementIds);
+          }
+        }
+      }
+    }
+    this.emitProgressEvent("relations", relationsStart);
+    const resolveStart = performance.now();
+    for (const eid of groupElementIds) {
+      collectDeps(eid, index, fileIds, allElementIds);
+    }
+    for (const eid of groupElementIds) {
+      const rels = vfMap.relLineIds.get(eid);
+      if (rels) {
+        for (const rid of rels)
+          collectDeps(rid, index, fileIds, allElementIds);
+      }
+      const aggRels = aggMap.aggregateRelIds.get(eid);
+      if (aggRels) {
+        for (const rid of aggRels)
+          collectDeps(rid, index, fileIds, allElementIds);
+      }
+    }
+    resolveStyles(fileIds, index, styleMaps, allElementIds);
+    this.emitProgressEvent("resolve", resolveStart);
+    index.free();
+    const writeStart = performance.now();
+    const writer = (await this.io.writableStream(outputPath)).getWriter();
+    let closed = false;
+    try {
+      await writer.write(`${header.join("\n")}
+`);
+      let section = "header";
+      let accumulator = "";
+      await this.forEachLine(inputPath, async (line) => {
+        if (section === "header") {
+          if (line.trim() === "DATA;")
+            section = "data";
+          return;
+        }
+        if (section === "data") {
+          const trimmed = line.trim();
+          if (trimmed === "ENDSEC;") {
+            if (accumulator) {
+              await emitExtractLine(
+                writer,
+                accumulator,
+                fileIds,
+                rewrittenLines
+              );
+              accumulator = "";
+            }
+            section = "footer";
+            return;
+          }
+          if (!accumulator && trimmed.charCodeAt(trimmed.length - 1) === 59) {
+            await emitExtractLine(writer, trimmed, fileIds, rewrittenLines);
+            return;
+          }
+          accumulator += (accumulator ? " " : "") + trimmed;
+          if (accumulator.charCodeAt(accumulator.length - 1) === 59) {
+            await emitExtractLine(writer, accumulator, fileIds, rewrittenLines);
+            accumulator = "";
+          }
+        }
+      });
+      await writer.write(`${footer.join("\n")}
+`);
+      await writer.close();
+      closed = true;
+    } finally {
+      if (!closed)
+        await abortWriters([writer]);
+    }
+    this.emitProgressEvent("write", writeStart);
+    return fileIds;
+  }
+  async parseIfc(filePath) {
+    const header = [];
+    const footer = [];
+    const index = new LineIndex();
+    let section = "header";
+    let accumulator = "";
+    await this.forEachLine(filePath, (line) => {
+      if (section === "header") {
+        header.push(line);
+        if (line.trim() === "DATA;")
+          section = "data";
+        return;
+      }
+      if (section === "data") {
+        const trimmed = line.trim();
+        if (trimmed === "ENDSEC;") {
+          if (accumulator) {
+            const info = extractLineMeta(accumulator);
+            if (info) {
+              const refs = extractRefs(accumulator, info.id);
+              index.set(info.id, info.type, refs, accumulator);
+            }
+            accumulator = "";
+          }
+          section = "footer";
+          footer.push(line);
+          return;
+        }
+        accumulator += (accumulator ? " " : "") + trimmed;
+        if (accumulator.charCodeAt(accumulator.length - 1) === 59) {
+          const info = extractLineMeta(accumulator);
+          if (info) {
+            const refs = extractRefs(accumulator, info.id);
+            index.set(info.id, info.type, refs, accumulator);
+          }
+          accumulator = "";
+        }
+        return;
+      }
+      footer.push(line);
+    });
+    index.finalize();
+    return { header, footer, index };
+  }
+  /**
+   * Chunked file reader — replaces readline (3-5x faster)
+   */
+  async forEachLine(filePath, callback) {
+    const readableStream = await this.io.readableStream(filePath);
+    for await (const line of streamAsyncIterator(readableStream)) {
+      await callback(line);
     }
   }
-  if (id === 0 || id >= idGroupMask.length)
-    return;
-  const mask = idGroupMask[id];
-  if (mask === 0)
-    return;
-  for (let g = 0; g < groupsData.length; g++) {
-    if (!(mask & 1 << g))
-      continue;
-    const gd = groupsData[g];
-    const line = gd.rewrittenLines.has(id) ? gd.rewrittenLines.get(id) : raw;
-    writers[g].write(line);
-    writers[g].write("\n");
+  async writeSplitOutput(inputPath, header, footer, groupsData, idGroups) {
+    const headerStr = `${header.join("\n")}
+`;
+    const writers = await this.openGroupWriters(groupsData, headerStr);
+    let section = "header";
+    let accumulator = "";
+    let closed = false;
+    try {
+      await this.forEachLine(inputPath, async (line) => {
+        if (section === "header") {
+          if (line.trim() === "DATA;")
+            section = "data";
+          return;
+        }
+        if (section === "data") {
+          const trimmed = line.trim();
+          if (trimmed === "ENDSEC;") {
+            if (accumulator) {
+              await emitSplitLine(writers, accumulator, groupsData, idGroups);
+              accumulator = "";
+            }
+            section = "footer";
+            return;
+          }
+          if (!accumulator && trimmed.charCodeAt(trimmed.length - 1) === 59) {
+            await emitSplitLine(writers, trimmed, groupsData, idGroups);
+            return;
+          }
+          accumulator += (accumulator ? " " : "") + trimmed;
+          if (accumulator.charCodeAt(accumulator.length - 1) === 59) {
+            await emitSplitLine(writers, accumulator, groupsData, idGroups);
+            accumulator = "";
+          }
+        }
+      });
+      const footerStr = `${footer.join("\n")}
+`;
+      await Promise.all(
+        writers.map(async (writer) => {
+          await writer.write(footerStr);
+          await writer.close();
+        })
+      );
+      closed = true;
+    } finally {
+      if (!closed)
+        await abortWriters(writers);
+    }
+  }
+  /**
+   * Open one writer per non-empty group and prime it with the header. If any
+   * writer fails to open, the ones already opened are aborted before rethrowing.
+   */
+  async openGroupWriters(groupsData, headerStr) {
+    const settled = await Promise.allSettled(
+      groupsData.map(async (groupData) => {
+        const writer = (await this.io.writableStream(groupData.filePath)).getWriter();
+        await writer.write(headerStr);
+        return writer;
+      })
+    );
+    const opened = settled.flatMap(
+      (result) => result.status === "fulfilled" ? [result.value] : []
+    );
+    const failure = settled.find(
+      (result) => result.status === "rejected"
+    );
+    if (failure) {
+      await abortWriters(opened, failure.reason);
+      throw failure.reason;
+    }
+    return opened;
+  }
+  emitProgressEvent(stage, start) {
+    this.onProgress.trigger({
+      stage,
+      timeElapsed: performance.now() - start
+    });
   }
 }
 const limitOf2Bytes = 65536;
@@ -15943,17 +15993,30 @@ class AlignmentsManager {
     points.renderOrder = 2;
   }
   dispose() {
-    this._absoluteAlignments.removeFromParent();
-    for (const alignment of this._absoluteAlignments.children) {
-      const line = alignment;
-      line.geometry.dispose();
-      line.geometry = void 0;
-      line.material = void 0;
+    const groups = [
+      this._absoluteAlignments,
+      this._horizontalAlignments,
+      this._verticalAlignments
+    ];
+    for (const group of groups) {
+      group.traverse((child) => {
+        const object = child;
+        if (!object.geometry)
+          return;
+        object.geometry.dispose();
+        object.geometry = void 0;
+        object.material = void 0;
+      });
+      group.clear();
+      group.removeFromParent();
     }
-    for (const material of Object.values(this._alignmentMaterials)) {
+    for (const material of this._alignmentMaterials.values()) {
       material.dispose();
     }
-    this._alignmentMaterials = {};
+    this._alignmentMaterials.clear();
+    for (const material of Object.values(this._endpointsMaterials)) {
+      material.dispose();
+    }
   }
 }
 class BoxManager {
@@ -19891,6 +19954,9 @@ class SetupManager {
     if (modelData instanceof ArrayBuffer) {
       return [modelData];
     }
+    if (modelData instanceof Uint8Array) {
+      return [modelData.buffer];
+    }
     return void 0;
   }
   updateBox(bbox, result) {
@@ -20227,14 +20293,14 @@ const _FragmentsModel = class _FragmentsModel {
   /**
    * Get the spatial structure of the model.
    */
-  async getSpatialStructure() {
+  getSpatialStructure() {
     return this._dataManager.getSpatialStructure(this);
   }
   /**
    * Get the local IDs corresponding to the specified GUIDs.
    * @param guids - Array of GUIDs to look up.
    */
-  async getLocalIdsByGuids(guids) {
+  getLocalIdsByGuids(guids) {
     return this._dataManager.getLocalIdsByGuids(this, guids);
   }
   /**
@@ -20243,27 +20309,27 @@ const _FragmentsModel = class _FragmentsModel {
    * per-vertex `id` attribute and need to map back to the public id
    * space.
    */
-  async getLocalIdsFromItemIds(itemIds) {
+  getLocalIdsFromItemIds(itemIds) {
     return this._dataManager.getLocalIdsFromItemIds(this, itemIds);
   }
   /**
    * Get all the categories of the model.
    */
-  async getCategories() {
+  getCategories() {
     return this._dataManager.getCategories(this);
   }
   /**
    * Get the names of every user-defined index stored on this model. See the
    * `ModelIndex` schema for the supported shapes.
    */
-  async getIndexNames() {
+  getIndexNames() {
     return this._dataManager.getIndexNames(this);
   }
   /**
    * Describe the shape of a named index without performing any lookups.
    * Returns `null` if no index with that name exists.
    */
-  async getIndexInfo(name) {
+  getIndexInfo(name) {
     return this._dataManager.getIndexInfo(this, name);
   }
   /**
@@ -20271,7 +20337,7 @@ const _FragmentsModel = class _FragmentsModel {
    * iteration) but valid for any mode. Number keys come back as a
    * `Uint32Array`, string keys as `string[]`.
    */
-  async getIndexKeys(name) {
+  getIndexKeys(name) {
     return this._dataManager.getIndexKeys(this, name);
   }
   /**
@@ -20290,14 +20356,14 @@ const _FragmentsModel = class _FragmentsModel {
   /**
    * Test whether a key exists in the named index without resolving its value.
    */
-  async hasIndexEntry(name, key) {
+  hasIndexEntry(name, key) {
     return this._dataManager.hasIndexEntry(this, name, key);
   }
   /**
    * Forward lookup of a single entry in the named index. The return shape
    * depends on the index mode (see {@link IndexEntry}).
    */
-  async getIndexEntry(name, key) {
+  getIndexEntry(name, key) {
     return this._dataManager.getIndexEntry(this, name, key);
   }
   /**
@@ -20305,28 +20371,28 @@ const _FragmentsModel = class _FragmentsModel {
    * returns every key that maps to `value`. The inverse map is built lazily
    * on first call and cached for the model's lifetime.
    */
-  async getInverseIndexEntry(name, value) {
+  getInverseIndexEntry(name, value) {
     return this._dataManager.getInverseIndexEntry(this, name, value);
   }
-  async getItemsWithGeometryCategories() {
+  getItemsWithGeometryCategories() {
     return this._dataManager.getItemsWithGeometryCategories(this);
   }
   /**
    * Get all the items of the model that have geometry.
    */
-  async getItemsWithGeometry() {
+  getItemsWithGeometry() {
     return this._dataManager.getItemsWithGeometry(this);
   }
   /**
    * Get all the items ids of the model that have geometry.
    */
-  async getItemsIdsWithGeometry() {
+  getItemsIdsWithGeometry() {
     return this._dataManager.getItemsIdsWithGeometry(this);
   }
   /**
    * Get the metadata of the model.
    */
-  async getMetadata() {
+  getMetadata() {
     return this._dataManager.getMetadata(this);
   }
   /**
@@ -20334,21 +20400,21 @@ const _FragmentsModel = class _FragmentsModel {
    * Returns null if the source IFC file did not contain IFCPROJECTEDCRS
    * or IFCCOORDINATEREFERENCESYSTEM entities.
    */
-  async getCRS() {
+  getCRS() {
     return this._dataManager.getCRS(this);
   }
   /**
    * Get the GUIDs corresponding to the specified local IDs.
    * @param localIds - Array of local IDs to look up.
    */
-  async getGuidsByLocalIds(localIds) {
+  getGuidsByLocalIds(localIds) {
     return this._dataManager.getGuidsByLocalIds(this, localIds);
   }
   /**
    * Get the buffer of the model.
    * @param raw - Whether to get the raw buffer. If false, it will be compressed.
    */
-  async getBuffer(raw = false) {
+  getBuffer(raw = false) {
     return this._dataManager.getBuffer(this, raw);
   }
   /**
@@ -20356,7 +20422,7 @@ const _FragmentsModel = class _FragmentsModel {
    * @param localIds - The local IDs of the items to include.
    * @param raw - Whether to get the raw buffer. If false, it will be compressed.
    */
-  async getSubsetBuffer(localIds, raw = false) {
+  getSubsetBuffer(localIds, raw = false) {
     return this.threads.invoke(this.modelId, "getSubsetBuffer", [
       localIds,
       raw
@@ -20366,7 +20432,7 @@ const _FragmentsModel = class _FragmentsModel {
    * Get all the items of the model that belong to the specified category.
    * @param category - The category to look up.
    */
-  async getItemsOfCategories(categories) {
+  getItemsOfCategories(categories) {
     return this._dataManager.getItemsOfCategories(this, categories);
   }
   async getGuids() {
@@ -20395,7 +20461,7 @@ const _FragmentsModel = class _FragmentsModel {
    * @param config - Optional query configuration.
    * @returns A promise that resolves to the items matching the query.
    */
-  async getItemsByQuery(params, config) {
+  getItemsByQuery(params, config) {
     return this._dataManager.getItemsByQuery(this, params, config);
   }
   // TODO: Fix, this is wrong
@@ -20416,10 +20482,10 @@ const _FragmentsModel = class _FragmentsModel {
    * @param localIds - An array of local IDs for which the geometry data is requested.
    * @param lod - The level of detail for the geometry (optional).
    */
-  async getItemsGeometry(localIds, lod = CurrentLod.GEOMETRY) {
+  getItemsGeometry(localIds, lod = CurrentLod.GEOMETRY) {
     return this._editManager.getItemsGeometry(this, localIds, lod);
   }
-  async getGeometries(ids) {
+  getGeometries(ids) {
     return this._editManager.getGeometries(this, ids);
   }
   /**
@@ -20497,7 +20563,7 @@ const _FragmentsModel = class _FragmentsModel {
   /**
    * Get the maximum local ID of the model.
    */
-  async getMaxLocalId() {
+  getMaxLocalId() {
     return this._dataManager.getMaxLocalId(this);
   }
   /**
@@ -20511,7 +20577,7 @@ const _FragmentsModel = class _FragmentsModel {
    * Get the spatial structure children of the specified items.
    * @param ids - The IDs of the items to look up.
    */
-  async getItemsChildren(ids) {
+  getItemsChildren(ids) {
     return this._itemsManager.getItemsChildren(this, ids);
   }
   /**
@@ -20542,20 +20608,20 @@ const _FragmentsModel = class _FragmentsModel {
    *   },
    * });
    */
-  async getItemsData(ids, config) {
+  getItemsData(ids, config) {
     return this._itemsManager.getItemsData(this, ids, config);
   }
   /**
    * Get the absolute positions of the specified items.
    * @param localIds - The local IDs of the items to look up.
    */
-  async getPositions(localIds) {
+  getPositions(localIds) {
     return this._coordinatesManager.getPositions(this, localIds);
   }
   /**
    * Gets coordinates of the model.
    */
-  async getCoordinates() {
+  getCoordinates() {
     return this._coordinatesManager.getCoordinates(this);
   }
   /**
@@ -20564,39 +20630,39 @@ const _FragmentsModel = class _FragmentsModel {
    * This method utilizes the `_coordinatesManager` to compute and return a
    * `THREE.Matrix4` object based on the original model coordinates.
    */
-  async getCoordinationMatrix() {
+  getCoordinationMatrix() {
     return this._coordinatesManager.getCoordinationMatrix(this);
   }
   /**
    * Get the merged bounding box of the specified items.
    * @param localIds - The local IDs of the items to look up.
    */
-  async getMergedBox(localIds) {
+  getMergedBox(localIds) {
     return this._boxManager.getMergedBox(this, localIds);
   }
   /**
    * Get the individual bounding boxes of the specified items.
    * @param localIds - The local IDs of the items to look up.
    */
-  async getBoxes(localIds) {
+  getBoxes(localIds) {
     return this._boxManager.getBoxes(this, localIds);
   }
   /**
    * Get the absolute alignments of the model (if any).
    */
-  async getAlignments() {
+  getAlignments() {
     return this._alignmentsManager.getAlignments();
   }
   /**
    * Get the horizontal alignments of the model (if any).
    */
-  async getHorizontalAlignments() {
+  getHorizontalAlignments() {
     return this._alignmentsManager.getHorizontalAlignments();
   }
   /**
    * Get the vertical alignments of the model (if any).
    */
-  async getVerticalAlignments() {
+  getVerticalAlignments() {
     return this._alignmentsManager.getVerticalAlignments();
   }
   /**
@@ -20622,7 +20688,7 @@ const _FragmentsModel = class _FragmentsModel {
    * All grid's descendants (`"axis"`, `"line"`, `"label"`) carry `userData.tag` (the axis label value)
    * and `userData.axis` (`"uAxes"`, `"vAxes"`, or `"wAxes"`).
    */
-  async getGrids(config) {
+  getGrids(config) {
     return this._gridsManager.getGrids(config);
   }
   /**
@@ -20669,35 +20735,35 @@ const _FragmentsModel = class _FragmentsModel {
    * Sets the LOD / culling mode of the model.
    * @param lodMode - The LOD / culling mode to set.
    */
-  async setLodMode(lodMode) {
+  setLodMode(lodMode) {
     return this._viewManager.setLodMode(this, lodMode);
   }
   /**
    * Performs a rectangle raycast on the model.
    * @param data - The data of the rectangle raycast.
    */
-  async rectangleRaycast(data) {
+  rectangleRaycast(data) {
     return this._raycastManager.rectangleRaycast(this, this._meshManager, data);
   }
   /**
    * Performs a raycast on the model.
    * @param data - The data of the raycast.
    */
-  async raycast(data) {
+  raycast(data) {
     return this._raycastManager.raycast(this, data);
   }
   /**
    * Performs a raycast on the model and returns all the results.
    * @param data - The data of the raycast.
    */
-  async raycastAll(data) {
+  raycastAll(data) {
     return this._raycastManager.raycastAll(this, data);
   }
   /**
    * Performs a raycast on the model with snapping.
    * @param data - The data of the raycast.
    */
-  async raycastWithSnapping(data) {
+  raycastWithSnapping(data) {
     return this._raycastManager.raycastWithSnapping(this, data);
   }
   /**
@@ -20721,20 +20787,20 @@ const _FragmentsModel = class _FragmentsModel {
    * Gets the items by visibility.
    * @param visible - Whether the items should be visible.
    */
-  async getItemsByVisibility(visible) {
+  getItemsByVisibility(visible) {
     return this._visibilityManager.getItemsByVisibility(this, visible);
   }
   /**
    * Gets the items by visibility.
    * @param localIds - The local IDs of the items to get the visibility of.
    */
-  async getVisible(localIds) {
+  getVisible(localIds) {
     return this._visibilityManager.getVisible(this, localIds);
   }
   /**
    * Resets the visibility of all items.
    */
-  async resetVisible() {
+  resetVisible() {
     return this._visibilityManager.resetVisible(this);
   }
   /**
@@ -20742,7 +20808,7 @@ const _FragmentsModel = class _FragmentsModel {
    * @param localIds - The local IDs of the items to highlight. If undefined, all items will be highlighted.
    * @param highlightMaterial - The material to use for the highlight.
    */
-  async highlight(localIds, highlightMaterial) {
+  highlight(localIds, highlightMaterial) {
     return this._highlightManager.highlight(this, localIds, highlightMaterial);
   }
   /**
@@ -20750,14 +20816,14 @@ const _FragmentsModel = class _FragmentsModel {
    * @param localIds - The local IDs of the items to color. If undefined, all items will be colored.
    * @param color - The color to apply.
    */
-  async setColor(localIds, color) {
+  setColor(localIds, color) {
     return this._highlightManager.setColor(this, localIds, color);
   }
   /**
    * Resets the color of the specified items to their original color while preserving other highlight properties (like opacity).
    * @param localIds - The local IDs of the items to reset color for. If undefined, all items will be affected.
    */
-  async resetColor(localIds) {
+  resetColor(localIds) {
     return this._highlightManager.resetColor(this, localIds);
   }
   /**
@@ -20765,34 +20831,34 @@ const _FragmentsModel = class _FragmentsModel {
    * @param localIds - The local IDs of the items to change opacity for. If undefined, all items will be affected.
    * @param opacity - The opacity to apply (0 to 1).
    */
-  async setOpacity(localIds, opacity) {
+  setOpacity(localIds, opacity) {
     return this._highlightManager.setOpacity(this, localIds, opacity);
   }
   /**
    * Resets the opacity of the specified items to their original opacity while preserving other highlight properties (like color).
    * @param localIds - The local IDs of the items to reset opacity for. If undefined, all items will be affected.
    */
-  async resetOpacity(localIds) {
+  resetOpacity(localIds) {
     return this._highlightManager.resetOpacity(this, localIds);
   }
   /**
    * Gets the highlight of the specified items.
    * @param localIds - The local IDs of the items to get the highlight of. If undefined, it will return the highlight of all items.
    */
-  async getHighlight(localIds) {
+  getHighlight(localIds) {
     return this._highlightManager.getHighlight(this, localIds);
   }
   /**
    * Resets the highlight of the specified items.
    * @param localIds - The local IDs of the items to reset the highlight of. If undefined, it will reset the highlight of all items.
    */
-  async resetHighlight(localIds) {
+  resetHighlight(localIds) {
     return this._highlightManager.resetHighlight(this, localIds);
   }
   /**
    * Gets the item IDs of the items that are highlighted.
    */
-  async getHighlightItemIds() {
+  getHighlightItemIds() {
     return this._highlightManager.getHighlightItemIds(this);
   }
   /**
@@ -20800,72 +20866,72 @@ const _FragmentsModel = class _FragmentsModel {
    * @param plane - The plane to get the section of.
    * @param localIds - The local IDs of the items to get the section of. If undefined, it will return the section of all items.
    */
-  async getSection(plane, localIds) {
+  getSection(plane, localIds) {
     return this._sectionManager.getSection(this, plane, localIds);
   }
   /**
    * Gets all the materials IDs of the model.
    */
-  async getMaterialsIds() {
+  getMaterialsIds() {
     return this._editManager.getMaterialsIds(this);
   }
   /**
    * Gets the materials of the model.
    * @param localIds - The local IDs of the materials to get. If undefined, it will return all materials.
    */
-  async getMaterials(localIds) {
+  getMaterials(localIds) {
     return this._editManager.getMaterials(this, localIds);
   }
   /**
    * Gets all the representations IDs of the model.
    */
-  async getRepresentationsIds() {
+  getRepresentationsIds() {
     return this._editManager.getRepresentationsIds(this);
   }
   /**
    * Gets the representations of the model.
    * @param localIds - The local IDs of the representations to get. If undefined, it will return all representations.
    */
-  async getRepresentations(localIds) {
+  getRepresentations(localIds) {
     return this._editManager.getRepresentations(this, localIds);
   }
   /**
    * Gets all the local transforms IDs of the model.
    */
-  async getLocalTransformsIds() {
+  getLocalTransformsIds() {
     return this._editManager.getLocalTransformsIds(this);
   }
   /**
    * Gets the local transforms of the model.
    * @param localIds - The local IDs of the local transforms to get. If undefined, it will return all local transforms.
    */
-  async getLocalTransforms(localIds) {
+  getLocalTransforms(localIds) {
     return this._editManager.getLocalTransforms(this, localIds);
   }
   /**
    * Gets all the global transforms IDs of the model.
    */
-  async getGlobalTransformsIds() {
+  getGlobalTransformsIds() {
     return this._editManager.getGlobalTransformsIds(this);
   }
   /**
    * Gets the global transforms of the model.
    * @param localIds - The local IDs of the global transforms to get. If undefined, it will return all global transforms.
    */
-  async getGlobalTransforms(localIds) {
+  getGlobalTransforms(localIds) {
     return this._editManager.getGlobalTransforms(this, localIds);
   }
   /**
    * Gets all the samples IDs of the model.
    */
-  async getSamplesIds() {
+  getSamplesIds() {
     return this._editManager.getSamplesIds(this);
   }
   /**
    * Gets the samples of the model.
    * @param localIds - The local IDs of the samples to get. If undefined, it will return all samples.
    */
-  async getSamples(localIds) {
+  getSamples(localIds) {
     return this._editManager.getSamples(this, localIds);
   }
   /**
@@ -20879,40 +20945,40 @@ const _FragmentsModel = class _FragmentsModel {
    * for each chunk to draw only the matching slices. No highlight
    * material slot is allocated; the call is read-only.
    */
-  async getItemDrawChunks(localIds) {
+  getItemDrawChunks(localIds) {
     return this._dataManager.getItemDrawChunks(this, localIds);
   }
   /**
    * Gets all the items IDs of the model.
    */
-  async getItemsIds() {
+  getItemsIds() {
     return this._editManager.getItemsIds(this);
   }
   /**
    * Gets the items of the model.
    * @param localIds - The local IDs of the items to get. If undefined, it will return all items.
    */
-  async getItems(localIds) {
+  getItems(localIds) {
     return this._editManager.getItems(this, localIds);
   }
   /**
    * Gets the relations of the model.
    * @param localIds - The local IDs of the relations to get. If undefined, it will return all relations.
    */
-  async getRelations(localIds) {
+  getRelations(localIds) {
     return this._editManager.getRelations(this, localIds);
   }
   /**
    * Gets the global transforms IDs of the items of the model.
    * @param ids - The local IDs of the items to get the global transforms IDs of.
    */
-  async getGlobalTranformsIdsOfItems(ids) {
+  getGlobalTranformsIdsOfItems(ids) {
     return this._editManager.getGlobalTranformsIdsOfItems(this, ids);
   }
   /**
    * Gets the edited elements of the model.
    */
-  async getEditedElements() {
+  getEditedElements() {
     return this._editManager.getEditedElements(this);
   }
   /**
@@ -20924,13 +20990,13 @@ const _FragmentsModel = class _FragmentsModel {
    * @returns The computed result after processing the sequence of actions, or `null` if the result function is not found.
    * @experimental
    */
-  async getSequenced(result, fromItems, inputs) {
+  getSequenced(result, fromItems, inputs) {
     return this._sequenceManager.getSequenced(this, result, fromItems, inputs);
   }
   async handleRequest(request) {
     await this._meshManager.requests.handleRequest(this._meshManager, request);
   }
-  async _getElements(localIds) {
+  _getElements(localIds) {
     return this._editManager.getElements(this, localIds);
   }
   /**
@@ -20938,7 +21004,7 @@ const _FragmentsModel = class _FragmentsModel {
    * `EditManager.getItemSnapData`. Internal — picker / SnapResolver
    * consume this. App code should keep using `_getElements` (localId).
    */
-  async _getItemSnapData(itemId) {
+  _getItemSnapData(itemId) {
     return this._editManager.getItemSnapData(this, itemId);
   }
   /**
@@ -20978,39 +21044,39 @@ const _FragmentsModel = class _FragmentsModel {
    * Internal method to edit the model. Don't use this directly.
    * @param requests - The requests to edit the model.
    */
-  async _edit(requests) {
+  _edit(requests) {
     return this._editManager.edit(this, requests);
   }
   /**
    * Internal method to reset the model. Don't use this directly.
    */
-  async _reset() {
+  _reset() {
     return this._editManager.reset(this);
   }
   /**
    * Internal method to save the model. Don't use this directly.
    */
-  async _save() {
+  _save() {
     return this._editManager.save(this);
   }
   /**
    * Internal method to get the requests of the model. Don't use this directly.
    */
-  async _getRequests() {
+  _getRequests() {
     return this._editManager.getRequests(this);
   }
   /**
    * Internal method to set the requests of the model. Don't use this directly.
    * @param data - The data to set the requests of the model.
    */
-  async _setRequests(data) {
+  _setRequests(data) {
     return this._editManager.setRequests(this, data);
   }
   /**
    * Internal method to select a request of the model. Don't use this directly.
    * @param index - The index of the request to select.
    */
-  async _selectRequest(index) {
+  _selectRequest(index) {
     return this._editManager.selectRequest(this, index);
   }
 };
@@ -22028,11 +22094,11 @@ class BVHNode {
     this.boundingData = new Float32Array(6);
   }
 }
-function partition(buffer, stride, primitiveBounds, offset, count, split2) {
+function partition(buffer, stride, primitiveBounds, offset, count, split) {
   let left = offset;
   let right = offset + count - 1;
-  const pos = split2.pos;
-  const axisOffset = split2.axis * 2;
+  const pos = split.pos;
+  const axisOffset = split.axis * 2;
   const boundsOffset = primitiveBounds.offset || 0;
   while (true) {
     while (left <= right && primitiveBounds[(left - boundsOffset) * 6 + axisOffset] < pos) {
@@ -22144,20 +22210,20 @@ function buildTree(bvh, primitiveBounds, offset, count, options, loadRange) {
       node.count = count2;
       return node;
     }
-    const split2 = getOptimalSplit(node.boundingData, centroidBoundingData, primitiveBounds, offset2, count2, strategy);
-    if (split2.axis === -1) {
+    const split = getOptimalSplit(node.boundingData, centroidBoundingData, primitiveBounds, offset2, count2, strategy);
+    if (split.axis === -1) {
       triggerProgress(offset2 + count2);
       node.offset = offset2;
       node.count = count2;
       return node;
     }
-    const splitOffset = partition(partitionBuffer, partitionStride, primitiveBounds, offset2, count2, split2);
+    const splitOffset = partition(partitionBuffer, partitionStride, primitiveBounds, offset2, count2, split);
     if (splitOffset === offset2 || splitOffset === offset2 + count2) {
       triggerProgress(offset2 + count2);
       node.offset = offset2;
       node.count = count2;
     } else {
-      node.splitAxis = split2.axis;
+      node.splitAxis = split.axis;
       const left = new BVHNode();
       const lstart = offset2;
       const lcount = splitOffset - offset2;
@@ -33004,7 +33070,14 @@ class VirtualPropertiesController {
   }
   getItemIdsFromLocalIds(localIds) {
     if (!localIds) {
-      return Array.from(this._model.meshes().meshesItemsArray());
+      const meshes = this._model.meshes();
+      if (!meshes)
+        return [];
+      const count = meshes.meshesItemsLength();
+      const all = new Array(count);
+      for (let itemId = 0; itemId < count; itemId++)
+        all[itemId] = itemId;
+      return all;
     }
     const itemIds = [];
     for (const localId of localIds) {
@@ -33925,7 +33998,7 @@ class AlignmentsController {
     __publicField(this, "_fragments");
     this._fragments = virtualFragmentsModel;
   }
-  async getAlignments() {
+  getAlignments() {
     const allAlignments = [];
     const alignCat = new RegExp(ALIGNMENT_CATEGORY);
     const allItemsIds = this._fragments.getItemsOfCategories([alignCat]);
@@ -34984,6 +35057,30 @@ class VirtualBoxController {
     this.fullBox.union(this._temp.box);
   }
 }
+class GridsController {
+  constructor(virtualFragmentsModel) {
+    __publicField(this, "_fragments");
+    this._fragments = virtualFragmentsModel;
+  }
+  async getGrids() {
+    const allGrids = [];
+    const gridCat = new RegExp(GRID_CATEGORY);
+    const allItemsIds = this._fragments.getItemsOfCategories([gridCat]);
+    const itemsIds = allItemsIds[GRID_CATEGORY];
+    if (!itemsIds) {
+      return [];
+    }
+    const gridsItems = this._fragments.getItemsData(
+      itemsIds,
+      {}
+    );
+    for (const item of gridsItems) {
+      const data = JSON.parse(item.data.value);
+      allGrids.push(data);
+    }
+    return allGrids;
+  }
+}
 class RaycastHelper {
   raycast(model, ray, frustum, returnAll) {
     if (model.view) {
@@ -35415,7 +35512,7 @@ class SectionHelper {
   constructor() {
     __publicField(this, "_sectionGenerator", new SectionGenerator());
   }
-  async getSection(model, plane, indices) {
+  getSection(model, plane, indices) {
     this._sectionGenerator.plane = plane;
     performance.now();
     const visitedGeometries = /* @__PURE__ */ new Map();
@@ -35549,7 +35646,7 @@ class ItemsHelper {
   }
   getItemsByConfig(model, condition) {
     const found = [];
-    const count = model.data.localIdsLength();
+    const count = model.itemConfig.size;
     for (let itemId = 0; itemId < count; itemId++) {
       const conditionPass = condition(itemId);
       if (!conditionPass)
@@ -35569,30 +35666,6 @@ class ItemsHelper {
     for (let id = 0; id < itemsCount; id++) {
       onItem(id, id);
     }
-  }
-}
-class GridsController {
-  constructor(virtualFragmentsModel) {
-    __publicField(this, "_fragments");
-    this._fragments = virtualFragmentsModel;
-  }
-  async getGrids() {
-    const allGrids = [];
-    const gridCat = new RegExp(GRID_CATEGORY);
-    const allItemsIds = this._fragments.getItemsOfCategories([gridCat]);
-    const itemsIds = allItemsIds[GRID_CATEGORY];
-    if (!itemsIds) {
-      return [];
-    }
-    const gridsItems = this._fragments.getItemsData(
-      itemsIds,
-      {}
-    );
-    for (const item of gridsItems) {
-      const data = JSON.parse(item.data.value);
-      allGrids.push(data);
-    }
-    return allGrids;
   }
 }
 class VirtualFragmentsModel {
@@ -35669,7 +35742,10 @@ class VirtualFragmentsModel {
     return this.indexes.getEntry(name, key);
   }
   getInverseIndexEntry(name, value) {
-    return this.indexes.getInverseEntry(name, value);
+    return this.indexes.getInverseEntry(
+      name,
+      value
+    );
   }
   getItemsByConfig(condition) {
     return this._itemsHelper.getItemsByConfig(this, condition);
@@ -35906,14 +35982,14 @@ class VirtualFragmentsModel {
   rectangleRaycast(frustum, fullyIncluded) {
     return this._raycastHelper.rectangleRaycast(this, frustum, fullyIncluded);
   }
-  async getSection(plane, localIds) {
+  getSection(plane, localIds) {
     const indices = this.properties.getItemIdsFromLocalIds(localIds);
     return this._sectionHelper.getSection(this, plane, indices);
   }
-  async getAlignments() {
+  getAlignments() {
     return this._alignments.getAlignments();
   }
-  async getGrids() {
+  getGrids() {
     return this._grids.getGrids();
   }
   getBuffer(raw) {
@@ -36211,7 +36287,8 @@ class VirtualFragmentsModel {
     return Model.getRootAsModel(byteBuffer);
   }
   setupItemsConfig() {
-    const itemsCount = this.data.localIdsLength();
+    const meshes = this.data.meshes();
+    const itemsCount = meshes ? meshes.meshesItemsLength() : 0;
     return new ItemConfigController(itemsCount);
   }
 }
@@ -36268,7 +36345,7 @@ class SingleThreadedFragmentsModel {
    * Translate internal `itemId`s into user-facing `localId`s, preserving
    * order. See {@link VirtualFragmentsModel.getLocalIdsFromItemIds}.
    */
-  async getLocalIdsFromItemIds(itemIds) {
+  getLocalIdsFromItemIds(itemIds) {
     return this._virtualModel.getLocalIdsFromItemIds(itemIds);
   }
   /**
@@ -36332,9 +36409,15 @@ class SingleThreadedFragmentsModel {
     return this._virtualModel.getInverseIndexEntry(name, value);
   }
   /**
-   * Get all the items of the model that have geometry.
+   * @deprecated use {@link getItemsIdsWithGeometry}
    */
   getItemsWithGeometry() {
+    return this.getItemsIdsWithGeometry();
+  }
+  /**
+   * Get all the items of the model that have geometry.
+   */
+  getItemsIdsWithGeometry() {
     return this._virtualModel.getItemsWithGeometry();
   }
   /**
@@ -36420,6 +36503,9 @@ class SingleThreadedFragmentsModel {
   getItemsGeometry(localIds, lod) {
     return this._virtualModel.getItemsGeometry(localIds, lod);
   }
+  getItemsVolume(localIds) {
+    return this._virtualModel.getItemsVolume(localIds);
+  }
   /**
    * Query items based on specified parameters.
    * @param params - The query parameters.
@@ -36433,78 +36519,78 @@ class SingleThreadedFragmentsModel {
    * @param plane - The plane to get the section of.
    * @param localIds - The local IDs of the items to get the section of. If undefined, it will return the section of all items.
    */
-  async getSection(plane, localIds) {
+  getSection(plane, localIds) {
     return this._virtualModel.getSection(plane, localIds);
   }
   /**
    * Get all the local IDs of the model.
    */
-  async getLocalIds() {
+  getLocalIds() {
     return this._virtualModel.getLocalIds();
   }
   /**
    * Gets all the materials IDs of the model.
    */
-  async getMaterialsIds() {
+  getMaterialsIds() {
     return this._virtualModel.getMaterialsIds();
   }
   /**
    * Gets the materials of the model.
    * @param localIds - The local IDs of the materials to get. If undefined, it will return all materials.
    */
-  async getMaterials(localIds) {
+  getMaterials(localIds) {
     return this._virtualModel.getMaterials(localIds);
   }
   /**
    * Gets all the representations IDs of the model.
    */
-  async getRepresentationsIds() {
+  getRepresentationsIds() {
     return this._virtualModel.getRepresentationsIds();
   }
   /**
    * Gets the representations of the model.
    * @param localIds - The local IDs of the representations to get. If undefined, it will return all representations.
    */
-  async getRepresentations(localIds) {
+  getRepresentations(localIds) {
     return this._virtualModel.getRepresentations(localIds);
   }
   /**
    * Gets all the local transforms IDs of the model.
    */
-  async getLocalTransformsIds() {
+  getLocalTransformsIds() {
     return this._virtualModel.getLocalTransformsIds();
   }
   /**
    * Gets the local transforms of the model.
    * @param localIds - The local IDs of the local transforms to get. If undefined, it will return all local transforms.
    */
-  async getLocalTransforms(localIds) {
+  getLocalTransforms(localIds) {
     return this._virtualModel.getLocalTransforms(localIds);
   }
   /**
    * Gets all the global transforms IDs of the model.
    */
-  async getGlobalTransformsIds() {
+  getGlobalTransformsIds() {
     return this._virtualModel.getGlobalTransformsIds();
   }
   /**
    * Gets the global transforms of the model.
    * @param localIds - The local IDs of the global transforms to get. If undefined, it will return all global transforms.
    */
-  async getGlobalTransforms(localIds) {
+  getGlobalTransforms(localIds) {
     return this._virtualModel.getGlobalTransforms(localIds);
   }
   /**
    * Gets all the samples IDs of the model.
    */
-  async getSamplesIds() {
+  getSamplesIds() {
     return this._virtualModel.getSamplesIds();
   }
   /**
    * Gets the samples of the model.
    * @param localIds - The local IDs of the samples to get. If undefined, it will return all samples.
    */
-  async getSamples(localIds) {
+  getSamples(localIds) {
     return this._virtualModel.getSamples(localIds);
   }
   /**
@@ -36512,34 +36598,34 @@ class SingleThreadedFragmentsModel {
    * outline-style passes that share tile geometry and clip drawing to
    * just the outlined samples. See {@link VirtualFragmentsModel.getItemDrawChunks}.
    */
-  async getItemDrawChunks(localIds) {
+  getItemDrawChunks(localIds) {
     return this._virtualModel.getItemDrawChunks(localIds);
   }
   /**
    * Gets all the items IDs of the model.
    */
-  async getItemsIds() {
+  getItemsIds() {
     return this._virtualModel.getItemsIds();
   }
   /**
    * Gets the items of the model.
    * @param localIds - The local IDs of the items to get. If undefined, it will return all items.
    */
-  async getItems(localIds) {
+  getItems(localIds) {
     return this._virtualModel.getItems(localIds);
   }
   /**
    * Gets the relations of the model.
    * @param localIds - The local IDs of the relations to get. If undefined, it will return all relations.
    */
-  async getRelations(localIds) {
+  getRelations(localIds) {
     return this._virtualModel.getRelations(localIds);
   }
   /**
    * Gets the global transforms IDs of the items of the model.
    * @param ids - The local IDs of the items to get the global transforms IDs of.
    */
-  async getGlobalTranformsIdsOfItems(ids) {
+  getGlobalTranformsIdsOfItems(ids) {
     return this._virtualModel.getGlobalTranformsIdsOfItems(ids);
   }
   // ---------------------------------------------------------------------
@@ -36999,7 +37085,7 @@ const _FragmentsModels = class _FragmentsModels {
     if (_FragmentsModels._workerPromise)
       return _FragmentsModels._workerPromise;
     _FragmentsModels._workerPromise = (async () => {
-      const url = `https://unpkg.com/@thatopen/fragments@${"3.4.6"}/dist/worker/worker.mjs`;
+      const url = `https://unpkg.com/@thatopen/fragments@${"3.4.7"}/dist/worker/worker.mjs`;
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(
@@ -37216,6 +37302,10 @@ class IfcPropertyProcessor {
     __publicField(this, "_lengthUnitsFactor", 1);
     __publicField(this, "_attributesOffsets", []);
     __publicField(this, "_relationsMap", {});
+    // Tracks entities already placed in the spatial structure so an item
+    // reachable by more than one relation (e.g. an alignment aggregated to the
+    // project and also referenced by a bridge) is listed once, not duplicated.
+    __publicField(this, "_spatialVisited", /* @__PURE__ */ new Set());
     __publicField(this, "_guids", []);
     __publicField(this, "_guidsItems", []);
     __publicField(this, "_uniqueAttributes", /* @__PURE__ */ new Set());
@@ -37389,6 +37479,9 @@ class IfcPropertyProcessor {
         this.classes.push(className);
         this.expressIDs.push(expressID);
         await this.serializeAttributes(expressID, attrs);
+        if (this._serializer.includeMaterialProperties) {
+          this.addMaterialPropertiesInverse(expressID, attrs);
+        }
       } catch (e) {
         console.log(
           `Problem reading properties for ${expressID}. If many items are problematic, it may be a problem with the category you are trying to process. You can remove it and try again.`
@@ -37422,6 +37515,26 @@ class IfcPropertyProcessor {
       this.classes.push(category);
       this.expressIDs.push(expressID);
       this._attributesOffsets.push(attributesOffset);
+    }
+  }
+  // `IfcMaterial.HasProperties` is the IFC4 inverse of
+  // `IfcMaterialProperties.Material` (and of the IFC2X3
+  // `IfcExtendedMaterialProperties` subtype). web-ifc only exposes the forward
+  // `Material` reference, and the generic attribute pass records just that
+  // direction, so without this the material's properties are serialized but
+  // unreachable from an element. Synthesize the inverse on the material so the
+  // path element -> HasAssociations -> material -> HasProperties -> material
+  // properties works (issue #249). No-op for anything that isn't material
+  // properties, so it's safe to call for every processed item.
+  addMaterialPropertiesInverse(expressID, attrs) {
+    const type = attrs.type;
+    if (type !== WEBIFC.IFCMATERIALPROPERTIES && type !== WEBIFC.IFCEXTENDEDMATERIALPROPERTIES) {
+      return;
+    }
+    const material = attrs.Material;
+    const materialID = material && typeof material === "object" && "value" in material ? material.value : void 0;
+    if (typeof materialID === "number") {
+      this.addRelation(materialID, "HasProperties", [expressID]);
     }
   }
   addRelation(expressID, relName, ids) {
@@ -37815,16 +37928,19 @@ class IfcPropertyProcessor {
       if (!relations)
         continue;
       const entityGroups = {};
-      for (const expressID2 of relations) {
-        const entityIndex = this.expressIDs.indexOf(expressID2);
+      for (const relatedID of relations) {
+        if (this._spatialVisited.has(relatedID))
+          continue;
+        const entityIndex = this.expressIDs.indexOf(relatedID);
         if (entityIndex === -1)
           continue;
         const entityClass = this.classes[entityIndex];
         if (!entityClass)
           continue;
+        this._spatialVisited.add(relatedID);
         if (!entityGroups[entityClass])
           entityGroups[entityClass] = [];
-        entityGroups[entityClass].push(expressID2);
+        entityGroups[entityClass].push(relatedID);
       }
       for (const category in entityGroups) {
         const entities = entityGroups[category];
@@ -37857,8 +37973,25 @@ class IfcPropertyProcessor {
     const ifcApi = await this.getIfcApi();
     const ifcClass = WEBIFC.IFCPROJECT;
     const classEntities = [...ifcApi.GetLineIDsWithType(0, ifcClass)];
+    this._spatialVisited = new Set(classEntities);
     const childrenOffsets = classEntities.map(
-      (id) => this.getEntityDecomposition(id, ["IsDecomposedBy", "ContainsElements"])
+      (id) => (
+        // Beyond the classic containment/aggregation relations, we follow:
+        //   - ReferencesElements (IfcRelReferencedInSpatialStructure): IFC4x3
+        //     alignments attach to the spatial element (e.g. IfcBridge) by
+        //     reference, not containment, so this is how IfcAlignment is reached.
+        //   - IsNestedBy (IfcRelNests): IfcAlignment nests its
+        //     IfcAlignmentHorizontal / IfcAlignmentVertical / IfcReferent, and
+        //     those nest their segments, via IfcRelNests.
+        // Without both, alignment layouts were absent from getSpatialStructure()
+        // even though the items exist in the model (issue #743).
+        this.getEntityDecomposition(id, [
+          "IsDecomposedBy",
+          "ContainsElements",
+          "ReferencesElements",
+          "IsNestedBy"
+        ])
+      )
     );
     const categoryOffset = this._builder.createSharedString("IFCPROJECT");
     const childrenVector = SpatialStructure.createChildrenVector(
@@ -38021,6 +38154,7 @@ class GridReader {
     }
   }
   getGridAxes(ifcGrid, webIfc, units, ifcKey) {
+    var _a2;
     if (!ifcGrid[ifcKey]) {
       return [];
     }
@@ -38030,15 +38164,18 @@ class GridReader {
       const curveId = axisCurve.AxisCurve.value;
       const curve = webIfc.GetLine(0, curveId);
       const axisData = {
-        tag: axisCurve.AxisTag.value,
+        // AxisTag is an optional IfcLabel. web-ifc returns it as null when the
+        // IFC omits it (IFCGRIDAXIS($,...)), so read it defensively; otherwise
+        // a single tagless axis threw and the outer catch dropped every grid.
+        tag: ((_a2 = axisCurve.AxisTag) == null ? void 0 : _a2.value) ?? "",
         curve: []
       };
       if (!curve.Points) {
         continue;
       }
       const pushPoint = (coords) => {
-        var _a2, _b2, _c;
-        const x = (((_a2 = coords[0]) == null ? void 0 : _a2.value) ?? 0) * units;
+        var _a3, _b2, _c;
+        const x = (((_a3 = coords[0]) == null ? void 0 : _a3.value) ?? 0) * units;
         const y = (((_b2 = coords[1]) == null ? void 0 : _b2.value) ?? 0) * units;
         const z = (((_c = coords[2]) == null ? void 0 : _c.value) ?? 0) * units;
         axisData.curve.push(x, y, z);
@@ -39458,7 +39595,17 @@ const ifcClasses = {
     WEBIFC.IFCPROJECT,
     WEBIFC.IFCSITE,
     WEBIFC.IFCBUILDING,
-    WEBIFC.IFCBUILDINGSTOREY
+    WEBIFC.IFCBUILDINGSTOREY,
+    // IFC4x3 alignment layout entities, imported as data so they appear in the
+    // spatial structure (issue #743). Their geometry is still handled
+    // separately (saved as lines); these are the semantic items, to be linked
+    // to the saved alignment objects later. IFCREFERENT is not here: it carries
+    // body geometry, so it lives in `elements` instead (issue #744).
+    WEBIFC.IFCALIGNMENT,
+    WEBIFC.IFCALIGNMENTHORIZONTAL,
+    WEBIFC.IFCALIGNMENTVERTICAL,
+    WEBIFC.IFCALIGNMENTCANT,
+    WEBIFC.IFCALIGNMENTSEGMENT
   ]),
   units: /* @__PURE__ */ new Set([
     WEBIFC.IFCUNITASSIGNMENT,
@@ -39478,6 +39625,17 @@ const ifcClasses = {
     WEBIFC.IFCMATERIALPROFILE,
     WEBIFC.IFCMATERIALPROFILESET,
     WEBIFC.IFCMATERIALPROFILESETUSAGE
+  ]),
+  // Opt-in via IfcImporter.includeMaterialProperties (issue #249). Not folded
+  // into `materials` above because these are heavier and off by default: they
+  // pull each material's property sets. IFCMATERIALPROPERTIES is the IFC4
+  // entity; IFCEXTENDEDMATERIALPROPERTIES is the concrete IFC2X3 subtype
+  // (IfcMaterialProperties is abstract there). Both link to their material by a
+  // direct `Material` attribute rather than an IfcRel, so the importer also
+  // synthesizes the inverse `HasProperties` relation on the material.
+  materialProperties: /* @__PURE__ */ new Set([
+    WEBIFC.IFCMATERIALPROPERTIES,
+    WEBIFC.IFCEXTENDEDMATERIALPROPERTIES
   ]),
   properties: /* @__PURE__ */ new Set([
     WEBIFC.IFCPROPERTYSET,
@@ -39646,6 +39804,11 @@ const ifcClasses = {
     WEBIFC.IFCBUILDINGSTOREY,
     WEBIFC.IFCSPACE,
     WEBIFC.IFCANNOTATION,
+    // IFC4x3 bridge elements that carry body geometry but were missing here,
+    // so they never rendered (issue #744). IFCREFERENT also appears in the
+    // spatial structure (issue #743) since elements are in the entity list.
+    WEBIFC.IFCBEARING,
+    WEBIFC.IFCREFERENT,
     WEBIFC.IFCCONTROLLER,
     WEBIFC.IFCBOILER,
     WEBIFC.IFCLAMP,
@@ -39853,6 +40016,18 @@ class IfcImporter {
       [
         WEBIFC.IFCRELCONTAINEDINSPATIALSTRUCTURE,
         { forRelated: "ContainedInStructure", forRelating: "ContainsElements" }
+      ],
+      // Needed for the spatial structure to include IFC4x3 alignment layouts:
+      // alignments attach to the spatial element by reference (not containment)
+      // and nest their horizontal/vertical/referent children via IfcRelNests
+      // (issue #743).
+      [
+        WEBIFC.IFCRELREFERENCEDINSPATIALSTRUCTURE,
+        { forRelated: "ReferencedInStructures", forRelating: "ReferencesElements" }
+      ],
+      [
+        WEBIFC.IFCRELNESTS,
+        { forRelated: "Nests", forRelating: "IsNestedBy" }
       ]
     ]));
     /**
@@ -39900,6 +40075,16 @@ class IfcImporter {
      */
     __publicField(this, "doubleSidedMaterials", false);
     /**
+     * Whether to import each material's own property sets (`IfcMaterialProperties`
+     * in IFC4, `IfcExtendedMaterialProperties` in IFC2X3).
+     * @remarks Off by default to keep the output lean. These entities link to
+     * their material through a direct `Material` attribute rather than an
+     * `IfcRel*`, so when enabled the importer also synthesizes the inverse
+     * `HasProperties` relation on the material, making the properties reachable as
+     * element -> material -> material properties. See issue #249.
+     */
+    __publicField(this, "includeMaterialProperties", false);
+    /**
      * If set, ignores the items that are further away to the origin than this value.
      * Keep in mind that if your IFC is correctly georreferenced, this value should never
      * be too high. If it's too high, it's either because your file uses absolute coordinates,
@@ -39925,6 +40110,11 @@ class IfcImporter {
   async process(data) {
     var _a2;
     this._builder = new Builder(1024);
+    if (this.includeMaterialProperties) {
+      for (const materialPropertyClass of ifcClasses.materialProperties) {
+        this.classes.abstract.add(materialPropertyClass);
+      }
+    }
     const geometryProcessor = new IfcGeometryProcessor(this);
     geometryProcessor.wasm = this.wasm;
     geometryProcessor.webIfcSettings = this.webIfcSettings;
@@ -40753,6 +40943,7 @@ export {
   GeometryEngine,
   GeomsFbUtils,
   IfcImporter,
+  IfcSplitter,
   ItemConfigClass,
   LoadAbortedError,
   LodMode,
@@ -40785,7 +40976,6 @@ export {
   Wall,
   Wire,
   WireSet,
-  extract,
   geometryTypes,
   getObject,
   ifcCategoryMap,
@@ -40795,7 +40985,6 @@ export {
   isIndexRequest,
   isRawBuffer,
   limitOf2Bytes,
-  split,
   toClassicWorker
 };
 //# sourceMappingURL=index.mjs.map

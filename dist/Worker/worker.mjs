@@ -36314,19 +36314,16 @@ function applyChangesToIds(actions, ids, key, addCreatedElements) {
   const resultSet = new Set(ids);
   const deleteType = EditRequestType[`DELETE_${key}`];
   const createType = EditRequestType[`CREATE_${key}`];
-  if (actions) {
-    for (const action of actions) {
-      if (action.type === deleteType) {
-        resultSet.delete(action.localId);
-        continue;
-      }
-      if (addCreatedElements && action.type === createType) {
-        resultSet.add(action.localId);
-      }
+  for (const action of actions) {
+    if (action.type === deleteType) {
+      resultSet.delete(action.localId);
+      continue;
     }
-    return Array.from(resultSet);
+    if (addCreatedElements && action.type === createType) {
+      resultSet.add(action.localId);
+    }
   }
-  return ids;
+  return Array.from(resultSet);
 }
 class EditUtils {
 }
@@ -78758,6 +78755,53 @@ if (typeof document !== "undefined") {
       currentScriptData.src.lastIndexOf("/") + 1
     );
 }
+const crCharCode = 13;
+const nl = "\n";
+class IfcDecoderStream extends TransformStream {
+  constructor(encoding = "utf-8") {
+    let tail = "";
+    const decoder = new TextDecoder(encoding);
+    super({
+      transform(chunk, controller) {
+        const text = decoder.decode(chunk, { stream: true });
+        if (!text)
+          return;
+        let start = 0;
+        let idx = text.indexOf(nl);
+        if (idx !== -1) {
+          let end = idx;
+          if (end > 0 && text.charCodeAt(end - 1) === crCharCode)
+            end--;
+          controller.enqueue(
+            tail ? tail + text.substring(start, end) : text.substring(start, end)
+          );
+          tail = "";
+          start = idx + 1;
+          idx = text.indexOf(nl, start);
+        } else {
+          tail += text;
+          return;
+        }
+        while (idx !== -1) {
+          let end = idx;
+          if (end > start && text.charCodeAt(end - 1) === crCharCode)
+            end--;
+          controller.enqueue(text.substring(start, end));
+          start = idx + 1;
+          idx = text.indexOf(nl, start);
+        }
+        if (start < text.length)
+          tail = text.substring(start);
+      },
+      flush(controller) {
+        const remaining = decoder.decode();
+        const full = tail + remaining;
+        if (full)
+          controller.enqueue(full);
+      }
+    });
+  }
+}
 class VirtualPropertiesController {
   constructor(virtualModel, boxes, config) {
     __publicField(this, "_model");
@@ -78906,7 +78950,14 @@ class VirtualPropertiesController {
   }
   getItemIdsFromLocalIds(localIds) {
     if (!localIds) {
-      return Array.from(this._model.meshes().meshesItemsArray());
+      const meshes = this._model.meshes();
+      if (!meshes)
+        return [];
+      const count = meshes.meshesItemsLength();
+      const all = new Array(count);
+      for (let itemId = 0; itemId < count; itemId++)
+        all[itemId] = itemId;
+      return all;
     }
     const itemIds = [];
     for (const localId of localIds) {
@@ -79827,7 +79878,7 @@ class AlignmentsController {
     __publicField(this, "_fragments");
     this._fragments = virtualFragmentsModel;
   }
-  async getAlignments() {
+  getAlignments() {
     const allAlignments = [];
     const alignCat = new RegExp(ALIGNMENT_CATEGORY);
     const allItemsIds = this._fragments.getItemsOfCategories([alignCat]);
@@ -80886,6 +80937,30 @@ class VirtualBoxController {
     this.fullBox.union(this._temp.box);
   }
 }
+class GridsController {
+  constructor(virtualFragmentsModel) {
+    __publicField(this, "_fragments");
+    this._fragments = virtualFragmentsModel;
+  }
+  async getGrids() {
+    const allGrids = [];
+    const gridCat = new RegExp(GRID_CATEGORY);
+    const allItemsIds = this._fragments.getItemsOfCategories([gridCat]);
+    const itemsIds = allItemsIds[GRID_CATEGORY];
+    if (!itemsIds) {
+      return [];
+    }
+    const gridsItems = this._fragments.getItemsData(
+      itemsIds,
+      {}
+    );
+    for (const item of gridsItems) {
+      const data = JSON.parse(item.data.value);
+      allGrids.push(data);
+    }
+    return allGrids;
+  }
+}
 class RaycastHelper {
   raycast(model, ray, frustum, returnAll) {
     if (model.view) {
@@ -81317,7 +81392,7 @@ class SectionHelper {
   constructor() {
     __publicField(this, "_sectionGenerator", new SectionGenerator());
   }
-  async getSection(model, plane, indices) {
+  getSection(model, plane, indices) {
     this._sectionGenerator.plane = plane;
     performance.now();
     const visitedGeometries = /* @__PURE__ */ new Map();
@@ -81451,7 +81526,7 @@ class ItemsHelper {
   }
   getItemsByConfig(model, condition) {
     const found = [];
-    const count = model.data.localIdsLength();
+    const count = model.itemConfig.size;
     for (let itemId = 0; itemId < count; itemId++) {
       const conditionPass = condition(itemId);
       if (!conditionPass)
@@ -81471,30 +81546,6 @@ class ItemsHelper {
     for (let id = 0; id < itemsCount; id++) {
       onItem(id, id);
     }
-  }
-}
-class GridsController {
-  constructor(virtualFragmentsModel) {
-    __publicField(this, "_fragments");
-    this._fragments = virtualFragmentsModel;
-  }
-  async getGrids() {
-    const allGrids = [];
-    const gridCat = new RegExp(GRID_CATEGORY);
-    const allItemsIds = this._fragments.getItemsOfCategories([gridCat]);
-    const itemsIds = allItemsIds[GRID_CATEGORY];
-    if (!itemsIds) {
-      return [];
-    }
-    const gridsItems = this._fragments.getItemsData(
-      itemsIds,
-      {}
-    );
-    for (const item of gridsItems) {
-      const data = JSON.parse(item.data.value);
-      allGrids.push(data);
-    }
-    return allGrids;
   }
 }
 class VirtualFragmentsModel {
@@ -81571,7 +81622,10 @@ class VirtualFragmentsModel {
     return this.indexes.getEntry(name, key);
   }
   getInverseIndexEntry(name, value) {
-    return this.indexes.getInverseEntry(name, value);
+    return this.indexes.getInverseEntry(
+      name,
+      value
+    );
   }
   getItemsByConfig(condition) {
     return this._itemsHelper.getItemsByConfig(this, condition);
@@ -81808,14 +81862,14 @@ class VirtualFragmentsModel {
   rectangleRaycast(frustum, fullyIncluded) {
     return this._raycastHelper.rectangleRaycast(this, frustum, fullyIncluded);
   }
-  async getSection(plane, localIds) {
+  getSection(plane, localIds) {
     const indices = this.properties.getItemIdsFromLocalIds(localIds);
     return this._sectionHelper.getSection(this, plane, indices);
   }
-  async getAlignments() {
+  getAlignments() {
     return this._alignments.getAlignments();
   }
-  async getGrids() {
+  getGrids() {
     return this._grids.getGrids();
   }
   getBuffer(raw) {
@@ -82113,7 +82167,8 @@ class VirtualFragmentsModel {
     return Model.getRootAsModel(byteBuffer);
   }
   setupItemsConfig() {
-    const itemsCount = this.data.localIdsLength();
+    const meshes = this.data.meshes();
+    const itemsCount = meshes ? meshes.meshesItemsLength() : 0;
     return new ItemConfigController(itemsCount);
   }
 }

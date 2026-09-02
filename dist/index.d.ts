@@ -39,7 +39,7 @@ declare type AnyTileBasicData = TileBasicData | TileBasicData[];
 
 declare type AnyTileData = TileData | TileData[];
 
-declare function applyChangesToIds(actions: EditRequest[], ids: number[] | Uint32Array | Set<number>, key: EditKey, addCreatedElements: boolean): number[] | Uint32Array | Set<number>;
+declare function applyChangesToIds(actions: EditRequest[], ids: number[] | Uint32Array | Set<number>, key: EditKey, addCreatedElements: boolean): number[];
 
 declare function applyChangesToRawData(actions: EditRequest[], rawData: Map<number, any>, type: EditKey, filter?: Set<number>): void;
 
@@ -725,6 +725,18 @@ export declare class DoubleVector {
     static createDoubleVector(builder: flatbuffers.Builder, x: number, y: number, z: number): flatbuffers.Offset;
 }
 
+/**
+ * Per-tile index-buffer chunk returned by {@link IFragmentsModel.getItemDrawChunks}.
+ * `position` and `size` are parallel arrays: start index and count for each
+ * contiguous run of vertices belonging to the queried items in this tile's
+ * index buffer.
+ */
+declare type DrawChunk = {
+    tileId: number;
+    position: Uint32Array;
+    size: Uint32Array;
+};
+
 declare function edit(model: TFB.Model, requests: ET.EditRequest[], config?: {
     raw?: boolean;
     delta?: boolean;
@@ -1164,14 +1176,6 @@ declare class Event_2<T> {
 }
 export { Event_2 as Event }
 
-/**
- * Extract specific building elements from an IFC file into a new IFC file.
- * @param inputPath  - Absolute or relative path to the source IFC file.
- * @param elementIds - Array of IFC entity IDs (`#id`) for the building elements to extract. Non-element or missing IDs are skipped with a warning.
- * @param outputPath - Path for the output IFC file.
- */
-export declare function extract(deps: IfcSplitterDeps, inputPath: string, elementIds: number[], outputPath: string): void;
-
 export declare class Extrusion {
     core: WEBIFC.Extrusion;
     constructor(api: WEBIFC.IfcAPI);
@@ -1345,7 +1349,7 @@ export declare class FragmentsIfcUtils {
 /**
  * The main class for managing a 3D model loaded from a fragments file. Handles geometry, materials, visibility, highlighting, sections, and more. This class orchestrates multiple specialized managers to handle different aspects of the model like mesh management, item data, raycasting, etc. It maintains the overall state and provides the main interface for interacting with the model. The model data is loaded and processed asynchronously across multiple threads.
  */
-export declare class FragmentsModel {
+export declare class FragmentsModel implements IFragmentsModel<true> {
     /**
      * A map of attribute changes that have occurred in the model.
      * The key is the local ID of the item, and the value is the change.
@@ -2589,17 +2593,43 @@ declare interface GridsConfig {
 
 /** Per-group output data: the set of IFC entity IDs to include and any rewritten relationship lines. */
 export declare interface GroupData {
+    /**
+     * The `groupId` this data was resolved for — the value passed to `split`'s
+     * `outputPath` callback. Carried explicitly rather than implied by position,
+     * because groups that end up with no elements produce no entry at all.
+     */
+    groupId: number;
     fileIds: Set<number>;
     rewrittenLines: Map<number, string>;
     elementCount: number;
     totalIds: number;
-    fileName: string;
+    filePath: string;
 }
 
 /**
  * Type representing a unique identifier for a model item. This can be either a string or a number.
  */
 export declare type Identifier = string | number;
+
+/**
+ * Maps every parsed IFC id to the groups whose output file must contain it.
+ *
+ * Laid out CSR-style — `starts` slices into a flat `members` array — rather
+ * than as one bit per group in a `Uint32Array`, so the number of groups is not
+ * capped at 32. Lookup is a `subarray` view: O(1) and allocation-free, which
+ * matters because the write pass calls it once per data line.
+ */
+declare class IdGroupIndex {
+    private readonly starts;
+    private readonly members;
+    private readonly maxId;
+    constructor(groupsData: GroupData[], maxId: number);
+    /**
+     * Positions in `groupsData` of the groups that include `id`, ascending.
+     * Empty if none.
+     */
+    groupsOf(id: number): Uint32Array;
+}
 
 /**
  * A map that associates each unique integer identifier (IFC Entity ID) with its corresponding category name. This map is used to map IFC entities to their respective categories for easier identification and processing.
@@ -2612,6 +2642,7 @@ export declare const ifcClasses: {
     base: Set<number>;
     units: Set<number>;
     materials: Set<number>;
+    materialProperties: Set<number>;
     properties: Set<number>;
     types: Set<number>;
     elements: Set<number>;
@@ -2691,6 +2722,16 @@ export declare class IfcImporter {
      */
     doubleSidedMaterials: boolean;
     /**
+     * Whether to import each material's own property sets (`IfcMaterialProperties`
+     * in IFC4, `IfcExtendedMaterialProperties` in IFC2X3).
+     * @remarks Off by default to keep the output lean. These entities link to
+     * their material through a direct `Material` attribute rather than an
+     * `IfcRel*`, so when enabled the importer also synthesizes the inverse
+     * `HasProperties` relation on the material, making the properties reachable as
+     * element -> material -> material properties. See issue #249.
+     */
+    includeMaterialProperties: boolean;
+    /**
      * If set, ignores the items that are further away to the origin than this value.
      * Keep in mind that if your IFC is correctly georreferenced, this value should never
      * be too high. If it's too high, it's either because your file uses absolute coordinates,
@@ -2724,32 +2765,146 @@ export declare const ifcRelationsMap: Map<number, {
     forRelated: string;
 }>;
 
-/** Dependencies that must be provided by the caller (Node.js modules). */
-export declare interface IfcSplitterDeps {
-    fs: IfcSplitterFs;
-    path: IfcSplitterPath;
+export declare class IfcSplitter {
+    protected readonly io: IfcSplitterIO;
+    protected readonly eventTarget: EventTarget;
+    constructor(ifcSplitterIO: IfcSplitterIO);
+    readonly onProgress: Event_2<IfcSplitterProgressEvent>;
+    readonly onSplitsResolved: Event_2<IfcSplitterGroupsEvent>;
+    /**
+     * Fires from `extract` when an id is missing or has a wrong type
+     */
+    readonly onExtractWarning: Event_2<IfcSplitterWarningEvent>;
+    /**
+     * Split an IFC file into N roughly equal groups of building elements.
+     * @param inputPath - Absolute or relative path to the source IFC file.
+     * @param numGroups - Number of output files to produce. Not capped by the
+     * splitter, but note that the write pass holds one open writer per non-empty
+     * group, so the practical ceiling is the process' file descriptor limit.
+     * @param outputPath - Given `groupId` returns output file path.
+     * @returns a map keyed by {@link GroupData.groupId}.
+     * @throws {RangeError} if `numGroups` is not a positive integer.
+     */
+    split(inputPath: string, numGroups: number, outputPath: (groupId: number) => string): Promise<Map<number, {
+        path: string;
+        ids: Set<number>;
+    }>>;
+    /**
+     * Extract specific building elements from an IFC file into a new IFC file.
+     * @param inputPath  - Absolute or relative path to the source IFC file.
+     * @param elementIds - Array of IFC entity IDs (`#id`) for the building elements to extract. Non-element or missing IDs are skipped, each reported through {@link onExtractWarning}.
+     * @param outputPath - Path for the output IFC file.
+     * @throws {Error} if none of `elementIds` resolves to a building element. No
+     * output file is produced in that case.
+     */
+    extract(inputPath: string, elementIds: number[], outputPath: string): Promise<Set<number>>;
+    parseIfc(filePath: string): Promise<ParseResult>;
+    /**
+     * Chunked file reader — replaces readline (3-5x faster)
+     */
+    forEachLine(filePath: string, callback: (line: string) => void | Promise<void>): Promise<void>;
+    protected writeSplitOutput(inputPath: string, header: string[], footer: string[], groupsData: GroupData[], idGroups: IdGroupIndex): Promise<void>;
+    /**
+     * Open one writer per non-empty group and prime it with the header. If any
+     * writer fails to open, the ones already opened are aborted before rethrowing.
+     */
+    private openGroupWriters;
+    protected emitProgressEvent(stage: IfcSplitterStage, start: number): void;
 }
 
-/** Subset of Node.js `fs` used by the splitter. */
-export declare interface IfcSplitterFs {
-    openSync(path: string, flags: string): number;
-    readSync(fd: number, buffer: any, offset: number, length: number, position: null): number;
-    writeSync(fd: number, data: any, offset?: number, length?: number): number;
-    closeSync(fd: number): void;
-    existsSync(path: string): boolean;
-    mkdirSync(path: string, options?: {
-        recursive?: boolean;
-    }): void;
-    statSync(path: string): {
-        size: number;
+export declare interface IfcSplitterGroupsEvent {
+    /**
+     * One entry per **non-empty** group, ascending by {@link GroupData.groupId}.
+     * A `split` into more groups than there are element clusters simply yields
+     * fewer entries than `numGroups` — use `groupId` to correlate, not the index.
+     */
+    data: GroupData[];
+}
+
+export declare interface IfcSplitterIO {
+    /**
+     * @param path
+     * @throws if {@link path} doesn't exist
+     * @returns a {@link ReadableStream} streaming ifc lines
+     */
+    readableStream(path: string): Promise<ReadableStream<string>>;
+    /**
+     * @param path
+     * @returns a {@link WritableStream} able to write ifc lines
+     */
+    writableStream(path: string): Promise<WritableStream<string>>;
+}
+
+export declare interface IfcSplitterProgressEvent {
+    stage: IfcSplitterStage;
+    timeElapsed: number;
+}
+
+export declare type IfcSplitterStage = "parse" | "spatial" | "void-fill" | "style-maps" | "classify" | "aggregate" | "cluster" | "distribute" | "relations" | "resolve" | "build-index" | "write";
+
+export declare interface IfcSplitterWarningEvent {
+    message: string;
+    context: {
+        id: number;
+        type?: string;
     };
 }
 
-/** Subset of Node.js `path` used by the splitter. */
-export declare interface IfcSplitterPath {
-    join(...paths: string[]): string;
-    dirname(p: string): string;
-    basename(p: string): string;
+export declare interface IFragmentsModel<Async extends boolean = false> extends IModelData<Async>, IRawModelData<Async>, IModelGeometry<Async>, IModelIndex<Async>, IModelSerializer<Async> {
+    readonly modelId: string;
+    dispose(): Promisify<void, Async>;
+}
+
+declare interface IModelData<Async extends boolean> {
+    getSpatialStructure(): Promisify<SpatialTreeItem, Async>;
+    getCategories(): Promisify<string[], Async>;
+    getMetadata<T extends Record<string, any>>(): Promisify<T, Async>;
+    getCRS(): Promisify<CRSData | null, Async>;
+    getMaxLocalId(): Promisify<number, Async>;
+    getLocalIds(): Promisify<number[], Async>;
+    getLocalIdsByGuids(guids: string[]): Promisify<(number | null)[], Async>;
+    getGuidsByLocalIds(localIds: number[]): Promisify<(string | null)[], Async>;
+    getLocalIdsFromItemIds(itemIds: Iterable<number>): Promisify<number[], Async>;
+    getItemsIdsWithGeometry(): Promisify<number[], Async>;
+    getItemsOfCategories(categories: RegExp[]): Promisify<Record<string, number[]>, Async>;
+    getItemsChildren(ids: Identifier[]): Promisify<number[], Async>;
+    /**
+     * MISALIGNMENT: SingleThreaded declares `ids: number[]`; FragmentsModel uses
+     * the broader `ids: Identifier[]` (`string | number`).
+     */
+    getItemsData(ids: Identifier[], config?: Partial<ItemsDataConfig>): Promisify<ItemData[], Async>;
+    getItemsByQuery(params: ItemsQueryParams, config?: ItemsQueryConfig): Promisify<number[], Async>;
+}
+
+declare interface IModelGeometry<Async extends boolean> {
+    getItemsGeometry(localIds: number[], lod?: CurrentLod): Promisify<MeshData[][], Async>;
+    getItemsVolume(localIds: number[]): Promisify<number, Async>;
+    getItemDrawChunks(localIds: Iterable<number>): Promisify<DrawChunk[], Async>;
+    getSection(plane: THREE.Plane, localIds?: number[]): Promisify<ModelSection, Async>;
+    getPositions(localIds?: number[]): Promisify<{
+        x: number;
+        y: number;
+        z: number;
+    }[], Async>;
+    getCoordinates(): Promisify<number[], Async>;
+}
+
+/** User-defined indexes, see {@link VirtualIndexesController}. */
+declare interface IModelIndex<Async extends boolean> {
+    getIndexNames(): Promisify<string[], Async>;
+    getIndexInfo(name: string): Promisify<IndexInfo | null, Async>;
+    getIndexKeys<K extends string | number>(name: string): Promisify<IndexArrayType<K> | null, Async>;
+    getIndexKey<K extends string | number>(name: string, index: number): Promisify<K | null, Async>;
+    getIndexValues<V extends string | number>(name: string): Promisify<V[] | null, Async>;
+    hasIndexEntry<K extends string | number>(name: string, key: K): Promisify<boolean, Async>;
+    getIndexEntry<K extends string | number, V extends IndexEntry>(name: string, key: K): Promisify<V | null, Async>;
+    getInverseIndexEntry<K extends string | number, V extends string | number>(name: string, value: K): Promisify<IndexArrayType<V> | null, Async>;
+}
+
+/** Binary serialization of the full model or an item subset. */
+declare interface IModelSerializer<Async extends boolean> {
+    getBuffer(raw?: boolean): Promisify<ArrayBufferLike | Uint8Array, Async>;
+    getSubsetBuffer(localIds: number[], raw?: boolean): Promisify<ArrayBufferLike | Uint8Array, Async>;
 }
 
 export declare type IndexArrayType<T extends string | number> = T extends string ? string[] : T extends number ? Uint32Array : never;
@@ -2842,6 +2997,27 @@ export declare type InformationResultType<T extends ItemInformationType> = Mappe
  * for number-keyed indexes and `string[]` for string-keyed ones.
  */
 export declare type InverseIndexEntry = Uint32Array | string[] | null;
+
+/**
+ * Low-level access to the FlatBuffer tables: materials, representations,
+ * transforms, samples, items, and relations.
+ */
+declare interface IRawModelData<Async extends boolean> {
+    getMaterialsIds(): Promisify<number[], Async>;
+    getMaterials(ids?: Iterable<number>): Promisify<Map<number, RawMaterial>, Async>;
+    getRepresentationsIds(): Promisify<number[], Async>;
+    getRepresentations(ids?: Iterable<number>): Promisify<Map<number, RawRepresentation>, Async>;
+    getLocalTransformsIds(): Promisify<number[], Async>;
+    getLocalTransforms(ids?: Iterable<number>): Promisify<Map<number, RawTransformData>, Async>;
+    getGlobalTransformsIds(): Promisify<number[], Async>;
+    getGlobalTransforms(ids?: Iterable<number>): Promisify<Map<number, RawGlobalTransformData>, Async>;
+    getSamplesIds(): Promisify<number[], Async>;
+    getSamples(ids?: Iterable<number>): Promisify<Map<number, RawSample>, Async>;
+    getItemsIds(): Promisify<number[], Async>;
+    getItems(ids?: Iterable<number>): Promisify<Map<number, RawItemData>, Async>;
+    getRelations(ids?: number[]): Promisify<Map<number, RawRelationData>, Async>;
+    getGlobalTranformsIdsOfItems(ids: number[]): Promisify<number[], Async>;
+}
 
 /**
  * Discriminator for index edit requests. Use to skip them in code paths that
@@ -3244,6 +3420,25 @@ declare type LabelConfig = {
  * The maximum value for a 2-byte unsigned integer.
  */
 export declare const limitOf2Bytes = 65536;
+
+declare class LineIndex {
+    types: (string | undefined)[];
+    maxId: number;
+    private _typeIntern;
+    specialRaws: Map<number, string>;
+    private _refBuf;
+    private _refBufUsed;
+    private _refStart;
+    private _refLen;
+    set(id: number, type: string, refs: number[], raw: string): void;
+    finalize(): void;
+    has(id: number): boolean;
+    getType(id: number): string | undefined;
+    getRefs(id: number): Int32Array | null;
+    getRaw(id: number): string | undefined;
+    getAll(types: Set<string>): Set<number>;
+    free(): void;
+}
 
 /**
  * Error thrown when a model load is aborted via `FragmentsModels.abort()`.
@@ -3971,6 +4166,12 @@ export declare type ParabolaData = {
     endGradient?: number;
 };
 
+declare interface ParseResult {
+    header: string[];
+    footer: string[];
+    index: LineIndex;
+}
+
 export declare interface ProcessData {
     id?: string;
     bytes?: Uint8Array;
@@ -4037,6 +4238,8 @@ export declare interface ProgressData {
     class?: string;
     entitiesProcessed?: number;
 }
+
+declare type Promisify<T, Async extends boolean> = Async extends true ? Promise<T> : T;
 
 export declare type QueryAggregation = "exclusive" | "inclusive";
 
@@ -4107,7 +4310,17 @@ export declare type RawGlobalTransformData = RawTransformData & {
 export declare interface RawIndexData {
     /** Index identifier, unique within the model. */
     name: string;
-    /** Key vector. Drives the storage type (`number_keys` or `string_keys`). */
+    /**
+     * Key vector. Drives the storage type (`number_keys` or `string_keys`).
+     *
+     * Performance: prefer `number` keys for large or hot indexes. Number keys are
+     * read straight from a `Uint32Array`, while string keys cost a UTF-8 decode
+     * plus a long-string hash on every lookup-map build. If your keys are long
+     * strings (e.g. hashes), hash them down to a `uint32` at build time and keep a
+     * small side table if you need the original string back; both the build and
+     * every lookup get dramatically cheaper, and it also keeps the worker-to-main
+     * payload a plain typed-array copy.
+     */
     keys: number[] | string[];
     /** Value vector. Drives `number_values` or `string_values`. Omit for keys-only. */
     values?: number[] | string[];
@@ -4628,7 +4841,7 @@ export declare enum ShellType {
 /**
  * The main class for managing a 3D model loaded from a fragments file in a single thread. It's designed for easy data querying in the backend, so all the 3D visualization logic is not present.
  */
-export declare class SingleThreadedFragmentsModel {
+export declare class SingleThreadedFragmentsModel implements IFragmentsModel<false> {
     private readonly _modelId;
     private _virtualModel;
     /**
@@ -4659,7 +4872,7 @@ export declare class SingleThreadedFragmentsModel {
      * Translate internal `itemId`s into user-facing `localId`s, preserving
      * order. See {@link VirtualFragmentsModel.getLocalIdsFromItemIds}.
      */
-    getLocalIdsFromItemIds(itemIds: Iterable<number>): Promise<number[]>;
+    getLocalIdsFromItemIds(itemIds: Iterable<number>): number[];
     /**
      * Get all the categories of the model.
      */
@@ -4703,9 +4916,13 @@ export declare class SingleThreadedFragmentsModel {
      */
     getInverseIndexEntry<K extends string | number, V extends string | number>(name: string, value: K): IndexArrayType<V> | null;
     /**
-     * Get all the items of the model that have geometry.
+     * @deprecated use {@link getItemsIdsWithGeometry}
      */
     getItemsWithGeometry(): number[];
+    /**
+     * Get all the items of the model that have geometry.
+     */
+    getItemsIdsWithGeometry(): number[];
     /**
      * Get the metadata of the model.
      */
@@ -4756,7 +4973,7 @@ export declare class SingleThreadedFragmentsModel {
      * Get the absolute positions of the specified items.
      * @param localIds - The local IDs of the items to look up.
      */
-    getPositions(localIds: number[]): {
+    getPositions(localIds?: number[]): {
         x: number;
         y: number;
         z: number;
@@ -4771,6 +4988,7 @@ export declare class SingleThreadedFragmentsModel {
      * @param lod - The level of detail for the geometry (optional).
      */
     getItemsGeometry(localIds: number[], lod?: CurrentLod): MeshData[][];
+    getItemsVolume(localIds: number[]): number;
     /**
      * Query items based on specified parameters.
      * @param params - The query parameters.
@@ -4782,85 +5000,85 @@ export declare class SingleThreadedFragmentsModel {
      * @param plane - The plane to get the section of.
      * @param localIds - The local IDs of the items to get the section of. If undefined, it will return the section of all items.
      */
-    getSection(plane: THREE.Plane, localIds?: number[]): Promise<ModelSection>;
+    getSection(plane: THREE.Plane, localIds?: number[]): ModelSection;
     /**
      * Get all the local IDs of the model.
      */
-    getLocalIds(): Promise<number[]>;
+    getLocalIds(): number[];
     /**
      * Gets all the materials IDs of the model.
      */
-    getMaterialsIds(): Promise<number[] | Uint32Array | Set<number>>;
+    getMaterialsIds(): number[];
     /**
      * Gets the materials of the model.
      * @param localIds - The local IDs of the materials to get. If undefined, it will return all materials.
      */
-    getMaterials(localIds?: Iterable<number>): Promise<Map<number, RawMaterial>>;
+    getMaterials(localIds?: Iterable<number>): Map<number, RawMaterial>;
     /**
      * Gets all the representations IDs of the model.
      */
-    getRepresentationsIds(): Promise<number[] | Uint32Array | Set<number>>;
+    getRepresentationsIds(): number[];
     /**
      * Gets the representations of the model.
      * @param localIds - The local IDs of the representations to get. If undefined, it will return all representations.
      */
-    getRepresentations(localIds?: Iterable<number>): Promise<Map<number, RawRepresentation>>;
+    getRepresentations(localIds?: Iterable<number>): Map<number, RawRepresentation>;
     /**
      * Gets all the local transforms IDs of the model.
      */
-    getLocalTransformsIds(): Promise<number[] | Uint32Array | Set<number>>;
+    getLocalTransformsIds(): number[];
     /**
      * Gets the local transforms of the model.
      * @param localIds - The local IDs of the local transforms to get. If undefined, it will return all local transforms.
      */
-    getLocalTransforms(localIds?: Iterable<number>): Promise<Map<number, RawTransformData>>;
+    getLocalTransforms(localIds?: Iterable<number>): Map<number, RawTransformData>;
     /**
      * Gets all the global transforms IDs of the model.
      */
-    getGlobalTransformsIds(): Promise<number[] | Uint32Array | Set<number>>;
+    getGlobalTransformsIds(): number[];
     /**
      * Gets the global transforms of the model.
      * @param localIds - The local IDs of the global transforms to get. If undefined, it will return all global transforms.
      */
-    getGlobalTransforms(localIds?: Iterable<number>): Promise<Map<number, RawGlobalTransformData>>;
+    getGlobalTransforms(localIds?: Iterable<number>): Map<number, RawGlobalTransformData>;
     /**
      * Gets all the samples IDs of the model.
      */
-    getSamplesIds(): Promise<number[] | Uint32Array | Set<number>>;
+    getSamplesIds(): number[];
     /**
      * Gets the samples of the model.
      * @param localIds - The local IDs of the samples to get. If undefined, it will return all samples.
      */
-    getSamples(localIds?: Iterable<number>): Promise<Map<number, RawSample>>;
+    getSamples(localIds?: Iterable<number>): Map<number, RawSample>;
     /**
      * Returns per-tile index-buffer chunks for the given items. Used by
      * outline-style passes that share tile geometry and clip drawing to
      * just the outlined samples. See {@link VirtualFragmentsModel.getItemDrawChunks}.
      */
-    getItemDrawChunks(localIds: Iterable<number>): Promise<{
+    getItemDrawChunks(localIds: Iterable<number>): {
         tileId: number;
         position: Uint32Array;
         size: Uint32Array;
-    }[]>;
+    }[];
     /**
      * Gets all the items IDs of the model.
      */
-    getItemsIds(): Promise<number[] | Uint32Array | Set<number>>;
+    getItemsIds(): number[];
     /**
      * Gets the items of the model.
      * @param localIds - The local IDs of the items to get. If undefined, it will return all items.
      */
-    getItems(localIds?: Iterable<number>): Promise<Map<number, RawItemData>>;
+    getItems(localIds?: Iterable<number>): Map<number, RawItemData>;
     /**
      * Gets the relations of the model.
      * @param localIds - The local IDs of the relations to get. If undefined, it will return all relations.
      */
-    getRelations(localIds?: number[]): Promise<Map<number, RawRelationData>>;
+    getRelations(localIds?: number[]): Map<number, RawRelationData>;
     /**
      * Gets the global transforms IDs of the items of the model.
      * @param ids - The local IDs of the items to get the global transforms IDs of.
      */
-    getGlobalTranformsIdsOfItems(ids: number[]): Promise<number[]>;
+    getGlobalTranformsIdsOfItems(ids: number[]): number[];
     /**
      * Apply a batch of edit requests. Accumulates onto this model's
      * pending-edit history; call {@link save} to flatten them into a new
@@ -4955,14 +5173,6 @@ export declare interface SpatialTreeItem {
     /** The children of the item */
     children?: SpatialTreeItem[];
 }
-
-/**
- * Split an IFC file into N roughly equal groups of building elements.
- * @param inputPath - Absolute or relative path to the source IFC file.
- * @param numGroups - Number of output files to produce (max 32).
- * @param outputDir - Directory for output files. Defaults to `output/` next to the input file.
- */
-export declare function split(deps: IfcSplitterDeps, inputPath: string, numGroups: number, outputDir?: string): Map<string, Set<number>>;
 
 export declare enum Stroke {
     DEFAULT = 0
@@ -5316,7 +5526,7 @@ declare class VirtualFragmentsModel {
         size: Uint32Array;
     }[];
     getCoordinates(): number[];
-    getPositions(localIds: number[]): {
+    getPositions(localIds?: number[]): {
         x: number;
         y: number;
         z: number;
@@ -5340,8 +5550,8 @@ declare class VirtualFragmentsModel {
     raycast(ray: THREE.Ray, frustum: THREE.Frustum, returnAll?: boolean): any;
     snapRaycast(ray: THREE.Ray, frustum: THREE.Frustum, snaps: SnappingClass[]): any[];
     rectangleRaycast(frustum: THREE.Frustum, fullyIncluded: boolean): number[];
-    getSection(plane: THREE.Plane, localIds?: number[]): Promise<ModelSection>;
-    getAlignments(): Promise<AlignmentData[]>;
+    getSection(plane: THREE.Plane, localIds?: number[]): ModelSection;
+    getAlignments(): AlignmentData[];
     getGrids(): Promise<GridData[]>;
     getBuffer(raw: boolean): ArrayBufferLike;
     getSubsetBuffer(localIds: number[], raw: boolean): Uint8Array;
@@ -5375,17 +5585,17 @@ declare class VirtualFragmentsModel {
         undoneRequests?: EditRequest[];
     }): void;
     selectRequest(index: number): void;
-    getMaterialsIds(): number[] | Uint32Array | Set<number>;
+    getMaterialsIds(): number[];
     getMaterials(ids?: Iterable<number>): Map<number, RawMaterial>;
-    getRepresentationsIds(): number[] | Uint32Array | Set<number>;
+    getRepresentationsIds(): number[];
     getRepresentations(ids?: Iterable<number>): Map<number, RawRepresentation>;
-    getLocalTransformsIds(): number[] | Uint32Array | Set<number>;
+    getLocalTransformsIds(): number[];
     getLocalTransforms(ids?: Iterable<number>): Map<number, RawTransformData>;
-    getGlobalTransformsIds(): number[] | Uint32Array | Set<number>;
+    getGlobalTransformsIds(): number[];
     getGlobalTransforms(ids?: Iterable<number>): Map<number, RawGlobalTransformData>;
-    getSamplesIds(): number[] | Uint32Array | Set<number>;
+    getSamplesIds(): number[];
     getSamples(ids?: Iterable<number>): Map<number, RawSample>;
-    getItemsIds(): number[] | Uint32Array | Set<number>;
+    getItemsIds(): number[];
     getItems(ids?: Iterable<number>): Map<number, RawItemData>;
     getRelations(ids?: number[]): Map<number, RawRelationData>;
     getGlobalTranformsIdsOfItems(ids: number[]): number[];
