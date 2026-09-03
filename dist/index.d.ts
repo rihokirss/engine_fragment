@@ -1314,6 +1314,12 @@ declare class FragmentsConnection extends Connection {
     private readonly _defaultCap;
     get maxWorkers(): number;
     get threadGroups(): Record<string, number>;
+    /**
+     * Number of workers currently hosting at least one model. Used to
+     * split the global graphic-memory budget evenly between workers
+     * (each worker tracks its tile-cache consumption independently).
+     */
+    get activeThreadCount(): number;
     constructor(handleInput: ThreadHandler, threadPath: string, options?: FragmentsConnectionOptions);
     delete(model: string): void;
     /**
@@ -2044,7 +2050,7 @@ export declare class FragmentsModel implements IFragmentsModel<true> {
     /**
      * Internal method to refresh the view of the model. You shouldn't call this directly. Instead, use {@link FragmentsModels.update}.
      */
-    _refreshView(): Promise<void>;
+    _refreshView(force?: boolean): Promise<void>;
     /**
      * Internal method to set up the model. Don't use this directly.
      */
@@ -2191,6 +2197,7 @@ export declare class FragmentsModels {
     private _isDisposed;
     private _autoRedrawInterval;
     private _lastUpdate;
+    private _pendingForcedUpdate;
     /**
      * Creates a new FragmentsModels instance.
      *
@@ -2263,6 +2270,15 @@ export declare class FragmentsModels {
      * @param force - If true, it will force all the models to finish all the pending requests.
      */
     update(force?: boolean): Promise<void>;
+    private performUpdate;
+    /**
+     * (Re)schedules the next automatic update. The view-change gating
+     * means an idle scene produces no worker messages and thus no
+     * FINISH-driven update events, so the loop sustains itself with
+     * this timer instead. Skipped when disposed or no models exist —
+     * the next model load (or any mesh update event) restarts it.
+     */
+    private scheduleNextUpdate;
     private manageRequest;
     private newUpdateEvent;
     private newRequestEvent;
@@ -3927,6 +3943,23 @@ declare class MeshManager {
     private setupBoundings;
     private create;
     private updateStatus;
+    /**
+     * Minimum number of visibility runs before a shell tile switches from
+     * one geometry.group per run (one draw call each) to a compacted index
+     * buffer drawn with a single call. Small run counts stay on the group
+     * path: the copy is not worth it and highlights need groups anyway.
+     */
+    private static readonly compactMinRuns;
+    /**
+     * Rewrite the tile's GPU index with just the visible runs so the whole
+     * tile is one draw call. Returns false (after restoring the full index
+     * if it was compacted before) when the group path must be used:
+     * LOD/wire meshes, tiles without a CPU index copy, highlighted tiles
+     * (highlight groups address the full index) and tiles with few runs.
+     */
+    private applyCompactIndex;
+    private restoreFullIndex;
+    private readonly white;
     private cleanAttributeMemory;
     private setPositions;
     private setFaceIds;
@@ -5464,6 +5497,13 @@ declare class VirtualBoxStructure {
     private readonly _boxes;
     constructor(boxes: VirtualBoxController);
     collideFrustum(bounds: THREE.Plane[], frustum: THREE.Frustum, fullyIncluded?: boolean): number[];
+    /**
+     * Fills `mask` with 1 for every sample whose box is fully outside the
+     * frustum (plus optional clipping planes) and 0 for every candidate.
+     * Allocation-free variant of {@link collideFrustum} for the per-view
+     * culling pass.
+     */
+    fillOutsideFrustumMask(bounds: THREE.Plane[], frustum: THREE.Frustum, mask: Uint8Array): void;
     collideRay(bounds: THREE.Plane[], beam: THREE.Ray): number[];
     private setupLimits;
     private getPointBuffer;
@@ -5955,6 +5995,16 @@ declare class VirtualTilesController {
     private _virtualPlanes;
     private _changedSamples;
     private _virtualView;
+    /**
+     * Per-sample frustum verdict from the spatial hierarchy, refreshed on
+     * every real view change: 1 = the sample's box is provably outside
+     * the frustum/clipping planes (skip all per-sample plane math in
+     * {@link fetchLodLevel}), 0 = candidate (run the exact per-sample
+     * test as before, so the final classification is unchanged). All
+     * zeroes when no view or lookup exists — the pass then behaves
+     * exactly like the flat version.
+     */
+    private _outsideMask;
     private _lodMode;
     constructor(data: VirtualTileData);
     restart(): void;
@@ -5963,6 +6013,15 @@ declare class VirtualTilesController {
     dispose(): void;
     generate(onProgress?: (progress: number) => void, throwIfAborted?: () => void): Promise<void>;
     setupView(view: any): void;
+    /**
+     * Rebuilds {@link _outsideMask} from the spatial hierarchy for the
+     * current view. One hierarchy walk per view change replaces the
+     * per-sample plane tests for everything that is provably outside —
+     * with a zoomed-in camera that is typically most of the model. Falls
+     * back to all-candidates (no skipping) when the model has no lookup
+     * (empty model) or no view yet.
+     */
+    private updateOutsideMask;
     updateVirtualMeshes(itemIds: number[]): void;
     getSampleTransform(id: number): any;
     /**
@@ -6003,6 +6062,17 @@ declare class VirtualTilesController {
     private addLodToTile;
     private addBoxLodToTile;
     private notifyUpdateFinished;
+    private emitFinish;
+    /**
+     * Structural equality of two worker-side views, covering every field
+     * the culling/LOD pass reads. `graphicThreshold` is deliberately
+     * ignored — it only budgets the invisible-tile cache, so a change in
+     * it must not trigger a full re-cull (the new value still takes
+     * effect because the caller stores the incoming view first).
+     */
+    private viewEquals;
+    private planeEquals;
+    private vectorEquals;
     private updatePositionIfNeeded;
     private updateCurrentSample;
     private processSamplesDimension;

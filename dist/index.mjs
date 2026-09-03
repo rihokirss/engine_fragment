@@ -15592,10 +15592,19 @@ class GPU {
     const height = window.screen.height;
     const ratio = window.devicePixelRatio;
     const result = Math.trunc(width * height * ratio * ratio * factor);
-    return result;
+    return Math.min(result, this.maxCapacity);
   }
 }
 __publicField(GPU, "capacityFactor", 200);
+/**
+ * Ceiling for the estimated tile-cache budget, in bytes. The
+ * screen-size heuristic explodes on hidpi displays (a 4K screen at
+ * devicePixelRatio 2 yields ~6.6 GB), and this budget only caps the
+ * cache of *invisible* tiles — visible geometry is never evicted —
+ * so a bounded cache costs at most some re-uploads when the camera
+ * returns to a previously culled area.
+ */
+__publicField(GPU, "maxCapacity", 1e9);
 class BitUtils {
   static check(data, id, config) {
     const filter = this.get(config);
@@ -19980,6 +19989,14 @@ class ViewManager {
     __publicField(this, "_tempMatrix", new THREE.Matrix4());
     __publicField(this, "_tempVec", new THREE.Vector3());
     __publicField(this, "_tempFrustum", new THREE.Frustum());
+    /**
+     * Numeric fingerprint of the last view dispatched to the worker.
+     * `refreshView` skips the REFRESH_VIEW RPC when the view is
+     * identical to the previous one (unless forced), so an idle camera
+     * produces zero worker traffic instead of a full re-cull of every
+     * sample on every update tick. See {@link refreshView}.
+     */
+    __publicField(this, "_lastViewSignature", null);
     __publicField(this, "_updateCameraPositionEvent", () => {
     });
     __publicField(this, "_updateCameraFrustumEvent", () => {
@@ -19989,11 +20006,31 @@ class ViewManager {
     __publicField(this, "_updateOrthoSizeEvent", () => {
     });
   }
-  async refreshView(model, meshes) {
-    const fov = this.setup(meshes, model);
+  /**
+   * Sends the current view to the worker so it can re-evaluate culling
+   * and LOD. Returns `true` if a REFRESH_VIEW was actually dispatched.
+   *
+   * When `force` is false and the view (camera frustum + position in
+   * model space, clipping planes, viewport size, quality, model
+   * placement) is unchanged since the last dispatch, the RPC is
+   * skipped entirely and `false` is returned. Visibility, highlight,
+   * LOD-mode and edit changes don't need a view resend — the worker
+   * restarts its own tile pass for those. Forced sends always go
+   * through because `FragmentsModels.update(true)` uses the resulting
+   * FINISH as a completion fence.
+   */
+  async refreshView(model, meshes, force = false) {
+    const fov = this.setup(model);
     const frustum = CameraUtils.transform(this._tempFrustum, this._tempMatrix);
     const request = this.newViewRequest(frustum, fov, model);
+    const signature = this.computeViewSignature(request.view, model);
+    if (!force && this.signatureEquals(signature)) {
+      return false;
+    }
+    this._lastViewSignature = signature;
+    meshes.requests.clean(model.modelId);
     await model.threads.fetch(request);
+    return true;
   }
   useCamera(camera) {
     const projScreenMatrix = new THREE.Matrix4();
@@ -20016,13 +20053,55 @@ class ViewManager {
     }
     return orthoSize;
   }
-  setup(meshes, model) {
-    meshes.requests.clean(model.modelId);
+  setup(model) {
     this._tempMatrix.copy(model.object.matrixWorld).invert();
     this._updateCameraPositionEvent(this._tempVec);
     this._updateCameraFrustumEvent(this._tempFrustum);
     const fov = this._updateFOVEvent();
     return fov;
+  }
+  /**
+   * Flattens everything view-relevant into a number list for cheap
+   * equality checks. `graphicThreshold` is deliberately excluded: it
+   * only budgets the worker's invisible-tile cache, so a change in it
+   * (e.g. the worker count changed) shouldn't force a full re-cull.
+   * `undefined` fields (fov on ortho cameras, ortho size on
+   * perspective ones) are encoded as NaN and compared with
+   * `Object.is` semantics below.
+   */
+  computeViewSignature(view, model) {
+    const signature = [];
+    const frustum = view.cameraFrustum;
+    for (const plane of frustum.planes) {
+      signature.push(plane.normal.x, plane.normal.y, plane.normal.z);
+      signature.push(plane.constant);
+    }
+    const position = view.cameraPosition;
+    signature.push(position.x, position.y, position.z);
+    signature.push(view.fov ?? NaN);
+    signature.push(view.orthogonalDimension ?? NaN);
+    signature.push(view.viewSize);
+    signature.push(view.graphicQuality);
+    for (const plane of view.clippingPlanes) {
+      signature.push(plane.normal.x, plane.normal.y, plane.normal.z);
+      signature.push(plane.constant);
+    }
+    for (const element of model.object.matrixWorld.elements) {
+      signature.push(element);
+    }
+    return signature;
+  }
+  signatureEquals(signature) {
+    const last = this._lastViewSignature;
+    if (!last || last.length !== signature.length) {
+      return false;
+    }
+    for (let i = 0; i < signature.length; i++) {
+      if (signature[i] !== last[i] && !(Number.isNaN(signature[i]) && Number.isNaN(last[i]))) {
+        return false;
+      }
+    }
+    return true;
   }
   newViewRequest(frustum, fov, model) {
     const view = this.newView(frustum, fov, model);
@@ -20040,7 +20119,8 @@ class ViewManager {
     view.fov = fov;
     view.orthogonalDimension = this.getOrthoSize();
     view.viewSize = Math.max(window.innerWidth, window.innerHeight);
-    view.graphicThreshold = GPU.estimateCapacity();
+    const threadCount = Math.max(1, model.threads.activeThreadCount);
+    view.graphicThreshold = GPU.estimateCapacity() / threadCount;
     view.graphicQuality = model.graphicsQuality * -1.5 + 2;
     view.clippingPlanes = this.getPlanes();
     view.modelPlacement = model.object.matrixWorld;
@@ -21021,11 +21101,13 @@ const _FragmentsModel = class _FragmentsModel {
   /**
    * Internal method to refresh the view of the model. You shouldn't call this directly. Instead, use {@link FragmentsModels.update}.
    */
-  async _refreshView() {
+  async _refreshView(force = false) {
     if (this.frozen)
       return;
-    this._isProcessing = true;
-    const mainPromise = this._viewManager.refreshView(this, this._meshManager);
+    const mainPromise = this._viewManager.refreshView(this, this._meshManager, force).then((sent) => {
+      if (sent)
+        this._isProcessing = true;
+    });
     const deltaPromise = this._editor._update(this.modelId);
     await Promise.all([mainPromise, deltaPromise]);
   }
@@ -21482,7 +21564,7 @@ const _MultithreadingHelper = class _MultithreadingHelper {
  */
 __publicField(_MultithreadingHelper, "_seq", 0);
 let MultithreadingHelper = _MultithreadingHelper;
-class MeshManager {
+const _MeshManager = class _MeshManager {
   constructor(onUpdate) {
     /**
      * A map of FragmentsModel instances by their model ID.
@@ -21508,6 +21590,8 @@ class MeshManager {
      */
     __publicField(this, "_fenceWaiters", []);
     __publicField(this, "_onUpdate");
+    // TODO: Deduplicate with other white values (LODManager, MaterialManager)
+    __publicField(this, "white", 4294967295);
     this._onUpdate = onUpdate;
     this.requests.onFinish = (seq) => this.handleFinish(seq);
   }
@@ -21681,11 +21765,14 @@ class MeshManager {
   }
   updateStatus(mesh, request) {
     const {
-      tileData: { highlightData },
+      tileData: { highlightData, visibilityData },
       currentLod
     } = request;
     const { geometry } = mesh;
     geometry.clearGroups();
+    if (currentLod !== CurrentLod.WIRES && this.applyCompactIndex(geometry, visibilityData, !!highlightData)) {
+      return;
+    }
     this.lod.processMesh(mesh, request);
     if (!highlightData)
       return;
@@ -21695,6 +21782,50 @@ class MeshManager {
     }
     const materials = this.materials.createHighlights(mesh, request);
     mesh.material = materials;
+  }
+  /**
+   * Rewrite the tile's GPU index with just the visible runs so the whole
+   * tile is one draw call. Returns false (after restoring the full index
+   * if it was compacted before) when the group path must be used:
+   * LOD/wire meshes, tiles without a CPU index copy, highlighted tiles
+   * (highlight groups address the full index) and tiles with few runs.
+   */
+  applyCompactIndex(geometry, visibilityData, hasHighlight) {
+    const full = geometry.userData.fullIndex;
+    const index = geometry.index;
+    if (!full || !index)
+      return false;
+    const runs = visibilityData ? visibilityData.position.length : 0;
+    if (hasHighlight || runs < _MeshManager.compactMinRuns) {
+      this.restoreFullIndex(geometry, full);
+      return false;
+    }
+    const target = index.array;
+    const { position, size } = visibilityData;
+    let count = 0;
+    for (let i = 0; i < runs; i++) {
+      const start = position[i];
+      const isWhite = size[i] === this.white;
+      const end = isWhite ? full.length : Math.min(full.length, start + size[i]);
+      if (end <= start)
+        continue;
+      target.set(full.subarray(start, end), count);
+      count += end - start;
+    }
+    index.needsUpdate = true;
+    geometry.setDrawRange(0, count);
+    geometry.addGroup(0, count, 0);
+    geometry.userData.compactIndex = true;
+    return true;
+  }
+  restoreFullIndex(geometry, full) {
+    if (!geometry.userData.compactIndex)
+      return;
+    const index = geometry.index;
+    index.array.set(full);
+    index.needsUpdate = true;
+    geometry.setDrawRange(0, Infinity);
+    geometry.userData.compactIndex = false;
   }
   cleanAttributeMemory(geometry, name) {
     const attr = geometry.attributes[name];
@@ -21717,8 +21848,11 @@ class MeshManager {
     if (!indices) {
       throw new Error("Fragments: no indices provided to create the mesh.");
     }
-    geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-    geometry.index.onUpload(this.deleteAttribute(geometry));
+    const full = indices;
+    const gpu = full.slice();
+    geometry.setIndex(new THREE.BufferAttribute(gpu, 1));
+    geometry.userData.fullIndex = full;
+    geometry.userData.compactIndex = false;
   }
   setNormals(normals, geometry) {
     if (normals) {
@@ -21747,7 +21881,15 @@ class MeshManager {
     mesh.applyMatrix4(matrix);
     mesh.matrix.copy(matrix);
   }
-}
+};
+/**
+ * Minimum number of visibility runs before a shell tile switches from
+ * one geometry.group per run (one draw call each) to a compacted index
+ * buffer drawn with a single call. Small run counts stay on the group
+ * path: the copy is not worth it and highlights need groups anyway.
+ */
+__publicField(_MeshManager, "compactMinRuns", 3);
+let MeshManager = _MeshManager;
 const CENTER = 0;
 const AVERAGE = 1;
 const SAH = 2;
@@ -29425,6 +29567,11 @@ class ThreadUpdater {
       const delay = updated ? this._updateDelay : 0;
       this.schedule(delay);
     });
+    // Offset into the model list where the next tick starts. Rotating the
+    // start point keeps one model with a long-running cull pass from
+    // eating the whole per-tick time budget every tick and starving the
+    // other models on this worker.
+    __publicField(this, "_nextModelOffset", 0);
     this._thread = thread2;
   }
   // Starts the update loop if it is not already running. Idempotent. Called
@@ -29458,14 +29605,23 @@ class ThreadUpdater {
   updateAllModels() {
     const start = performance.now();
     let isUpdated = true;
-    for (const [, model] of this._thread.list) {
+    const models = Array.from(this._thread.list.values());
+    const offset = this._nextModelOffset % models.length;
+    let processed = 0;
+    for (; processed < models.length; processed++) {
+      const model = models[(offset + processed) % models.length];
       const modelUpdated = model.update(start);
       isUpdated = isUpdated && modelUpdated;
       const end = performance.now();
       const timePassed = end - start;
       if (timePassed > this._updateThreshold) {
+        processed++;
         break;
       }
+    }
+    this._nextModelOffset = (offset + processed) % models.length;
+    if (processed < models.length) {
+      isUpdated = false;
     }
     return isUpdated;
   }
@@ -31766,6 +31922,16 @@ const _VirtualTilesController = class _VirtualTilesController {
     __publicField(this, "_virtualPlanes", []);
     __publicField(this, "_changedSamples", 0);
     __publicField(this, "_virtualView");
+    /**
+     * Per-sample frustum verdict from the spatial hierarchy, refreshed on
+     * every real view change: 1 = the sample's box is provably outside
+     * the frustum/clipping planes (skip all per-sample plane math in
+     * {@link fetchLodLevel}), 0 = candidate (run the exact per-sample
+     * test as before, so the final classification is unchanged). All
+     * zeroes when no view or lookup exists — the pass then behaves
+     * exactly like the flat version.
+     */
+    __publicField(this, "_outsideMask");
     __publicField(this, "_lodMode", LodMode.DEFAULT);
     this._modelId = data.modelId;
     this._boxes = data.boxes;
@@ -31783,6 +31949,7 @@ const _VirtualTilesController = class _VirtualTilesController {
     this._sampleLodClass = new Uint8Array(this._sampleAmount);
     this._sampleLodState = new Uint8Array(this._sampleAmount);
     this._sampleLodSize = new Float32Array(this._sampleAmount);
+    this._outsideMask = new Uint8Array(this._sampleAmount);
     this._tileDimension = this.computeTileSize();
     this._tileBySample = new Array(this._sampleAmount);
     this._lodBySample = new Array(this._sampleAmount);
@@ -31816,7 +31983,7 @@ const _VirtualTilesController = class _VirtualTilesController {
     }
     const step = Math.max(1, Math.floor(this._sampleAmount / 20));
     for (let i = 0; i < this._sampleAmount; i++) {
-      this.generateSampleInTiles(i);
+      this.generateSampleInTiles(this._samplesDimensions[i]);
       if (i % step === 0) {
         onProgress == null ? void 0 : onProgress(i / this._sampleAmount);
         await new Promise((resolve) => setTimeout(resolve, 0));
@@ -31826,12 +31993,40 @@ const _VirtualTilesController = class _VirtualTilesController {
     this.setupTileVisibilityAndHighlight();
   }
   setupView(view) {
+    const previous = this._virtualView;
     this._virtualView = view;
     VirtualMemoryController.setCapacity(view.meshThreshold);
+    if (previous && this.viewEquals(previous, view)) {
+      this.setupViewPlanes();
+      if (this.tilesUpdated) {
+        this.emitFinish();
+      }
+      return;
+    }
     this.restart();
     this.updateOrientationIfNeeded();
     this.updatePositionIfNeeded();
     this.setupViewPlanes();
+    this.updateOutsideMask();
+  }
+  /**
+   * Rebuilds {@link _outsideMask} from the spatial hierarchy for the
+   * current view. One hierarchy walk per view change replaces the
+   * per-sample plane tests for everything that is provably outside —
+   * with a zoomed-in camera that is typically most of the model. Falls
+   * back to all-candidates (no skipping) when the model has no lookup
+   * (empty model) or no view yet.
+   */
+  updateOutsideMask() {
+    var _a2;
+    const lookup = this._boxes.lookup;
+    const frustum = (_a2 = this._virtualView) == null ? void 0 : _a2.cameraFrustum;
+    if (!lookup || !frustum) {
+      this._outsideMask.fill(0);
+      return;
+    }
+    const clipping = this._virtualView.clippingPlanes ?? [];
+    lookup.fillOutsideFrustumMask(clipping, frustum, this._outsideMask);
   }
   updateVirtualMeshes(itemIds) {
     if (!itemIds || !this._virtualView) {
@@ -32001,6 +32196,10 @@ const _VirtualTilesController = class _VirtualTilesController {
     if (!updateFinished) {
       return;
     }
+    this.emitFinish();
+    this.tilesUpdated = true;
+  }
+  emitFinish() {
     this._meshConnection.process({
       tileRequestClass: TileRequestClass.FINISH,
       modelId: this._modelId,
@@ -32013,7 +32212,45 @@ const _VirtualTilesController = class _VirtualTilesController {
       // waiters precisely, no buffer / poll required.
       seq: thread.lastSeenSeq
     });
-    this.tilesUpdated = true;
+  }
+  /**
+   * Structural equality of two worker-side views, covering every field
+   * the culling/LOD pass reads. `graphicThreshold` is deliberately
+   * ignored — it only budgets the invisible-tile cache, so a change in
+   * it must not trigger a full re-cull (the new value still takes
+   * effect because the caller stores the incoming view first).
+   */
+  viewEquals(a, b) {
+    if (a.fov !== b.fov || a.orthogonalDimension !== b.orthogonalDimension || a.viewSize !== b.viewSize || a.graphicQuality !== b.graphicQuality) {
+      return false;
+    }
+    if (!this.vectorEquals(a.cameraPosition, b.cameraPosition)) {
+      return false;
+    }
+    const aPlanes = a.cameraFrustum.planes;
+    const bPlanes = b.cameraFrustum.planes;
+    for (let i = 0; i < aPlanes.length; i++) {
+      if (!this.planeEquals(aPlanes[i], bPlanes[i])) {
+        return false;
+      }
+    }
+    const aClipping = a.clippingPlanes || [];
+    const bClipping = b.clippingPlanes || [];
+    if (aClipping.length !== bClipping.length) {
+      return false;
+    }
+    for (let i = 0; i < aClipping.length; i++) {
+      if (!this.planeEquals(aClipping[i], bClipping[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+  planeEquals(a, b) {
+    return a.constant === b.constant && this.vectorEquals(a.normal, b.normal);
+  }
+  vectorEquals(a, b) {
+    return a.x === b.x && a.y === b.y && a.z === b.z;
   }
   updatePositionIfNeeded() {
     const positionThreshold = this._params.updateViewPosition;
@@ -32408,6 +32645,9 @@ const _VirtualTilesController = class _VirtualTilesController {
         return CurrentLod.INVISIBLE;
       }
       return CurrentLod.GEOMETRY;
+    }
+    if (this._outsideMask[sample]) {
+      return CurrentLod.INVISIBLE;
     }
     const item = this._boxes.get(sample);
     const notClipped = CameraUtils.collides(item, this._virtualPlanes);
@@ -34581,18 +34821,29 @@ class VirtualBoxCollider {
     const onSeen = this.newDefaultCallback(true);
     return this.collide(onCollide, onIncludes, onSeen, fullyIncluded);
   }
+  /**
+   * Marks every point whose box does NOT touch the given frustum (plus
+   * optional clipping planes) with 1 in `mask`, and every candidate
+   * with 0. Same traversal and plane semantics as {@link frustumCollide},
+   * but writes into a caller-owned mask instead of allocating a result
+   * array — the culling hot path calls this on every view change, and
+   * with everything on screen a result array would hold every sample.
+   */
+  frustumFillOutsideMask(bounds, frustum, mask) {
+    mask.fill(1);
+    const planes = this.getFrustumPlanes(frustum, bounds);
+    const onCollide = this.getFrustumOnCollide(planes);
+    const onIncludes = this.getFrustumOnIncludes(planes);
+    const onSeen = this.newDefaultCallback(true);
+    this.traverse(onCollide, onIncludes, onSeen, (data) => {
+      mask[data] = 0;
+    });
+  }
   rayCollide(bounds, ray) {
     const onCollide = this.getRayOnCollide(ray);
     const onIncludes = this.newDefaultCallback(false);
     const onSeen = this.getRayOnSeen(bounds);
     return this.collide(onCollide, onIncludes, onSeen);
-  }
-  addPoint(fullyIncluded, result, currentPosition, includes) {
-    if (!fullyIncluded) {
-      result.push(this.getPointData(currentPosition));
-    } else if (includes) {
-      result.push(this.getPointData(currentPosition));
-    }
   }
   getPointData(position) {
     const point = this.getPoint(position);
@@ -34632,19 +34883,27 @@ class VirtualBoxCollider {
     };
   }
   collide(onCollide, onIncludes, onSeen, fullyIncluded = false) {
-    const pointAmount = this._data.points.length;
     const result = [];
+    this.traverse(onCollide, onIncludes, onSeen, (data, includes) => {
+      if (!fullyIncluded || includes) {
+        result.push(data);
+      }
+    });
+    return result;
+  }
+  // Shared hierarchy walk: groups whose box misses the query are skipped
+  // wholesale, fully-included groups collect their leaves without further
+  // box tests, and each surviving leaf is handed to `onLeaf` together
+  // with whether it sits in a fully-included group.
+  traverse(onCollide, onIncludes, onSeen, onLeaf) {
+    const pointAmount = this._data.points.length;
     let currentPosition = 0;
     const addAllPoints = (bound, includes) => {
       const finalPosition = currentPosition + this.groupSize(currentPosition);
       for (; currentPosition < finalPosition; currentPosition++) {
         const isPoint = this.isPoint(currentPosition);
         if (isPoint && onSeen(bound)) {
-          if (!fullyIncluded) {
-            this.savePoint(currentPosition, result);
-          } else if (includes) {
-            this.savePoint(currentPosition, result);
-          }
+          onLeaf(this.getPointData(currentPosition), includes);
         }
       }
     };
@@ -34654,7 +34913,7 @@ class VirtualBoxCollider {
       const isPoint = this.isPoint(currentPosition);
       const collides = includes || onCollide(bound);
       if (isPoint && collides && onSeen(bound)) {
-        this.addPoint(fullyIncluded, result, currentPosition, includes);
+        onLeaf(this.getPointData(currentPosition), includes);
       }
       if (collides || isPoint) {
         currentPosition++;
@@ -34668,7 +34927,6 @@ class VirtualBoxCollider {
     while (currentPosition < pointAmount) {
       processCollisions();
     }
-    return result;
   }
   getFrustumOnIncludes(planes) {
     return (box) => {
@@ -34691,10 +34949,6 @@ class VirtualBoxCollider {
       }
     }
     return planes;
-  }
-  savePoint(position, result) {
-    const point = this.getPoint(position);
-    result.push(point.data);
   }
 }
 class VirtualBoxSorter {
@@ -34881,6 +35135,15 @@ const _VirtualBoxStructure = class _VirtualBoxStructure {
   }
   collideFrustum(bounds, frustum, fullyIncluded = false) {
     return this._collider.frustumCollide(bounds, frustum, fullyIncluded);
+  }
+  /**
+   * Fills `mask` with 1 for every sample whose box is fully outside the
+   * frustum (plus optional clipping planes) and 0 for every candidate.
+   * Allocation-free variant of {@link collideFrustum} for the per-view
+   * culling pass.
+   */
+  fillOutsideFrustumMask(bounds, frustum, mask) {
+    this._collider.frustumFillOutsideMask(bounds, frustum, mask);
   }
   collideRay(bounds, beam) {
     return this._collider.rayCollide(bounds, beam);
@@ -36972,6 +37235,14 @@ class FragmentsConnection extends Connection {
   get threadGroups() {
     return Object.fromEntries(this._threadGroups);
   }
+  /**
+   * Number of workers currently hosting at least one model. Used to
+   * split the global graphic-memory budget evenly between workers
+   * (each worker tracks its tile-cache consumption independently).
+   */
+  get activeThreadCount() {
+    return this._data.getThreadAmount();
+  }
   delete(model) {
     const thread2 = this._data.getThreadSafe(model);
     const amount = this._data.getAmountSafe(thread2) - 1;
@@ -37163,6 +37434,7 @@ const _FragmentsModels = class _FragmentsModels {
     __publicField(this, "_isDisposed", false);
     __publicField(this, "_autoRedrawInterval", null);
     __publicField(this, "_lastUpdate", 0);
+    __publicField(this, "_pendingForcedUpdate", null);
     const url = workerURL ?? new URL("./Worker/worker.mjs", import.meta.url).href;
     const requestEvent = this.newRequestEvent();
     const updateEvent = this.newUpdateEvent();
@@ -37321,6 +37593,10 @@ const _FragmentsModels = class _FragmentsModels {
    */
   async dispose() {
     this._isDisposed = true;
+    if (this._autoRedrawInterval) {
+      clearTimeout(this._autoRedrawInterval);
+      this._autoRedrawInterval = null;
+    }
     const models = Array.from(this.models.list.values());
     const promises = [];
     for (const model of models) {
@@ -37363,13 +37639,33 @@ const _FragmentsModels = class _FragmentsModels {
       return;
     }
     const now = performance.now();
-    if (now - this._lastUpdate < this.settings.maxUpdateRate) {
+    const elapsed = now - this._lastUpdate;
+    if (elapsed < this.settings.maxUpdateRate) {
+      if (!force) {
+        this.scheduleNextUpdate();
+        return;
+      }
+      if (!this._pendingForcedUpdate) {
+        const delay = this.settings.maxUpdateRate - elapsed + 1;
+        this._pendingForcedUpdate = new Promise((resolve) => {
+          setTimeout(() => {
+            this._pendingForcedUpdate = null;
+            this.performUpdate(true).then(resolve, () => resolve());
+          }, delay);
+        });
+      }
+      return this._pendingForcedUpdate;
+    }
+    return this.performUpdate(force);
+  }
+  async performUpdate(force) {
+    if (this._isDisposed) {
       return;
     }
-    this._lastUpdate = now;
+    this._lastUpdate = performance.now();
     const modelUpdates = [];
     for (const model of this.models.list.values()) {
-      modelUpdates.push(model._refreshView());
+      modelUpdates.push(model._refreshView(force));
     }
     await Promise.all(modelUpdates);
     if (force) {
@@ -37377,6 +37673,27 @@ const _FragmentsModels = class _FragmentsModels {
     } else {
       this.models.update();
     }
+    this.scheduleNextUpdate();
+  }
+  /**
+   * (Re)schedules the next automatic update. The view-change gating
+   * means an idle scene produces no worker messages and thus no
+   * FINISH-driven update events, so the loop sustains itself with
+   * this timer instead. Skipped when disposed or no models exist —
+   * the next model load (or any mesh update event) restarts it.
+   */
+  scheduleNextUpdate() {
+    if (this._isDisposed || this.models.list.size === 0) {
+      return;
+    }
+    if (this._autoRedrawInterval) {
+      clearTimeout(this._autoRedrawInterval);
+    }
+    const offset = this.settings.maxUpdateRate + 1;
+    this._autoRedrawInterval = setTimeout(() => {
+      this._autoRedrawInterval = null;
+      this.update();
+    }, offset);
   }
   async manageRequest(message) {
     if (message.class === MultiThreadingRequestClass.LOAD_PROGRESS) {
