@@ -32324,6 +32324,16 @@ const _VirtualTilesController = class _VirtualTilesController {
     __publicField(this, "_virtualPlanes", []);
     __publicField(this, "_changedSamples", 0);
     __publicField(this, "_virtualView");
+    /**
+     * Per-sample frustum verdict from the spatial hierarchy, refreshed on
+     * every real view change: 1 = the sample's box is provably outside
+     * the frustum/clipping planes (skip all per-sample plane math in
+     * {@link fetchLodLevel}), 0 = candidate (run the exact per-sample
+     * test as before, so the final classification is unchanged). All
+     * zeroes when no view or lookup exists — the pass then behaves
+     * exactly like the flat version.
+     */
+    __publicField(this, "_outsideMask");
     __publicField(this, "_lodMode", LodMode.DEFAULT);
     this._modelId = data.modelId;
     this._boxes = data.boxes;
@@ -32341,6 +32351,7 @@ const _VirtualTilesController = class _VirtualTilesController {
     this._sampleLodClass = new Uint8Array(this._sampleAmount);
     this._sampleLodState = new Uint8Array(this._sampleAmount);
     this._sampleLodSize = new Float32Array(this._sampleAmount);
+    this._outsideMask = new Uint8Array(this._sampleAmount);
     this._tileDimension = this.computeTileSize();
     this._tileBySample = new Array(this._sampleAmount);
     this._lodBySample = new Array(this._sampleAmount);
@@ -32374,7 +32385,7 @@ const _VirtualTilesController = class _VirtualTilesController {
     }
     const step = Math.max(1, Math.floor(this._sampleAmount / 20));
     for (let i = 0; i < this._sampleAmount; i++) {
-      this.generateSampleInTiles(i);
+      this.generateSampleInTiles(this._samplesDimensions[i]);
       if (i % step === 0) {
         onProgress == null ? void 0 : onProgress(i / this._sampleAmount);
         await new Promise((resolve) => setTimeout(resolve, 0));
@@ -32384,12 +32395,40 @@ const _VirtualTilesController = class _VirtualTilesController {
     this.setupTileVisibilityAndHighlight();
   }
   setupView(view) {
+    const previous = this._virtualView;
     this._virtualView = view;
     VirtualMemoryController.setCapacity(view.meshThreshold);
+    if (previous && this.viewEquals(previous, view)) {
+      this.setupViewPlanes();
+      if (this.tilesUpdated) {
+        this.emitFinish();
+      }
+      return;
+    }
     this.restart();
     this.updateOrientationIfNeeded();
     this.updatePositionIfNeeded();
     this.setupViewPlanes();
+    this.updateOutsideMask();
+  }
+  /**
+   * Rebuilds {@link _outsideMask} from the spatial hierarchy for the
+   * current view. One hierarchy walk per view change replaces the
+   * per-sample plane tests for everything that is provably outside —
+   * with a zoomed-in camera that is typically most of the model. Falls
+   * back to all-candidates (no skipping) when the model has no lookup
+   * (empty model) or no view yet.
+   */
+  updateOutsideMask() {
+    var _a2;
+    const lookup = this._boxes.lookup;
+    const frustum = (_a2 = this._virtualView) == null ? void 0 : _a2.cameraFrustum;
+    if (!lookup || !frustum) {
+      this._outsideMask.fill(0);
+      return;
+    }
+    const clipping = this._virtualView.clippingPlanes ?? [];
+    lookup.fillOutsideFrustumMask(clipping, frustum, this._outsideMask);
   }
   updateVirtualMeshes(itemIds) {
     if (!itemIds || !this._virtualView) {
@@ -32559,6 +32598,10 @@ const _VirtualTilesController = class _VirtualTilesController {
     if (!updateFinished) {
       return;
     }
+    this.emitFinish();
+    this.tilesUpdated = true;
+  }
+  emitFinish() {
     this._meshConnection.process({
       tileRequestClass: TileRequestClass.FINISH,
       modelId: this._modelId,
@@ -32571,7 +32614,45 @@ const _VirtualTilesController = class _VirtualTilesController {
       // waiters precisely, no buffer / poll required.
       seq: thread.lastSeenSeq
     });
-    this.tilesUpdated = true;
+  }
+  /**
+   * Structural equality of two worker-side views, covering every field
+   * the culling/LOD pass reads. `graphicThreshold` is deliberately
+   * ignored — it only budgets the invisible-tile cache, so a change in
+   * it must not trigger a full re-cull (the new value still takes
+   * effect because the caller stores the incoming view first).
+   */
+  viewEquals(a, b) {
+    if (a.fov !== b.fov || a.orthogonalDimension !== b.orthogonalDimension || a.viewSize !== b.viewSize || a.graphicQuality !== b.graphicQuality) {
+      return false;
+    }
+    if (!this.vectorEquals(a.cameraPosition, b.cameraPosition)) {
+      return false;
+    }
+    const aPlanes = a.cameraFrustum.planes;
+    const bPlanes = b.cameraFrustum.planes;
+    for (let i = 0; i < aPlanes.length; i++) {
+      if (!this.planeEquals(aPlanes[i], bPlanes[i])) {
+        return false;
+      }
+    }
+    const aClipping = a.clippingPlanes || [];
+    const bClipping = b.clippingPlanes || [];
+    if (aClipping.length !== bClipping.length) {
+      return false;
+    }
+    for (let i = 0; i < aClipping.length; i++) {
+      if (!this.planeEquals(aClipping[i], bClipping[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+  planeEquals(a, b) {
+    return a.constant === b.constant && this.vectorEquals(a.normal, b.normal);
+  }
+  vectorEquals(a, b) {
+    return a.x === b.x && a.y === b.y && a.z === b.z;
   }
   updatePositionIfNeeded() {
     const positionThreshold = this._params.updateViewPosition;
@@ -32966,6 +33047,9 @@ const _VirtualTilesController = class _VirtualTilesController {
         return CurrentLod.INVISIBLE;
       }
       return CurrentLod.GEOMETRY;
+    }
+    if (this._outsideMask[sample]) {
+      return CurrentLod.INVISIBLE;
     }
     const item = this._boxes.get(sample);
     const notClipped = CameraUtils.collides(item, this._virtualPlanes);
@@ -80461,18 +80545,29 @@ class VirtualBoxCollider {
     const onSeen = this.newDefaultCallback(true);
     return this.collide(onCollide, onIncludes, onSeen, fullyIncluded);
   }
+  /**
+   * Marks every point whose box does NOT touch the given frustum (plus
+   * optional clipping planes) with 1 in `mask`, and every candidate
+   * with 0. Same traversal and plane semantics as {@link frustumCollide},
+   * but writes into a caller-owned mask instead of allocating a result
+   * array — the culling hot path calls this on every view change, and
+   * with everything on screen a result array would hold every sample.
+   */
+  frustumFillOutsideMask(bounds, frustum, mask) {
+    mask.fill(1);
+    const planes = this.getFrustumPlanes(frustum, bounds);
+    const onCollide = this.getFrustumOnCollide(planes);
+    const onIncludes = this.getFrustumOnIncludes(planes);
+    const onSeen = this.newDefaultCallback(true);
+    this.traverse(onCollide, onIncludes, onSeen, (data) => {
+      mask[data] = 0;
+    });
+  }
   rayCollide(bounds, ray) {
     const onCollide = this.getRayOnCollide(ray);
     const onIncludes = this.newDefaultCallback(false);
     const onSeen = this.getRayOnSeen(bounds);
     return this.collide(onCollide, onIncludes, onSeen);
-  }
-  addPoint(fullyIncluded, result, currentPosition, includes) {
-    if (!fullyIncluded) {
-      result.push(this.getPointData(currentPosition));
-    } else if (includes) {
-      result.push(this.getPointData(currentPosition));
-    }
   }
   getPointData(position) {
     const point = this.getPoint(position);
@@ -80512,19 +80607,27 @@ class VirtualBoxCollider {
     };
   }
   collide(onCollide, onIncludes, onSeen, fullyIncluded = false) {
-    const pointAmount = this._data.points.length;
     const result = [];
+    this.traverse(onCollide, onIncludes, onSeen, (data, includes) => {
+      if (!fullyIncluded || includes) {
+        result.push(data);
+      }
+    });
+    return result;
+  }
+  // Shared hierarchy walk: groups whose box misses the query are skipped
+  // wholesale, fully-included groups collect their leaves without further
+  // box tests, and each surviving leaf is handed to `onLeaf` together
+  // with whether it sits in a fully-included group.
+  traverse(onCollide, onIncludes, onSeen, onLeaf) {
+    const pointAmount = this._data.points.length;
     let currentPosition = 0;
     const addAllPoints = (bound, includes) => {
       const finalPosition = currentPosition + this.groupSize(currentPosition);
       for (; currentPosition < finalPosition; currentPosition++) {
         const isPoint = this.isPoint(currentPosition);
         if (isPoint && onSeen(bound)) {
-          if (!fullyIncluded) {
-            this.savePoint(currentPosition, result);
-          } else if (includes) {
-            this.savePoint(currentPosition, result);
-          }
+          onLeaf(this.getPointData(currentPosition), includes);
         }
       }
     };
@@ -80534,7 +80637,7 @@ class VirtualBoxCollider {
       const isPoint = this.isPoint(currentPosition);
       const collides = includes || onCollide(bound);
       if (isPoint && collides && onSeen(bound)) {
-        this.addPoint(fullyIncluded, result, currentPosition, includes);
+        onLeaf(this.getPointData(currentPosition), includes);
       }
       if (collides || isPoint) {
         currentPosition++;
@@ -80548,7 +80651,6 @@ class VirtualBoxCollider {
     while (currentPosition < pointAmount) {
       processCollisions();
     }
-    return result;
   }
   getFrustumOnIncludes(planes) {
     return (box) => {
@@ -80571,10 +80673,6 @@ class VirtualBoxCollider {
       }
     }
     return planes;
-  }
-  savePoint(position, result) {
-    const point = this.getPoint(position);
-    result.push(point.data);
   }
 }
 class VirtualBoxSorter {
@@ -80761,6 +80859,15 @@ const _VirtualBoxStructure = class _VirtualBoxStructure {
   }
   collideFrustum(bounds, frustum, fullyIncluded = false) {
     return this._collider.frustumCollide(bounds, frustum, fullyIncluded);
+  }
+  /**
+   * Fills `mask` with 1 for every sample whose box is fully outside the
+   * frustum (plus optional clipping planes) and 0 for every candidate.
+   * Allocation-free variant of {@link collideFrustum} for the per-view
+   * culling pass.
+   */
+  fillOutsideFrustumMask(bounds, frustum, mask) {
+    this._collider.frustumFillOutsideMask(bounds, frustum, mask);
   }
   collideRay(bounds, beam) {
     return this._collider.rayCollide(bounds, beam);
@@ -82542,6 +82649,11 @@ class ThreadUpdater {
       const delay = updated ? this._updateDelay : 0;
       this.schedule(delay);
     });
+    // Offset into the model list where the next tick starts. Rotating the
+    // start point keeps one model with a long-running cull pass from
+    // eating the whole per-tick time budget every tick and starving the
+    // other models on this worker.
+    __publicField(this, "_nextModelOffset", 0);
     this._thread = thread2;
   }
   // Starts the update loop if it is not already running. Idempotent. Called
@@ -82575,14 +82687,23 @@ class ThreadUpdater {
   updateAllModels() {
     const start = performance.now();
     let isUpdated = true;
-    for (const [, model] of this._thread.list) {
+    const models = Array.from(this._thread.list.values());
+    const offset = this._nextModelOffset % models.length;
+    let processed = 0;
+    for (; processed < models.length; processed++) {
+      const model = models[(offset + processed) % models.length];
       const modelUpdated = model.update(start);
       isUpdated = isUpdated && modelUpdated;
       const end = performance.now();
       const timePassed = end - start;
       if (timePassed > this._updateThreshold) {
+        processed++;
         break;
       }
+    }
+    this._nextModelOffset = (offset + processed) % models.length;
+    if (processed < models.length) {
+      isUpdated = false;
     }
     return isUpdated;
   }
