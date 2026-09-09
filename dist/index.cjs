@@ -13167,6 +13167,218 @@ function extractArgsString(raw) {
     return null;
   return raw.substring(idx + 1, lastParen);
 }
+const { STRING, LABEL, ENUM, REAL, REF, INTEGER } = WEBIFC__namespace;
+function decodeStepString(raw) {
+  if (raw.indexOf("'") === -1 && raw.indexOf("\\") === -1)
+    return raw;
+  let out = "";
+  for (let i = 0; i < raw.length; i++) {
+    const c = raw.charCodeAt(i);
+    if (c === 39) {
+      out += "'";
+      i++;
+    } else if (c === 92) {
+      const next = raw[i + 1];
+      if (next === "\\") {
+        out += "\\";
+        i++;
+      } else if (next === "S" && raw[i + 2] === "\\") {
+        out += String.fromCharCode(raw.charCodeAt(i + 3) + 128);
+        i += 3;
+      } else if (next === "P" && raw[i + 3] === "\\") {
+        i += 3;
+      } else if (next === "X" && raw[i + 2] === "\\") {
+        out += String.fromCharCode(parseInt(raw.substr(i + 3, 2), 16));
+        i += 4;
+      } else if (next === "X" && (raw[i + 2] === "2" || raw[i + 2] === "4")) {
+        const width = raw[i + 2] === "2" ? 4 : 8;
+        const close = raw.indexOf("\\X0\\", i + 4);
+        const hex = raw.substring(i + 4, close === -1 ? raw.length : close);
+        for (let k = 0; k + width <= hex.length; k += width) {
+          const code = parseInt(hex.substr(k, width), 16);
+          out += width === 4 ? String.fromCharCode(code) : String.fromCodePoint(code);
+        }
+        i = close === -1 ? raw.length : close + 3;
+      } else {
+        out += raw[i];
+      }
+    } else {
+      out += raw[i];
+    }
+  }
+  return out;
+}
+function parseError(src, pos, reason) {
+  return new Error(
+    `Invalid Ifc argument at position ${pos} (${reason}): ${src.slice(Math.max(0, pos - 20), pos + 20)}`
+  );
+}
+function parseList(src, pos, end) {
+  const items = [];
+  while (pos < end) {
+    while (pos < end) {
+      const c2 = src.charCodeAt(pos);
+      if (c2 === 44 || c2 <= 32) {
+        pos++;
+      } else if (c2 === 47 && src.charCodeAt(pos + 1) === 42) {
+        const close = src.indexOf("*/", pos + 2);
+        if (close === -1 || close >= end) {
+          throw parseError(src, pos, "unterminated comment");
+        }
+        pos = close + 2;
+      } else
+        break;
+    }
+    if (pos >= end)
+      break;
+    const c = src.charCodeAt(pos);
+    if (c === 41)
+      break;
+    if (c === 36) {
+      items.push(null);
+      pos++;
+    } else if (c === 42) {
+      pos++;
+    } else if (c === 35) {
+      pos++;
+      const digitsStart = pos;
+      let id = 0;
+      while (pos < end) {
+        const d = src.charCodeAt(pos);
+        if (d >= 48 && d <= 57) {
+          id = id * 10 + (d - 48);
+          pos++;
+        } else
+          break;
+      }
+      if (pos === digitsStart)
+        throw parseError(src, pos, "expected digits after '#'");
+      items.push({ type: REF, value: id });
+    } else if (c === 46) {
+      pos++;
+      const nameStart = pos;
+      while (pos < end && src.charCodeAt(pos) !== 46)
+        pos++;
+      if (pos >= end)
+        throw parseError(src, nameStart, "unterminated enum");
+      const name = src.substring(nameStart, pos);
+      pos++;
+      if (name === "T")
+        items.push({ type: ENUM, value: true });
+      else if (name === "F")
+        items.push({ type: ENUM, value: false });
+      else if (name === "U")
+        items.push({ type: ENUM, value: void 0 });
+      else
+        items.push({ type: ENUM, value: name });
+    } else if (c === 39) {
+      pos++;
+      let i = pos;
+      while (i < end) {
+        if (src.charCodeAt(i) === 39) {
+          if (src.charCodeAt(i + 1) === 39 && i + 1 < end)
+            i += 2;
+          else
+            break;
+        } else
+          i++;
+      }
+      if (i >= end)
+        throw parseError(src, pos, "unterminated string");
+      items.push({
+        type: STRING,
+        value: decodeStepString(src.substring(pos, i))
+      });
+      pos = i + 1;
+    } else if (c === 34) {
+      pos++;
+      const hexStart = pos;
+      while (pos < end && src.charCodeAt(pos) !== 34)
+        pos++;
+      if (pos >= end)
+        throw parseError(src, hexStart, "unterminated binary literal");
+      items.push({ type: REAL, value: src.substring(hexStart, pos) });
+      pos++;
+    } else if (c === 40) {
+      const inner = parseList(src, pos + 1, end);
+      if (inner.pos >= end || src.charCodeAt(inner.pos) !== 41) {
+        throw parseError(src, pos, "unterminated aggregate");
+      }
+      pos = inner.pos + 1;
+      items.push(inner.items);
+    } else if (c === 45 || c === 43 || c >= 48 && c <= 57) {
+      const numStart = pos;
+      if (c === 45 || c === 43)
+        pos++;
+      let hasDigits = false;
+      let isReal = false;
+      while (pos < end) {
+        const d = src.charCodeAt(pos);
+        if (d >= 48 && d <= 57) {
+          hasDigits = true;
+          pos++;
+        } else if (d === 46) {
+          isReal = true;
+          pos++;
+        } else if (d === 69 || d === 101) {
+          isReal = true;
+          pos++;
+          const s = src.charCodeAt(pos);
+          if (s === 43 || s === 45)
+            pos++;
+        } else
+          break;
+      }
+      if (!hasDigits)
+        throw parseError(src, numStart, "malformed number");
+      items.push(
+        isReal ? { type: REAL, value: src.substring(numStart, pos) } : {
+          type: INTEGER,
+          value: parseInt(src.substring(numStart, pos), 10)
+        }
+      );
+    } else if (c >= 65 && c <= 90 || c >= 97 && c <= 122) {
+      const nameStart = pos;
+      while (pos < end) {
+        const d = src.charCodeAt(pos);
+        if (d >= 65 && d <= 90 || d >= 97 && d <= 122 || d >= 48 && d <= 57 || d === 95)
+          pos++;
+        else
+          break;
+      }
+      const name = src.substring(nameStart, pos);
+      while (pos < end && src.charCodeAt(pos) <= 32)
+        pos++;
+      if (pos >= end || src.charCodeAt(pos) !== 40) {
+        throw parseError(src, nameStart, `expected '(' after '${name}'`);
+      }
+      const inner = parseList(src, pos + 1, end);
+      if (inner.pos >= end || src.charCodeAt(inner.pos) !== 41) {
+        throw parseError(src, pos, "unterminated typed value");
+      }
+      pos = inner.pos + 1;
+      const typecode = WEBIFC__namespace[name.toUpperCase()];
+      const first = inner.items[0];
+      items.push({
+        type: LABEL,
+        typecode: typeof typecode === "number" ? typecode : void 0,
+        value: first === null || Array.isArray(first) ? first ?? void 0 : first.value
+      });
+    } else {
+      throw parseError(src, pos, `unexpected character '${src[pos]}'`);
+    }
+  }
+  return { items, pos };
+}
+function parseStepArguments(line) {
+  const start = line.indexOf("(");
+  if (start < 0)
+    return [];
+  const end = line.lastIndexOf(")");
+  if (end < start)
+    return [];
+  return parseList(line, start + 1, end).items;
+}
 const crCharCode = 13;
 const nl = "\n";
 class IfcDecoderStream extends TransformStream {
@@ -13184,6 +13396,8 @@ class IfcDecoderStream extends TransformStream {
           let end = idx;
           if (end > 0 && text.charCodeAt(end - 1) === crCharCode)
             end--;
+          else if (end === 0 && tail.charCodeAt(tail.length - 1) === crCharCode)
+            tail = tail.slice(0, -1);
           controller.enqueue(
             tail ? tail + text.substring(start, end) : text.substring(start, end)
           );
@@ -13210,6 +13424,153 @@ class IfcDecoderStream extends TransformStream {
         const full = tail + remaining;
         if (full)
           controller.enqueue(full);
+      }
+    });
+  }
+}
+const maxStatementLength = 64 * 1024 * 1024;
+class IfcParserStream extends TransformStream {
+  constructor() {
+    let factories = null;
+    let fileSchemas = null;
+    let section = "header";
+    let statement = "";
+    let inString = false;
+    let inComment = false;
+    function processStatement(raw, controller) {
+      switch (section) {
+        case "header":
+          if (raw === "DATA") {
+            if (!fileSchemas) {
+              controller.error(new Error("Ifc schema not found"));
+              return;
+            }
+            let schemaIndex = -1;
+            for (const name of fileSchemas) {
+              schemaIndex = WEBIFC__namespace.SchemaNames.findIndex(
+                (names) => names == null ? void 0 : names.includes(name)
+              );
+              if (schemaIndex !== -1)
+                break;
+            }
+            if (schemaIndex === -1) {
+              controller.error(
+                new Error(`Ifc schema '${fileSchemas.join("', '")}' not found`)
+              );
+              return;
+            }
+            factories = WEBIFC__namespace.FromRawLineData[schemaIndex];
+            section = "data";
+          } else if (raw.startsWith("FILE_SCHEMA")) {
+            try {
+              const [names] = parseStepArguments(raw);
+              if (Array.isArray(names)) {
+                const schemas = [];
+                for (const item of names) {
+                  if (item && !Array.isArray(item) && typeof item.value === "string") {
+                    schemas.push(item.value);
+                  }
+                }
+                if (schemas.length)
+                  fileSchemas = schemas;
+              }
+            } catch {
+            }
+          }
+          break;
+        case "data": {
+          if (raw === "ENDSEC") {
+            section = "between";
+            return;
+          }
+          const meta = extractLineMeta(raw);
+          if (!meta) {
+            controller.error(new Error(`Corrupted Ifc statement: ${raw}`));
+            return;
+          }
+          const typeCode = WEBIFC__namespace[meta.type];
+          if (typeof typeCode !== "number")
+            return;
+          const factory = factories == null ? void 0 : factories[typeCode];
+          if (!factory)
+            return;
+          let entity;
+          try {
+            entity = factory(parseStepArguments(raw));
+          } catch (err2) {
+            controller.error(
+              new Error(`Corrupted Ifc statement: ${raw}`, { cause: err2 })
+            );
+            return;
+          }
+          entity.expressID = meta.id;
+          controller.enqueue(entity);
+          break;
+        }
+        case "between":
+          if (raw === "DATA")
+            section = "data";
+          else if (raw === "END-ISO-10303-21")
+            section = "end";
+          break;
+      }
+    }
+    super({
+      transform(line, controller) {
+        const length = line.length;
+        let segStart = 0;
+        let i = 0;
+        while (i < length) {
+          const c = line.charCodeAt(i);
+          if (inComment) {
+            if (c === 42 && line.charCodeAt(i + 1) === 47) {
+              inComment = false;
+              i += 2;
+              segStart = i;
+            } else
+              i++;
+            continue;
+          }
+          if (inString) {
+            if (c === 39)
+              inString = false;
+            i++;
+            continue;
+          }
+          if (c === 39) {
+            inString = true;
+            i++;
+            continue;
+          }
+          if (c === 47 && line.charCodeAt(i + 1) === 42) {
+            statement += `${line.substring(segStart, i)} `;
+            inComment = true;
+            i += 2;
+            continue;
+          }
+          if (c === 59) {
+            const raw = (statement + line.substring(segStart, i)).trim();
+            statement = "";
+            i++;
+            segStart = i;
+            if (raw)
+              processStatement(raw, controller);
+            continue;
+          }
+          i++;
+        }
+        if (!inComment && segStart < length) {
+          statement += `${line.substring(segStart)}
+`;
+          if (statement.length > maxStatementLength) {
+            controller.error(new Error("Ifc statement exceeds maximum length"));
+          }
+        }
+      },
+      flush(controller) {
+        if (statement.trim() || section !== "end") {
+          controller.error(new Error("Unexpected end of Ifc stream"));
+        }
       }
     });
   }
@@ -13399,10 +13760,10 @@ function collectDeps(startId, index, visited, allElementIds) {
     const id = stack.pop();
     if (visited.has(id))
       continue;
-    visited.add(id);
     const refs = index.getRefs(id);
     if (!refs)
       continue;
+    visited.add(id);
     for (let i = 0; i < refs.length; i++) {
       const refId = refs[i];
       if (visited.has(refId))
@@ -13419,10 +13780,10 @@ function collectDepsAll(startId, index, visited) {
     const id = stack.pop();
     if (visited.has(id))
       continue;
-    visited.add(id);
     const refs = index.getRefs(id);
     if (!refs)
       continue;
+    visited.add(id);
     for (let i = 0; i < refs.length; i++) {
       if (!visited.has(refs[i]))
         stack.push(refs[i]);
@@ -14343,6 +14704,54 @@ class PlanesUtils {
 __publicField(PlanesUtils, "tempPoint", new THREE__namespace.Vector3());
 __publicField(PlanesUtils, "dimensions", ["x", "y", "z"]);
 class CameraUtils {
+  /**
+   * A frustum containing all of `box`, used when no camera has been set.
+   *
+   * This is deliberately *not* signalled out of band. The worker ships as
+   * a separate artifact that consumers pin or self-host, so a main thread
+   * can be paired with a worker that predates any new flag. A frustum that
+   * contains the model needs no agreement: it is structurally an ordinary
+   * frustum, so every worker — old or new — culls against it and keeps
+   * every box, which is exactly the intended behaviour. Contrast the
+   * default `new THREE.Frustum()`, whose six identical (1,0,0)/0 planes
+   * discard the entire negative-X half space (#255).
+   *
+   * The extent comes from the model's own bounds rather than a fixed
+   * constant, so it carries no assumption about authoring units. That
+   * matters because fragments does not normalise geometry to metres — the
+   * IFC length-unit factor is applied to storey-height properties only —
+   * so a millimetre-scale, geo-referenced model can legitimately reach
+   * coordinates of 1e10, which any hard-coded extent would start clipping.
+   *
+   * `box` must be in model space, because that is where the worker culls:
+   * `VirtualBoxController.get()` returns raw flatbuffer coordinates with
+   * only the per-sample transform applied, and the `modelPlacement` on the
+   * view is never read by anything. Callers holding a world-space box —
+   * `FragmentsModel.box` is world space — must first push it through the
+   * inverse placement, mirroring what {@link transform} does for the
+   * real-camera frustum. Under an identity placement the two spaces
+   * coincide, so this is easy to get wrong without noticing.
+   */
+  static containing(box, result = new THREE__namespace.Frustum()) {
+    const min = box.isEmpty() ? { x: -1, y: -1, z: -1 } : box.min;
+    const max = box.isEmpty() ? { x: 1, y: 1, z: 1 } : box.max;
+    const size = box.isEmpty() ? this.tempSize.set(2, 2, 2) : box.getSize(this.tempSize);
+    const margin = Math.max(size.x, size.y, size.z) || 1;
+    const constants = [
+      -min.x + margin,
+      max.x + margin,
+      -min.y + margin,
+      max.y + margin,
+      -min.z + margin,
+      max.z + margin
+    ];
+    for (let i = 0; i < result.planes.length; i++) {
+      const [x, y, z] = this.axisNormals[i];
+      result.planes[i].normal.set(x, y, z);
+      result.planes[i].constant = constants[i];
+    }
+    return result;
+  }
   static transform(input, transform, result = new THREE__namespace.Frustum()) {
     for (let i = 0; i < result.planes.length; i++) {
       const resultPlane = result.planes[i];
@@ -14359,6 +14768,16 @@ class CameraUtils {
     return PlanesUtils.collides(box, ps, false);
   }
 }
+__publicField(CameraUtils, "tempSize", new THREE__namespace.Vector3());
+/** Axis-aligned inward normals, in THREE's plane order. */
+__publicField(CameraUtils, "axisNormals", [
+  [1, 0, 0],
+  [-1, 0, 0],
+  [0, 1, 0],
+  [0, -1, 0],
+  [0, 0, 1],
+  [0, 0, -1]
+]);
 function earcut$1(data, holeIndices, dim = 2) {
   const hasHoles = holeIndices && holeIndices.length;
   const outerLen = hasHoles ? holeIndices[0] * dim : data.length;
@@ -20006,6 +20425,7 @@ class ViewManager {
   constructor() {
     __publicField(this, "getClippingPlanesEvent", () => []);
     __publicField(this, "currentCamera", null);
+    __publicField(this, "_noCameraWarned", false);
     __publicField(this, "_tempMatrix", new THREE__namespace.Matrix4());
     __publicField(this, "_tempVec", new THREE__namespace.Vector3());
     __publicField(this, "_tempFrustum", new THREE__namespace.Frustum());
@@ -20041,7 +20461,17 @@ class ViewManager {
    */
   async refreshView(model, meshes, force = false) {
     const fov = this.setup(model);
-    const frustum = CameraUtils.transform(this._tempFrustum, this._tempMatrix);
+    let frustum;
+    if (!this.currentCamera) {
+      this.warnNoCameraOnce(model);
+      const bounds = model.box;
+      if (!bounds.isEmpty()) {
+        bounds.applyMatrix4(this._tempMatrix);
+      }
+      frustum = CameraUtils.containing(bounds, this._tempFrustum);
+    } else {
+      frustum = CameraUtils.transform(this._tempFrustum, this._tempMatrix);
+    }
     const request = this.newViewRequest(frustum, fov, model);
     const signature = this.computeViewSignature(request.view, model);
     if (!force && this.signatureEquals(signature)) {
@@ -20079,6 +20509,15 @@ class ViewManager {
     this._updateCameraFrustumEvent(this._tempFrustum);
     const fov = this._updateFOVEvent();
     return fov;
+  }
+  warnNoCameraOnce(model) {
+    if (this._noCameraWarned) {
+      return;
+    }
+    console.warn(
+      `Fragments: model "${model.modelId}" is being rendered before useCamera() has been called. Frustum culling is disabled until a camera is set.`
+    );
+    this._noCameraWarned = true;
   }
   /**
    * Flattens everything view-relevant into a number list for cheap
@@ -29507,7 +29946,7 @@ class ThreadViewRefresher extends ThreadController {
   }
   safeCopyFrustum(input) {
     const frustum = input.view.cameraFrustum;
-    input.view.cameraFrustum = MultithreadingHelper.frustum(frustum);
+    input.view.cameraFrustum = frustum ? MultithreadingHelper.frustum(frustum) : null;
   }
   safeCopyPosition(input) {
     const position = input.view.cameraPosition;
@@ -32299,10 +32738,22 @@ const _VirtualTilesController = class _VirtualTilesController {
       return bDimension - aDimension;
     });
   }
+  /**
+   * Defensive only. A camera-less main thread sends a model-containing frustum
+   * rather than omitting one, so this should always be true in practice —
+   * but the field is untyped across the worker boundary, and dereferencing
+   * it unguarded is what turns a missing frustum into a crash on every
+   * frame instead of a degraded view.
+   */
+  get hasCameraFrustum() {
+    return !!this._virtualView.cameraFrustum;
+  }
   setupViewPlanes() {
     this._virtualPlanes = [];
-    for (const plane of this._virtualView.cameraFrustum.planes) {
-      this._virtualPlanes.push(plane);
+    if (this.hasCameraFrustum) {
+      for (const plane of this._virtualView.cameraFrustum.planes) {
+        this._virtualPlanes.push(plane);
+      }
     }
     if (this._virtualView.clippingPlanes) {
       for (const plane of this._virtualView.clippingPlanes) {
@@ -32312,6 +32763,8 @@ const _VirtualTilesController = class _VirtualTilesController {
   }
   updateOrientationIfNeeded() {
     const orientation = this.getCurrentViewOrientation();
+    if (!orientation)
+      return;
     const orientationThreshold = this._params.updateviewOrientation;
     const orientationChange = orientation.angleTo(this._lastView.rotation);
     const orientationNeedsUpdate = orientationChange > orientationThreshold;
@@ -32321,6 +32774,9 @@ const _VirtualTilesController = class _VirtualTilesController {
     }
   }
   getCurrentViewOrientation() {
+    if (!this.hasCameraFrustum) {
+      return void 0;
+    }
     return this._virtualView.cameraFrustum.planes[4].normal;
   }
   resetUpdateProcess() {
@@ -41396,7 +41852,9 @@ exports.FragmentsModels = FragmentsModels;
 exports.GRID_CATEGORY = GRID_CATEGORY;
 exports.GeometryEngine = GeometryEngine;
 exports.GeomsFbUtils = GeomsFbUtils;
+exports.IfcDecoderStream = IfcDecoderStream;
 exports.IfcImporter = IfcImporter;
+exports.IfcParserStream = IfcParserStream;
 exports.IfcSplitter = IfcSplitter;
 exports.ItemConfigClass = ItemConfigClass;
 exports.LoadAbortedError = LoadAbortedError;
@@ -41430,6 +41888,10 @@ exports.Transform = Transform;
 exports.Wall = Wall;
 exports.Wire = Wire;
 exports.WireSet = WireSet;
+exports.decodeStepString = decodeStepString;
+exports.extractArgsString = extractArgsString;
+exports.extractLineMeta = extractLineMeta;
+exports.extractRefs = extractRefs;
 exports.geometryTypes = geometryTypes;
 exports.getObject = getObject;
 exports.ifcCategoryMap = ifcCategoryMap;
@@ -41439,5 +41901,9 @@ exports.ifcRelationsMap = ifcRelationsMap;
 exports.isIndexRequest = isIndexRequest;
 exports.isRawBuffer = isRawBuffer;
 exports.limitOf2Bytes = limitOf2Bytes;
+exports.parseHashRef = parseHashRef;
+exports.parseStepArguments = parseStepArguments;
+exports.splitIfcArgs = splitIfcArgs;
+exports.streamAsyncIterator = streamAsyncIterator;
 exports.toClassicWorker = toClassicWorker;
 //# sourceMappingURL=index.cjs.map

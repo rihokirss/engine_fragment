@@ -645,6 +645,9 @@ export declare class DataSet<T> extends Set<T> {
     dispose(): void;
 }
 
+/** Decode a raw STEP string body: `''`, `\\`, `\S\c`, `\X\hh`, `\X2\…\X0\`. */
+export declare function decodeStepString(raw: string): string;
+
 /**
  * Interface for delete global transform edit requests.
  */
@@ -1214,6 +1217,12 @@ declare class Event_2<T> {
     private handlers;
 }
 export { Event_2 as Event }
+
+export declare function extractArgsString(raw: string | undefined): string | null;
+
+export declare function extractLineMeta(raw: string): LineMeta | null;
+
+export declare function extractRefs(raw: string, skipId?: number): number[];
 
 export declare class Extrusion {
     core: WEBIFC.Extrusion;
@@ -2703,6 +2712,29 @@ export declare const ifcClasses: {
     elements: Set<number>;
 };
 
+/**
+
+ *
+ * @example
+ * ```ts
+ * let blob: Blob;
+ *
+ * // node
+ * blob = await fs.openAsBlob(path, { type: "text/plain" });
+ *
+ * const ifcStream = blob
+ *   .stream()
+ *   .pipeThrough(new IfcDecoderStream());
+ *
+ * for await (const line of ifcStream) {
+ *   // parse line
+ * }
+ * ```
+ */
+export declare class IfcDecoderStream extends TransformStream<Uint8Array, string> {
+    constructor(encoding?: string);
+}
+
 export declare const ifcGeometriesMap: Set<number>;
 
 /**
@@ -2813,6 +2845,38 @@ export declare class IfcImporter {
      */
     addAllRelations(): void;
     private clean;
+}
+
+/**
+ * Parses the ISO 10303-21 statements of an IFC file into web-ifc entities,
+ * matching the shape `IfcAPI.GetLine` returns (attributes hold typed value
+ * wrappers, refs are `{ type: 5, value }` handles, omitted attributes are
+ * `null`). Statements may span physical lines, share a line, or be
+ * interleaved with `/* ... *\/` comments and blank lines. Entity types
+ * outside the file's declared schema are skipped, like web-ifc does.
+ * The stream errors on corrupted statements and on input that ends before
+ * `END-ISO-10303-21;`, so truncated files are not mistaken for complete ones.
+ *
+ * @example
+ * ```ts
+ * let blob: Blob;
+ *
+ * // node
+ * blob = await fs.openAsBlob(path, { type: "text/plain" });
+ *
+ * const ifcStream = blob
+ *   .stream()
+ *   .pipeThrough(new IfcDecoderStream())
+ *   .pipeThrough(new IfcParserStream());
+ *
+ * for await (const entity of ifcStream) {
+ *   const localId = entity.expressID;
+ *   const type = entity.type;
+ * }
+ * ```
+ */
+export declare class IfcParserStream extends TransformStream<string, WEBIFC.IfcLineObject> {
+    constructor();
 }
 
 export declare const ifcRelationsMap: Map<number, {
@@ -3493,6 +3557,11 @@ declare class LineIndex {
     getRaw(id: number): string | undefined;
     getAll(types: Set<string>): Set<number>;
     free(): void;
+}
+
+export declare interface LineMeta {
+    id: number;
+    type: string;
 }
 
 /**
@@ -4238,11 +4307,20 @@ export declare type ParabolaData = {
     endGradient?: number;
 };
 
+export declare function parseHashRef(s: string): number | null;
+
 declare interface ParseResult {
     header: string[];
     footer: string[];
     index: LineIndex;
 }
+
+/**
+ * Parse the argument list of a STEP data statement (`#ID=TYPENAME(args);`)
+ * into web-ifc's raw tape shape, suitable for `webIfc.FromRawLineData`.
+ * Throws on malformed arguments.
+ */
+export declare function parseStepArguments(line: string): StepArgument[];
 
 export declare interface ProcessData {
     id?: string;
@@ -5250,6 +5328,31 @@ export declare interface SpatialTreeItem {
     children?: SpatialTreeItem[];
 }
 
+export declare function splitIfcArgs(s: string): string[];
+
+export declare type StepArgument = null | StepArgument[] | {
+    type: number;
+    value?: string | number | boolean | StepArgument[];
+    typecode?: number;
+};
+
+/**
+ * Backward compatible stream async iterator
+ * ```typescript
+ * for await (const line of streamAsyncIterator(readableStream)) {
+ *   await callback(line);
+ * }
+ * ```
+ *
+ * Modern environments support stream async iterator out of the box:
+ * ```typescript
+ * for await (const line of readableStream) {
+ *   await callback(line);
+ * }
+ * ```
+ */
+export declare function streamAsyncIterator<T>(stream: ReadableStream<T>): AsyncGenerator<Awaited<T>, void, unknown>;
+
 export declare enum Stroke {
     DEFAULT = 0
 }
@@ -6076,6 +6179,14 @@ declare class VirtualTilesController {
     private updatePositionIfNeeded;
     private updateCurrentSample;
     private processSamplesDimension;
+    /**
+     * Defensive only. A camera-less main thread sends a model-containing frustum
+     * rather than omitting one, so this should always be true in practice —
+     * but the field is untyped across the worker boundary, and dereferencing
+     * it unguarded is what turns a missing frustum into a crash on every
+     * frame instead of a degraded view.
+     */
+    private get hasCameraFrustum();
     private setupViewPlanes;
     private updateOrientationIfNeeded;
     private getCurrentViewOrientation;
