@@ -1649,10 +1649,10 @@ class ByteBuffer {
   /**
    * Initialize any Table-derived type to point to the union at the given offset.
    */
-  __union(t, offset) {
-    t.bb_pos = offset + this.readInt32(offset);
-    t.bb = this;
-    return t;
+  __union(t2, offset) {
+    t2.bb_pos = offset + this.readInt32(offset);
+    t2.bb = this;
+    return t2;
   }
   /**
    * Create a JavaScript string from UTF-8 data stored inside the FlatBuffer.
@@ -2910,11 +2910,11 @@ const makeTable = () => {
 };
 const crcTable = new Uint32Array(makeTable());
 const crc32 = (crc, buf, len, pos) => {
-  const t = crcTable;
+  const t2 = crcTable;
   const end = pos + len;
   crc ^= -1;
   for (let i = pos; i < end; i++) {
-    crc = crc >>> 8 ^ t[(crc ^ buf[i]) & 255];
+    crc = crc >>> 8 ^ t2[(crc ^ buf[i]) & 255];
   }
   return crc ^ -1;
 };
@@ -9549,6 +9549,14 @@ function getIdsDelta(model, requests) {
     createNewSample
   };
 }
+const FRAGMENTS_GENERATOR = "@thatopen/fragments";
+const FRAGMENTS_VERSION = "3.4.7";
+function getProvenanceMetadata() {
+  return {
+    generator: FRAGMENTS_GENERATOR,
+    version: FRAGMENTS_VERSION
+  };
+}
 function newModel(config) {
   const builder = new Builder(1024);
   Meshes.startGlobalTransformsVector(builder, 0);
@@ -9605,7 +9613,9 @@ function newModel(config) {
   Meshes.addLocalTransformIds(builder, ltLocalIdsOffset);
   Meshes.addGlobalTransformIds(builder, gtLocalIdsOffset);
   const modelMesh = Meshes.endMeshes(builder);
-  const metadataOffset = builder.createString("{}");
+  const metadataOffset = builder.createString(
+    JSON.stringify(getProvenanceMetadata())
+  );
   const attributesVector = Model.createAttributesVector(builder, []);
   const uniqueAttributesVector = Model.createUniqueAttributesVector(
     builder,
@@ -12376,16 +12386,19 @@ __publicField(_GeomsFbUtils, "ushortMaxValue", 65e3);
 let GeomsFbUtils = _GeomsFbUtils;
 class FragmentsIfcUtils {
   static getAbsolutePlacement(webIfc, item, unitsFactor = this.getUnitsFactor(webIfc)) {
-    const placementId = item.ObjectPlacement.value;
-    const placement = webIfc.GetLine(0, placementId);
+    var _a2;
     const ifcResult = new THREE.Matrix4();
     ifcResult.identity();
-    this.getAbsolutePlacementRecursively(
-      webIfc,
-      placement,
-      ifcResult,
-      unitsFactor
-    );
+    const placementId = (_a2 = item.ObjectPlacement) == null ? void 0 : _a2.value;
+    if (placementId !== null && placementId !== void 0) {
+      const placement = webIfc.GetLine(0, placementId);
+      this.getAbsolutePlacementRecursively(
+        webIfc,
+        placement,
+        ifcResult,
+        unitsFactor
+      );
+    }
     const tempMatrix2 = new THREE.Matrix4();
     tempMatrix2.makeRotationX(-Math.PI / 2);
     ifcResult.premultiply(tempMatrix2);
@@ -13574,7 +13587,7 @@ async function* streamAsyncIterator(stream) {
     reader.releaseLock();
   }
 }
-const ELEMENT_TYPES = /* @__PURE__ */ new Set([
+const ELEMENT_TYPES = Object.freeze([
   "IFCWALL",
   "IFCWALLSTANDARDCASE",
   "IFCWALLELEMENTEDCASE",
@@ -13629,7 +13642,7 @@ const ELEMENT_TYPES = /* @__PURE__ */ new Set([
   "IFCPROXY",
   "IFCMECHANICALFASTENER"
 ]);
-const SPATIAL_TYPES = /* @__PURE__ */ new Set([
+const SPATIAL_TYPES = Object.freeze([
   "IFCPROJECT",
   "IFCSITE",
   "IFCBUILDING",
@@ -13670,12 +13683,12 @@ class LineIndex {
     __publicField(this, "_refLen", []);
   }
   set(id, type, refs, raw) {
-    let t = this._typeIntern.get(type);
-    if (!t) {
-      t = type;
-      this._typeIntern.set(type, t);
+    let t2 = this._typeIntern.get(type);
+    if (!t2) {
+      t2 = type;
+      this._typeIntern.set(type, t2);
     }
-    this.types[id] = t;
+    this.types[id] = t2;
     if (id > this.maxId)
       this.maxId = id;
     const start = this._refBufUsed;
@@ -13692,7 +13705,7 @@ class LineIndex {
     this._refBufUsed = start + refs.length;
     this._refStart[id] = start;
     this._refLen[id] = refs.length;
-    if (t.startsWith("IFCREL") || t === "IFCSTYLEDITEM" || t === "IFCMATERIALDEFINITIONREPRESENTATION") {
+    if (t2.startsWith("IFCREL") || t2 === "IFCSTYLEDITEM" || t2 === "IFCMATERIALDEFINITIONREPRESENTATION") {
       this.specialRaws.set(id, raw);
     }
   }
@@ -13859,11 +13872,11 @@ function buildAggregateMap(index, allElementIds) {
   }
   return { parentToChildren, childToParent, aggregateRelIds };
 }
-function traverseSpatialStructure(index) {
+function traverseSpatialStructure(index, spatialTypes) {
   const spatialIds = /* @__PURE__ */ new Set();
   for (let id = 0; id <= index.maxId; id++) {
     const type = index.getType(id);
-    if (type && SPATIAL_TYPES.has(type))
+    if (type && spatialTypes.has(type))
       spatialIds.add(id);
   }
   const sharedIds = /* @__PURE__ */ new Set();
@@ -14096,8 +14109,9 @@ async function abortWriters(writers, reason) {
   await Promise.allSettled(writers.map(async (writer) => writer.abort(reason)));
 }
 class IfcSplitter {
-  constructor(ifcSplitterIO) {
+  constructor(ifcSplitterIO, config = {}) {
     __publicField(this, "io");
+    __publicField(this, "config");
     __publicField(this, "eventTarget");
     __publicField(this, "onProgress", new Event());
     __publicField(this, "onSplitsResolved", new Event());
@@ -14106,6 +14120,11 @@ class IfcSplitter {
      */
     __publicField(this, "onExtractWarning", new Event());
     this.io = ifcSplitterIO;
+    this.config = {
+      elementTypes: new Set(config.elementTypes ?? ELEMENT_TYPES),
+      spatialTypes: new Set(config.spatialTypes ?? SPATIAL_TYPES),
+      listArgIndex: config.listArgIndex ?? listIdxByType
+    };
     this.eventTarget = new EventTarget();
   }
   /**
@@ -14128,7 +14147,7 @@ class IfcSplitter {
     const { header, footer, index } = await this.parseIfc(inputPath);
     this.emitProgressEvent("parse", parseStart);
     const spatialStart = performance.now();
-    const sharedIds = traverseSpatialStructure(index);
+    const sharedIds = traverseSpatialStructure(index, this.config.spatialTypes);
     this.emitProgressEvent("spatial", spatialStart);
     const voidFillStart = performance.now();
     const vfMap = buildVoidFillMap(index);
@@ -14137,7 +14156,7 @@ class IfcSplitter {
     const styleMaps = buildStyleMaps(index);
     this.emitProgressEvent("style-maps", styleMapsStart);
     const classifyStart = performance.now();
-    const allElementIds = index.getAll(ELEMENT_TYPES);
+    const allElementIds = index.getAll(this.config.elementTypes);
     this.emitProgressEvent("classify", classifyStart);
     const aggregateStart = performance.now();
     const aggMap = buildAggregateMap(index, allElementIds);
@@ -14151,13 +14170,14 @@ class IfcSplitter {
       const cluster = getCluster(eid, vfMap, aggMap);
       const elementCluster = /* @__PURE__ */ new Set();
       for (const cid of cluster) {
-        if (allElementIds.has(cid))
+        if (allElementIds.has(cid)) {
           elementCluster.add(cid);
+          assigned.add(cid);
+        }
       }
       clusters.push(elementCluster);
-      for (const cid of elementCluster)
-        assigned.add(cid);
     }
+    assigned.clear();
     this.emitProgressEvent("cluster", clusterStart);
     const distributeStart = performance.now();
     const groups = Array.from(
@@ -14187,8 +14207,8 @@ class IfcSplitter {
         if (!argsStr)
           continue;
         const args = splitIfcArgs(argsStr);
-        const listIdx = listIdxByType(type);
-        if (args.length <= listIdx)
+        const listIdx = this.config.listArgIndex(type) ?? -1;
+        if (listIdx < 0 || args.length <= listIdx)
           continue;
         const listRefs = extractRefs(args[listIdx]);
         if (listRefs.length === 0)
@@ -14298,7 +14318,7 @@ class IfcSplitter {
     const { header, footer, index } = await this.parseIfc(inputPath);
     this.emitProgressEvent("parse", parseStart);
     const spatialStart = performance.now();
-    const sharedIds = traverseSpatialStructure(index);
+    const sharedIds = traverseSpatialStructure(index, this.config.spatialTypes);
     this.emitProgressEvent("spatial", spatialStart);
     const voidFillStart = performance.now();
     const vfMap = buildVoidFillMap(index);
@@ -14307,7 +14327,7 @@ class IfcSplitter {
     const styleMaps = buildStyleMaps(index);
     this.emitProgressEvent("style-maps", styleMapsStart);
     const classifyStart = performance.now();
-    const allElementIds = index.getAll(ELEMENT_TYPES);
+    const allElementIds = index.getAll(this.config.elementTypes);
     this.emitProgressEvent("classify", classifyStart);
     const aggregateStart = performance.now();
     const aggMap = buildAggregateMap(index, allElementIds);
@@ -14353,8 +14373,8 @@ class IfcSplitter {
         if (!argsStr)
           continue;
         const args = splitIfcArgs(argsStr);
-        const listIdx = listIdxByType(type);
-        if (args.length <= listIdx)
+        const listIdx = this.config.listArgIndex(type) ?? -1;
+        if (listIdx < 0 || args.length <= listIdx)
           continue;
         const listRefs = extractRefs(args[listIdx]);
         if (listRefs.length === 0)
@@ -15029,7 +15049,7 @@ function sortLinked$1(list) {
   let inSize = 1;
   do {
     let p = list;
-    let e;
+    let e2;
     list = null;
     let tail = null;
     numMerges = 0;
@@ -15046,20 +15066,20 @@ function sortLinked$1(list) {
       let qSize = inSize;
       while (pSize > 0 || qSize > 0 && q) {
         if (pSize !== 0 && (qSize === 0 || !q || p.z <= q.z)) {
-          e = p;
+          e2 = p;
           p = p.nextZ;
           pSize--;
         } else {
-          e = q;
+          e2 = q;
           q = q.nextZ;
           qSize--;
         }
         if (tail)
-          tail.nextZ = e;
+          tail.nextZ = e2;
         else
-          list = e;
-        e.prevZ = tail;
-        tail = e;
+          list = e2;
+        e2.prevZ = tail;
+        tail = e2;
       }
       p = q;
     }
@@ -15614,6 +15634,24 @@ class IntHelper {
 }
 __publicField(IntHelper, "_max", 2147483647);
 __publicField(IntHelper, "_min", -2147483648);
+class MaterialUtils {
+  static isSame(a, b) {
+    return this.getKey(a) === this.getKey(b);
+  }
+  /** Returns a stable key including rendering and inheritance semantics. */
+  static getKey(material) {
+    const { color, _explicitProps, ...properties } = material;
+    if (!material.preserveOriginalMaterial) {
+      properties.opacity ?? (properties.opacity = 1);
+      properties.renderedFaces ?? (properties.renderedFaces = RenderedFaces.ONE);
+    }
+    return JSON.stringify([
+      color && [color.r, color.g, color.b, color.isColor === true],
+      [...new Set(_explicitProps ?? [])].sort(),
+      Object.entries(properties).filter(([, value]) => value !== void 0).sort(([a], [b]) => a.localeCompare(b))
+    ]);
+  }
+}
 const _CRC = class _CRC {
   constructor() {
     __publicField(this, "_core", new CRCData());
@@ -15666,7 +15704,7 @@ const _CRC = class _CRC {
     this.reset();
     this.compute(modelId);
     this.compute(objectClass);
-    this.compute(materialDefinition);
+    this.compute(MaterialUtils.getKey(materialDefinition));
     this.compute(currentLod);
     this.compute(templateId !== void 0);
   }
@@ -16869,9 +16907,9 @@ class EditHelper {
       this._fragments.models.list.set(deltaModel.modelId, deltaModel);
       await deltaModel._setup(buffer, true, virtualModelConfig);
       parentModel.object.add(deltaModel.object);
-    } catch (e) {
+    } catch (e2) {
       this._fragments.models.list.delete(deltaModel.modelId);
-      throw e;
+      throw e2;
     }
     const camera = parentModel.camera;
     if (camera) {
@@ -19186,6 +19224,9 @@ class MaterialManager {
         userData: { customId: data.customId, localId: data.localId },
         depthTest: data.depthTest ?? true,
         depthWrite: data.depthWrite ?? true,
+        polygonOffset: (data.polygonOffsetFactor ?? 0) !== 0 || (data.polygonOffsetUnits ?? 0) !== 0,
+        polygonOffsetFactor: data.polygonOffsetFactor ?? 0,
+        polygonOffsetUnits: data.polygonOffsetUnits ?? 0,
         side: data.renderedFaces === 1 ? THREE.DoubleSide : THREE.FrontSide
       });
     } else if (objectClass === ObjectClass.LINE) {
@@ -21898,8 +21939,8 @@ const _MultithreadingHelper = class _MultithreadingHelper {
   }
   static frustum(frustum) {
     const newPlane = this.planeSet(frustum.planes);
-    const [a, b, c, d, e, f] = newPlane;
-    return new THREE.Frustum(a, b, c, d, e, f);
+    const [a, b, c, d, e2, f] = newPlane;
+    return new THREE.Frustum(a, b, c, d, e2, f);
   }
   static beam(ray) {
     const newOrigin = this.array(ray.origin);
@@ -22033,6 +22074,8 @@ const _MeshManager = class _MeshManager {
     __publicField(this, "white", 4294967295);
     this._onUpdate = onUpdate;
     this.requests.onFinish = (seq) => this.handleFinish(seq);
+    this.list.onItemDeleted.add(() => this.finishEmptyScene());
+    this.list.onCleared.add(() => this.finishEmptyScene());
   }
   /**
    * Wait until every main → worker request issued before this call
@@ -22053,13 +22096,22 @@ const _MeshManager = class _MeshManager {
    */
   async forceUpdateFinish() {
     const targetSeq = MultithreadingHelper.lastDispatchedSeq;
-    if (this._lastSettledSeq >= targetSeq) {
+    if (this.list.size === 0 || this._lastSettledSeq >= targetSeq) {
       this.drainAll();
       return;
     }
     await new Promise((resolve) => {
       this._fenceWaiters.push({ targetSeq, resolve });
     });
+  }
+  finishEmptyScene() {
+    if (this.list.size !== 0)
+      return;
+    this.drainAll();
+    const waiters = this._fenceWaiters;
+    this._fenceWaiters = [];
+    for (const waiter of waiters)
+      waiter.resolve();
   }
   /**
    * Called by `RequestsManager` whenever a FINISH tile request lands
@@ -24014,12 +24066,12 @@ ExtendedTriangle.prototype.intersectsTriangle = /* @__PURE__ */ function() {
     return true;
   }
   function findSingleBounds(a, b, c, aProj, bProj, cProj, aDist, bDist, cDist, bounds, edge) {
-    let t = aDist / (aDist - bDist);
-    bounds.x = aProj + (bProj - aProj) * t;
-    edge.start.subVectors(b, a).multiplyScalar(t).add(a);
-    t = aDist / (aDist - cDist);
-    bounds.y = aProj + (cProj - aProj) * t;
-    edge.end.subVectors(c, a).multiplyScalar(t).add(a);
+    let t2 = aDist / (aDist - bDist);
+    bounds.x = aProj + (bProj - aProj) * t2;
+    edge.start.subVectors(b, a).multiplyScalar(t2).add(a);
+    t2 = aDist / (aDist - cDist);
+    bounds.y = aProj + (cProj - aProj) * t2;
+    edge.end.subVectors(c, a).multiplyScalar(t2).add(a);
   }
   function findIntersectionLineBounds(self, aProj, bProj, cProj, abDist, acDist, aDist, bDist, cDist, bounds, edge) {
     if (abDist > 0) {
@@ -24109,17 +24161,17 @@ ExtendedTriangle.prototype.intersectsTriangle = /* @__PURE__ */ function() {
         if (isNearZero(denom)) {
           return false;
         }
-        const t = (startDelta.x * delta2.y - startDelta.y * delta2.x) / denom;
+        const t2 = (startDelta.x * delta2.y - startDelta.y * delta2.x) / denom;
         const u = -(delta1.x * startDelta.y - delta1.y * startDelta.x) / denom;
-        if (t < 0 || t > 1 || u < 0 || u > 1) {
+        if (t2 < 0 || t2 > 1 || u < 0 || u > 1) {
           return false;
         }
-        const z1 = segment1.start.z + delta1.z * t;
+        const z1 = segment1.start.z + delta1.z * t2;
         const z2 = segment2.start.z + delta2.z * u;
         if (isNearZero(z1 - z2)) {
           if (target) {
-            target.start.copy(segment1.start).addScaledVector(delta1, t);
-            target.end.copy(segment1.start).addScaledVector(delta1, t);
+            target.start.copy(segment1.start).addScaledVector(delta1, t2);
+            target.end.copy(segment1.start).addScaledVector(delta1, t2);
           }
           return true;
         } else {
@@ -25366,9 +25418,9 @@ function refit_indirect(bvh, nodeIndices = null) {
       let maxy = -Infinity;
       let maxz = -Infinity;
       for (let i = offset, l = offset + count; i < l; i++) {
-        const t = 3 * bvh.resolveTriangleIndex(i);
+        const t2 = 3 * bvh.resolveTriangleIndex(i);
         for (let j = 0; j < 3; j++) {
-          let index = t + j;
+          let index = t2 + j;
           index = indexArr ? indexArr[index] : index;
           const x = posAttr.getX(index);
           const y = posAttr.getY(index);
@@ -26952,7 +27004,7 @@ function sortLinked(list) {
   let numMerges;
   do {
     let p = list;
-    let e;
+    let e2;
     list = null;
     let tail = null;
     numMerges = 0;
@@ -26969,20 +27021,20 @@ function sortLinked(list) {
       let qSize = inSize;
       while (pSize > 0 || qSize > 0 && q) {
         if (pSize !== 0 && (qSize === 0 || !q || p.z <= q.z)) {
-          e = p;
+          e2 = p;
           p = p.nextZ;
           pSize--;
         } else {
-          e = q;
+          e2 = q;
           q = q.nextZ;
           qSize--;
         }
         if (tail)
-          tail.nextZ = e;
+          tail.nextZ = e2;
         else
-          list = e;
-        e.prevZ = tail;
-        tail = e;
+          list = e2;
+        e2.prevZ = tail;
+        tail = e2;
       }
       p = q;
     }
@@ -27824,10 +27876,10 @@ class ShellFaceRaycaster {
     return false;
   }
   triangleHit(ray) {
-    const e = this.e;
+    const e2 = this.e;
     const f = this.f;
     const g = this.g;
-    const hits = ray.intersectTriangle(e, f, g, false, this.h);
+    const hits = ray.intersectTriangle(e2, f, g, false, this.h);
     if (!hits) {
       return void 0;
     }
@@ -29619,6 +29671,9 @@ class MeshConnection {
     __publicField(this, "_connection");
     __publicField(this, "_list", []);
     __publicField(this, "refresh", () => {
+      if (!this._connection) {
+        return;
+      }
       if (this._list.length) {
         const current = this._list;
         this._connection.fetchMeshCompute(this._modelId, current);
@@ -29635,18 +29690,26 @@ class MeshConnection {
     if (typeof configuredThreshold === "number" && Number.isFinite(configuredThreshold) && configuredThreshold >= 0) {
       this._threshold = configuredThreshold;
     }
-    this._updater = MultithreadingHelper.newUpdater(this.refresh, this._rate);
+    if (this._connection) {
+      this._updater = MultithreadingHelper.newUpdater(this.refresh, this._rate);
+    }
   }
   get needsRefresh() {
     return this._list.length > this._threshold;
   }
   dispose() {
-    MultithreadingHelper.deleteUpdater(this._updater);
+    if (this._updater !== void 0) {
+      MultithreadingHelper.deleteUpdater(this._updater);
+      this._updater = void 0;
+    }
   }
   clean() {
     this._list = MultithreadingHelper.cleanRequests(this._list);
   }
   process(request) {
+    if (!this._connection) {
+      return;
+    }
     this._list.push(request);
     if (this.needsRefresh) {
       this.refresh();
@@ -29778,7 +29841,7 @@ class ThreadModelCreator extends ThreadController {
       const model = await this.createModel(input, notify, throwIfAborted);
       this.finalize(input, model);
       notify("done", 1);
-    } catch (e) {
+    } catch (e2) {
       const partial = this.thread.list.get(modelId);
       if (partial) {
         try {
@@ -29787,7 +29850,7 @@ class ThreadModelCreator extends ThreadController {
         }
         this.thread.list.delete(modelId);
       }
-      throw e;
+      throw e2;
     } finally {
       this.thread.aborting.delete(modelId);
       this.thread.loading.delete(modelId);
@@ -30392,8 +30455,8 @@ class RaycastController {
         out.push(current);
       }
       if (dCurrent >= 0 !== dNext >= 0) {
-        const t = dCurrent / (dCurrent - dNext);
-        out.push(new THREE.Vector3().lerpVectors(current, next, t));
+        const t2 = dCurrent / (dCurrent - dNext);
+        out.push(new THREE.Vector3().lerpVectors(current, next, t2));
       }
     }
     return out;
@@ -31818,13 +31881,13 @@ initializeTTLTracking_fn = function() {
     starts[index] = ttl !== 0 ? start : 0;
     ttls[index] = ttl;
     if (ttl !== 0 && this.ttlAutopurge) {
-      const t = setTimeout(() => {
+      const t2 = setTimeout(() => {
         if (__privateGet(this, _isStale).call(this, index)) {
           __privateMethod(this, _delete, delete_fn).call(this, __privateGet(this, _keyList)[index], "expire");
         }
       }, ttl + 1);
-      if (t.unref) {
-        t.unref();
+      if (t2.unref) {
+        t2.unref();
       }
     }
   });
@@ -31849,9 +31912,9 @@ initializeTTLTracking_fn = function() {
     const n = perf.now();
     if (this.ttlResolution > 0) {
       cachedNow = n;
-      const t = setTimeout(() => cachedNow = 0, this.ttlResolution);
-      if (t.unref) {
-        t.unref();
+      const t2 = setTimeout(() => cachedNow = 0, this.ttlResolution);
+      if (t2.unref) {
+        t2.unref();
       }
     }
     return n;
@@ -31871,8 +31934,8 @@ initializeTTLTracking_fn = function() {
   };
   __privateSet(this, _isStale, (index) => {
     const s = starts[index];
-    const t = ttls[index];
-    return !!t && !!s && (cachedNow || getNow()) - s > t;
+    const t2 = ttls[index];
+    return !!t2 && !!s && (cachedNow || getNow()) - s > t2;
   });
 };
 _updateItemAge = new WeakMap();
@@ -32996,7 +33059,7 @@ const _VirtualTilesController = class _VirtualTilesController {
     if (tileIds === void 0)
       return;
     MiscHelper.forEach(tileIds, (tileId) => {
-      this.updateTile(tileId, id, high, high === 0);
+      this.updateTile(tileId, id, high, vis);
     });
   }
   getTileIds(sample, lod) {
@@ -33486,46 +33549,11 @@ const _VirtualTilesController = class _VirtualTilesController {
 };
 __publicField(_VirtualTilesController, "_graphicMemoryConsumed", 0);
 let VirtualTilesController = _VirtualTilesController;
-class MaterialUtils {
-  static isSame(a, b) {
-    const isSameColor = this.checkSameColor(a.color, b.color);
-    const isSameOpacity = this.checkSame(a.opacity, b.opacity, 1);
-    const facesA = a.renderedFaces;
-    const facesB = b.renderedFaces;
-    const isSameFaces = this.checkSame(facesA, facesB, RenderedFaces.ONE);
-    return isSameColor && isSameOpacity && isSameFaces;
-  }
-  static checkSame(a, b, fallback) {
-    if (a === b) {
-      return true;
-    }
-    if (a === fallback && b === void 0) {
-      return true;
-    }
-    if (a === void 0 && b === fallback) {
-      return true;
-    }
-    return false;
-  }
-  static checkSameColor(a, b) {
-    if (a === b) {
-      return true;
-    }
-    if (a === void 0 || b === void 0) {
-      return false;
-    }
-    const { r: ar, g: ag, b: ab } = a;
-    const { r: br, g: bg, b: bb } = b;
-    if (ar === br && ag === bg && ab === bb) {
-      return true;
-    }
-    return false;
-  }
-}
 class VirtualMaterialController {
   constructor(modelId, onTransfer) {
     __publicField(this, "_modelId");
     __publicField(this, "_list", []);
+    __publicField(this, "_idsByDefinition", /* @__PURE__ */ new Map());
     __publicField(this, "_onTransfer");
     this._modelId = modelId;
     this._onTransfer = onTransfer;
@@ -33571,32 +33599,19 @@ class VirtualMaterialController {
     }
     return result;
   }
-  checkMaterialExists(material, ids) {
-    if (material.preserveOriginalMaterial) {
-      return false;
-    }
-    const count = this._list.length;
-    for (let i = 0; i < count; i++) {
-      const current = this._list[i];
-      const isSame = MaterialUtils.isSame(material, current);
-      if (isSame) {
-        ids.push(i);
-        return true;
-      }
-    }
-    return false;
-  }
   deduplicateMaterials(materialDefinition) {
     const ids = [];
     const materialDefinitions = [];
     for (const material of materialDefinition) {
-      const exists = this.checkMaterialExists(material, ids);
-      if (!exists) {
+      const key = MaterialUtils.getKey(material);
+      let id = this._idsByDefinition.get(key);
+      if (id === void 0) {
+        id = this._list.length;
         this._list.push(material);
+        this._idsByDefinition.set(key, id);
         materialDefinitions.push(material);
-        const currentId = this._list.length - 1;
-        ids.push(currentId);
       }
+      ids.push(id);
     }
     return { materialDefinitions, ids };
   }
@@ -35873,7 +35888,11 @@ class HighlightHelper {
       "color",
       "opacity",
       "transparent",
-      "renderedFaces"
+      "renderedFaces",
+      "depthTest",
+      "depthWrite",
+      "polygonOffsetFactor",
+      "polygonOffsetUnits"
     ]);
   }
   resetHighlight(model, items) {
@@ -36574,6 +36593,12 @@ class VirtualFragmentsModel {
   getItemsCategories(ids) {
     return this.properties.getItemsCategories(ids);
   }
+  // Item.getCategory() dispatches "getItemCategory" through the worker, so
+  // this wrapper must exist here (#267). Unknown ids are skipped by
+  // getItemsCategories, leaving an empty array, hence the null fallback.
+  getItemCategory(id) {
+    return this.getItemsCategories([id])[0] ?? null;
+  }
   getItemIdsByLocalIds(localIds) {
     return this.properties.getItemIdsFromLocalIds(localIds);
   }
@@ -37138,6 +37163,13 @@ class SingleThreadedFragmentsModel {
   constructor(modelId, modelData, raw) {
     __publicField(this, "_modelId");
     __publicField(this, "_virtualModel");
+    /**
+     * The promise of the asynchronous part of the model setup, started by the
+     * constructor. See {@link ready}. It is memoized: the setup runs exactly
+     * once, no public path can re-trigger it.
+     */
+    __publicField(this, "_setup");
+    __publicField(this, "_disposed", false);
     this._modelId = modelId;
     const isRaw = raw ?? isRawBuffer(modelData);
     let data = modelData;
@@ -37149,7 +37181,13 @@ class SingleThreadedFragmentsModel {
       data,
       void 0
     );
-    this._virtualModel.setupData();
+    this._setup = this._virtualModel.setupData(void 0, () => {
+      if (this._disposed) {
+        throw new LoadAbortedError(this._modelId);
+      }
+    });
+    this._setup.catch(() => {
+    });
   }
   /**
    * The ID of the model.
@@ -37158,10 +37196,31 @@ class SingleThreadedFragmentsModel {
     return this._modelId;
   }
   /**
+   * Resolves when the model is fully set up. The constructor starts an
+   * asynchronous setup that spans multiple macrotasks; await this before
+   * relying on the model being completely initialized.
+   *
+   * If {@link dispose} is called while the setup is still running, this
+   * promise rejects with a {@link LoadAbortedError}. If nobody awaits it,
+   * the rejection is already handled internally, so it never surfaces as
+   * an unhandled rejection.
+   */
+  get ready() {
+    return this._setup;
+  }
+  /**
    * Dispose the model. Use this when you're done with the model.
    * If you use the {@link FragmentsModels.dispose} method, this will be called automatically for all models.
+   *
+   * If the setup started by the constructor is still running, it is aborted
+   * at its next yield point and {@link ready} rejects with a
+   * {@link LoadAbortedError}. Calling this more than once is a no-op.
    */
   dispose() {
+    if (this._disposed) {
+      return;
+    }
+    this._disposed = true;
     this._virtualModel.dispose();
     this._virtualModel = null;
   }
@@ -37931,7 +37990,7 @@ const _FragmentsModels = class _FragmentsModels {
     if (_FragmentsModels._workerPromise)
       return _FragmentsModels._workerPromise;
     _FragmentsModels._workerPromise = (async () => {
-      const url = `https://unpkg.com/@thatopen/fragments@${"3.4.7"}/dist/worker/worker.mjs`;
+      const url = `https://unpkg.com/@thatopen/fragments@${FRAGMENTS_VERSION}/dist/worker/worker.mjs`;
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(
@@ -38024,14 +38083,14 @@ const _FragmentsModels = class _FragmentsModels {
           model.object.position.add(transform);
         }
       }
-    } catch (e) {
+    } catch (e2) {
       this._progressCallbacks.delete(options.modelId);
       try {
         await model.dispose();
       } catch {
         this.models.list.delete(model.modelId);
       }
-      throw e;
+      throw e2;
     } finally {
       this._progressCallbacks.delete(options.modelId);
     }
@@ -38373,11 +38432,11 @@ class IfcPropertyProcessor {
         if (this._serializer.includeMaterialProperties) {
           this.addMaterialPropertiesInverse(expressID, attrs);
         }
-      } catch (e) {
+      } catch (e2) {
         console.log(
           `Problem reading properties for ${expressID}. If many items are problematic, it may be a problem with the category you are trying to process. You can remove it and try again.`
         );
-        console.log(e);
+        console.log(e2);
         await new Promise((resolve) => {
           setTimeout(resolve, 100);
         });
@@ -38661,9 +38720,9 @@ class IfcPropertyProcessor {
           for (const relatedID of relatedIDs) {
             this.addRelation(relatedID, forRelated, [relatingID]);
           }
-        } catch (e) {
+        } catch (e2) {
           console.log(`Problem reading relations for ${expressID}`);
-          console.log(e);
+          console.log(e2);
           continue;
         }
       }
@@ -38724,7 +38783,13 @@ class IfcPropertyProcessor {
     const descriptions = [];
     this.getMetadataRecursively(rawDescription.arguments, descriptions);
     const crs = this.extractCRS(ifcApi);
-    const metadata = { schema, names, descriptions, crs };
+    const metadata = {
+      schema,
+      names,
+      descriptions,
+      crs,
+      ...getProvenanceMetadata()
+    };
     const metadataOffset = this._builder.createString(JSON.stringify(metadata));
     return metadataOffset;
   }
@@ -39022,21 +39087,44 @@ class GridReader {
       const size = gridsVector.size();
       for (let i = 0; i < size; i++) {
         const id = gridsVector.get(i);
-        const grid = webIfc.GetLine(0, id);
-        const transform = FragmentsIfcUtils.getAbsolutePlacement(
-          webIfc,
-          grid,
-          units
-        );
-        transform.premultiply(coordMatrix);
-        const data = {
-          id,
-          transform: transform.elements,
-          uAxes: this.getGridAxes(grid, webIfc, units, "UAxes"),
-          vAxes: this.getGridAxes(grid, webIfc, units, "VAxes"),
-          wAxes: this.getGridAxes(grid, webIfc, units, "WAxes")
-        };
-        result.push(data);
+        try {
+          const grid = webIfc.GetLine(0, id);
+          if (!grid.ObjectPlacement) {
+            console.warn(
+              `Fragments: IFCGRID #${id} has no ObjectPlacement. Using the identity placement for it.`
+            );
+          }
+          const transform = FragmentsIfcUtils.getAbsolutePlacement(
+            webIfc,
+            grid,
+            units
+          );
+          transform.premultiply(coordMatrix);
+          const unsupportedAxes = [];
+          const data = {
+            id,
+            transform: transform.elements,
+            // prettier-ignore
+            uAxes: this.getGridAxes(grid, webIfc, units, "UAxes", unsupportedAxes),
+            // prettier-ignore
+            vAxes: this.getGridAxes(grid, webIfc, units, "VAxes", unsupportedAxes),
+            // prettier-ignore
+            wAxes: this.getGridAxes(grid, webIfc, units, "WAxes", unsupportedAxes)
+          };
+          if (unsupportedAxes.length > 0) {
+            data.unsupportedAxes = unsupportedAxes;
+            const skipped = unsupportedAxes.map(({ tag, curveType }) => `"${tag}" (${curveType})`).join(", ");
+            console.warn(
+              `Fragments: IFCGRID #${id} has axes with unsupported curve types that will not be displayed: ${skipped}.`
+            );
+          }
+          result.push(data);
+        } catch (error) {
+          console.warn(
+            `Fragments: skipping IFCGRID #${id} because it could not be read:`,
+            error
+          );
+        }
       }
       return result;
     } catch (error) {
@@ -39044,8 +39132,8 @@ class GridReader {
       return [];
     }
   }
-  getGridAxes(ifcGrid, webIfc, units, ifcKey) {
-    var _a2;
+  getGridAxes(ifcGrid, webIfc, units, ifcKey, unsupportedAxes) {
+    var _a2, _b2;
     if (!ifcGrid[ifcKey]) {
       return [];
     }
@@ -39061,38 +39149,47 @@ class GridReader {
         tag: ((_a2 = axisCurve.AxisTag) == null ? void 0 : _a2.value) ?? "",
         curve: []
       };
-      if (!curve.Points) {
-        continue;
-      }
       const pushPoint = (coords) => {
-        var _a3, _b2, _c;
+        var _a3, _b3, _c;
         const x = (((_a3 = coords[0]) == null ? void 0 : _a3.value) ?? 0) * units;
-        const y = (((_b2 = coords[1]) == null ? void 0 : _b2.value) ?? 0) * units;
+        const y = (((_b3 = coords[1]) == null ? void 0 : _b3.value) ?? 0) * units;
         const z = (((_c = coords[2]) == null ? void 0 : _c.value) ?? 0) * units;
         axisData.curve.push(x, y, z);
       };
-      if (curve.type === WEBIFC.IFCPOLYLINE) {
+      if (curve.type === WEBIFC.IFCPOLYLINE && curve.Points) {
         for (const { value: pointId } of curve.Points) {
           const ifcPoints = webIfc.GetLine(0, pointId);
           if (ifcPoints.Coordinates) {
             pushPoint(ifcPoints.Coordinates);
           }
         }
-      } else {
-        const pointsId = curve.Points.value;
-        if (!pointsId) {
-          continue;
-        }
-        const ifcPoints = webIfc.GetLine(0, pointsId);
+      } else if ((_b2 = curve.Points) == null ? void 0 : _b2.value) {
+        const ifcPoints = webIfc.GetLine(0, curve.Points.value);
         if (ifcPoints.CoordList) {
           for (const coordinates of ifcPoints.CoordList) {
             pushPoint(coordinates);
           }
         }
       }
+      if (axisData.curve.length === 0) {
+        unsupportedAxes.push({
+          tag: axisData.tag,
+          curveType: this.getCurveTypeName(webIfc, curve)
+        });
+        continue;
+      }
       axisDataArr.push(axisData);
     }
     return axisDataArr;
+  }
+  getCurveTypeName(webIfc, curve) {
+    try {
+      const name = webIfc.GetNameFromTypeCode(curve.type);
+      if (name)
+        return name.toUpperCase();
+    } catch {
+    }
+    return `IFC type ${curve.type}`;
   }
 }
 class SpaceBoundaryReader {
@@ -39237,24 +39334,96 @@ class SpaceBoundaryReader {
     return { position, normals, index };
   }
   decompose(transform) {
-    const e = transform.elements;
+    const e2 = transform.elements;
     const p = 1e3;
     const ap = 1e5;
-    const dxx = GeomsFbUtils.round(e[0], p);
-    const dxy = GeomsFbUtils.round(e[1], p);
-    const dxz = GeomsFbUtils.round(e[2], p);
-    const dyx = GeomsFbUtils.round(e[4], ap);
-    const dyy = GeomsFbUtils.round(e[5], ap);
-    const dyz = GeomsFbUtils.round(e[6], ap);
-    const px = GeomsFbUtils.round(e[12], ap);
-    const py = GeomsFbUtils.round(e[13], ap);
-    const pz = GeomsFbUtils.round(e[14], ap);
+    const dxx = GeomsFbUtils.round(e2[0], p);
+    const dxy = GeomsFbUtils.round(e2[1], p);
+    const dxz = GeomsFbUtils.round(e2[2], p);
+    const dyx = GeomsFbUtils.round(e2[4], ap);
+    const dyy = GeomsFbUtils.round(e2[5], ap);
+    const dyz = GeomsFbUtils.round(e2[6], ap);
+    const px = GeomsFbUtils.round(e2[12], ap);
+    const py = GeomsFbUtils.round(e2[13], ap);
+    const pz = GeomsFbUtils.round(e2[14], ap);
     return { dxx, dxy, dxz, dyx, dyy, dyz, px, py, pz };
+  }
+}
+const t = new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 48, 8, 96, 3, 127, 127, 127, 1, 127, 96, 3, 127, 127, 127, 0, 96, 2, 127, 127, 0, 96, 1, 127, 1, 127, 96, 3, 127, 127, 126, 1, 126, 96, 3, 126, 127, 127, 1, 126, 96, 2, 127, 126, 0, 96, 1, 127, 1, 126, 3, 11, 10, 0, 0, 2, 1, 3, 4, 5, 6, 1, 7, 5, 3, 1, 0, 1, 7, 85, 9, 3, 109, 101, 109, 2, 0, 5, 120, 120, 104, 51, 50, 0, 0, 6, 105, 110, 105, 116, 51, 50, 0, 2, 8, 117, 112, 100, 97, 116, 101, 51, 50, 0, 3, 8, 100, 105, 103, 101, 115, 116, 51, 50, 0, 4, 5, 120, 120, 104, 54, 52, 0, 5, 6, 105, 110, 105, 116, 54, 52, 0, 7, 8, 117, 112, 100, 97, 116, 101, 54, 52, 0, 8, 8, 100, 105, 103, 101, 115, 116, 54, 52, 0, 9, 10, 251, 22, 10, 242, 1, 1, 4, 127, 32, 0, 32, 1, 106, 33, 3, 32, 1, 65, 16, 79, 4, 127, 32, 3, 65, 16, 107, 33, 6, 32, 2, 65, 168, 136, 141, 161, 2, 106, 33, 3, 32, 2, 65, 137, 235, 208, 208, 7, 107, 33, 4, 32, 2, 65, 207, 140, 162, 142, 6, 106, 33, 5, 3, 64, 32, 3, 32, 0, 40, 2, 0, 65, 247, 148, 175, 175, 120, 108, 106, 65, 13, 119, 65, 177, 243, 221, 241, 121, 108, 33, 3, 32, 4, 32, 0, 65, 4, 106, 34, 0, 40, 2, 0, 65, 247, 148, 175, 175, 120, 108, 106, 65, 13, 119, 65, 177, 243, 221, 241, 121, 108, 33, 4, 32, 2, 32, 0, 65, 4, 106, 34, 0, 40, 2, 0, 65, 247, 148, 175, 175, 120, 108, 106, 65, 13, 119, 65, 177, 243, 221, 241, 121, 108, 33, 2, 32, 5, 32, 0, 65, 4, 106, 34, 0, 40, 2, 0, 65, 247, 148, 175, 175, 120, 108, 106, 65, 13, 119, 65, 177, 243, 221, 241, 121, 108, 33, 5, 32, 6, 32, 0, 65, 4, 106, 34, 0, 79, 13, 0, 11, 32, 2, 65, 12, 119, 32, 5, 65, 18, 119, 106, 32, 4, 65, 7, 119, 106, 32, 3, 65, 1, 119, 106, 5, 32, 2, 65, 177, 207, 217, 178, 1, 106, 11, 32, 1, 106, 32, 0, 32, 1, 65, 15, 113, 16, 1, 11, 146, 1, 0, 32, 1, 32, 2, 106, 33, 2, 3, 64, 32, 1, 65, 4, 106, 32, 2, 75, 69, 4, 64, 32, 0, 32, 1, 40, 2, 0, 65, 189, 220, 202, 149, 124, 108, 106, 65, 17, 119, 65, 175, 214, 211, 190, 2, 108, 33, 0, 32, 1, 65, 4, 106, 33, 1, 12, 1, 11, 11, 3, 64, 32, 1, 32, 2, 79, 69, 4, 64, 32, 0, 32, 1, 45, 0, 0, 65, 177, 207, 217, 178, 1, 108, 106, 65, 11, 119, 65, 177, 243, 221, 241, 121, 108, 33, 0, 32, 1, 65, 1, 106, 33, 1, 12, 1, 11, 11, 32, 0, 32, 0, 65, 15, 118, 115, 65, 247, 148, 175, 175, 120, 108, 34, 0, 65, 13, 118, 32, 0, 115, 65, 189, 220, 202, 149, 124, 108, 34, 0, 65, 16, 118, 32, 0, 115, 11, 63, 0, 32, 0, 65, 8, 106, 32, 1, 65, 168, 136, 141, 161, 2, 106, 54, 2, 0, 32, 0, 65, 12, 106, 32, 1, 65, 137, 235, 208, 208, 7, 107, 54, 2, 0, 32, 0, 65, 16, 106, 32, 1, 54, 2, 0, 32, 0, 65, 20, 106, 32, 1, 65, 207, 140, 162, 142, 6, 106, 54, 2, 0, 11, 195, 4, 1, 6, 127, 32, 1, 32, 2, 106, 33, 6, 32, 0, 65, 24, 106, 33, 4, 32, 0, 65, 40, 106, 40, 2, 0, 33, 3, 32, 0, 32, 0, 40, 2, 0, 32, 2, 106, 54, 2, 0, 32, 0, 65, 4, 106, 34, 5, 32, 5, 40, 2, 0, 32, 2, 65, 16, 79, 32, 0, 40, 2, 0, 65, 16, 79, 114, 114, 54, 2, 0, 32, 2, 32, 3, 106, 65, 16, 73, 4, 64, 32, 3, 32, 4, 106, 32, 1, 32, 2, 252, 10, 0, 0, 32, 0, 65, 40, 106, 32, 2, 32, 3, 106, 54, 2, 0, 15, 11, 32, 3, 4, 64, 32, 3, 32, 4, 106, 32, 1, 65, 16, 32, 3, 107, 34, 2, 252, 10, 0, 0, 32, 0, 65, 8, 106, 34, 3, 32, 3, 40, 2, 0, 32, 4, 40, 2, 0, 65, 247, 148, 175, 175, 120, 108, 106, 65, 13, 119, 65, 177, 243, 221, 241, 121, 108, 54, 2, 0, 32, 0, 65, 12, 106, 34, 3, 32, 3, 40, 2, 0, 32, 4, 65, 4, 106, 40, 2, 0, 65, 247, 148, 175, 175, 120, 108, 106, 65, 13, 119, 65, 177, 243, 221, 241, 121, 108, 54, 2, 0, 32, 0, 65, 16, 106, 34, 3, 32, 3, 40, 2, 0, 32, 4, 65, 8, 106, 40, 2, 0, 65, 247, 148, 175, 175, 120, 108, 106, 65, 13, 119, 65, 177, 243, 221, 241, 121, 108, 54, 2, 0, 32, 0, 65, 20, 106, 34, 3, 32, 3, 40, 2, 0, 32, 4, 65, 12, 106, 40, 2, 0, 65, 247, 148, 175, 175, 120, 108, 106, 65, 13, 119, 65, 177, 243, 221, 241, 121, 108, 54, 2, 0, 32, 0, 65, 40, 106, 65, 0, 54, 2, 0, 32, 1, 32, 2, 106, 33, 1, 11, 32, 1, 32, 6, 65, 16, 107, 77, 4, 64, 32, 6, 65, 16, 107, 33, 8, 32, 0, 65, 8, 106, 40, 2, 0, 33, 2, 32, 0, 65, 12, 106, 40, 2, 0, 33, 3, 32, 0, 65, 16, 106, 40, 2, 0, 33, 5, 32, 0, 65, 20, 106, 40, 2, 0, 33, 7, 3, 64, 32, 2, 32, 1, 40, 2, 0, 65, 247, 148, 175, 175, 120, 108, 106, 65, 13, 119, 65, 177, 243, 221, 241, 121, 108, 33, 2, 32, 3, 32, 1, 65, 4, 106, 34, 1, 40, 2, 0, 65, 247, 148, 175, 175, 120, 108, 106, 65, 13, 119, 65, 177, 243, 221, 241, 121, 108, 33, 3, 32, 5, 32, 1, 65, 4, 106, 34, 1, 40, 2, 0, 65, 247, 148, 175, 175, 120, 108, 106, 65, 13, 119, 65, 177, 243, 221, 241, 121, 108, 33, 5, 32, 7, 32, 1, 65, 4, 106, 34, 1, 40, 2, 0, 65, 247, 148, 175, 175, 120, 108, 106, 65, 13, 119, 65, 177, 243, 221, 241, 121, 108, 33, 7, 32, 8, 32, 1, 65, 4, 106, 34, 1, 79, 13, 0, 11, 32, 0, 65, 8, 106, 32, 2, 54, 2, 0, 32, 0, 65, 12, 106, 32, 3, 54, 2, 0, 32, 0, 65, 16, 106, 32, 5, 54, 2, 0, 32, 0, 65, 20, 106, 32, 7, 54, 2, 0, 11, 32, 1, 32, 6, 73, 4, 64, 32, 4, 32, 1, 32, 6, 32, 1, 107, 34, 1, 252, 10, 0, 0, 32, 0, 65, 40, 106, 32, 1, 54, 2, 0, 11, 11, 97, 1, 1, 127, 32, 0, 65, 16, 106, 40, 2, 0, 33, 1, 32, 0, 65, 4, 106, 40, 2, 0, 4, 127, 32, 1, 65, 12, 119, 32, 0, 65, 20, 106, 40, 2, 0, 65, 18, 119, 106, 32, 0, 65, 12, 106, 40, 2, 0, 65, 7, 119, 106, 32, 0, 65, 8, 106, 40, 2, 0, 65, 1, 119, 106, 5, 32, 1, 65, 177, 207, 217, 178, 1, 106, 11, 32, 0, 40, 2, 0, 106, 32, 0, 65, 24, 106, 32, 0, 65, 40, 106, 40, 2, 0, 16, 1, 11, 255, 3, 2, 3, 126, 1, 127, 32, 0, 32, 1, 106, 33, 6, 32, 1, 65, 32, 79, 4, 126, 32, 6, 65, 32, 107, 33, 6, 32, 2, 66, 214, 235, 130, 238, 234, 253, 137, 245, 224, 0, 124, 33, 3, 32, 2, 66, 177, 169, 172, 193, 173, 184, 212, 166, 61, 125, 33, 4, 32, 2, 66, 249, 234, 208, 208, 231, 201, 161, 228, 225, 0, 124, 33, 5, 3, 64, 32, 3, 32, 0, 41, 3, 0, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 124, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 33, 3, 32, 4, 32, 0, 65, 8, 106, 34, 0, 41, 3, 0, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 124, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 33, 4, 32, 2, 32, 0, 65, 8, 106, 34, 0, 41, 3, 0, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 124, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 33, 2, 32, 5, 32, 0, 65, 8, 106, 34, 0, 41, 3, 0, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 124, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 33, 5, 32, 6, 32, 0, 65, 8, 106, 34, 0, 79, 13, 0, 11, 32, 2, 66, 12, 137, 32, 5, 66, 18, 137, 124, 32, 4, 66, 7, 137, 124, 32, 3, 66, 1, 137, 124, 32, 3, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 133, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 66, 157, 163, 181, 234, 131, 177, 141, 138, 250, 0, 125, 32, 4, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 133, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 66, 157, 163, 181, 234, 131, 177, 141, 138, 250, 0, 125, 32, 2, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 133, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 66, 157, 163, 181, 234, 131, 177, 141, 138, 250, 0, 125, 32, 5, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 133, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 66, 157, 163, 181, 234, 131, 177, 141, 138, 250, 0, 125, 5, 32, 2, 66, 197, 207, 217, 178, 241, 229, 186, 234, 39, 124, 11, 32, 1, 173, 124, 32, 0, 32, 1, 65, 31, 113, 16, 6, 11, 134, 2, 0, 32, 1, 32, 2, 106, 33, 2, 3, 64, 32, 2, 32, 1, 65, 8, 106, 79, 4, 64, 32, 1, 41, 3, 0, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 32, 0, 133, 66, 27, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 66, 157, 163, 181, 234, 131, 177, 141, 138, 250, 0, 125, 33, 0, 32, 1, 65, 8, 106, 33, 1, 12, 1, 11, 11, 32, 1, 65, 4, 106, 32, 2, 77, 4, 64, 32, 0, 32, 1, 53, 2, 0, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 133, 66, 23, 137, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 66, 249, 243, 221, 241, 153, 246, 153, 171, 22, 124, 33, 0, 32, 1, 65, 4, 106, 33, 1, 11, 3, 64, 32, 1, 32, 2, 73, 4, 64, 32, 0, 32, 1, 49, 0, 0, 66, 197, 207, 217, 178, 241, 229, 186, 234, 39, 126, 133, 66, 11, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 33, 0, 32, 1, 65, 1, 106, 33, 1, 12, 1, 11, 11, 32, 0, 32, 0, 66, 33, 136, 133, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 34, 0, 32, 0, 66, 29, 136, 133, 66, 249, 243, 221, 241, 153, 246, 153, 171, 22, 126, 34, 0, 32, 0, 66, 32, 136, 133, 11, 77, 0, 32, 0, 65, 8, 106, 32, 1, 66, 214, 235, 130, 238, 234, 253, 137, 245, 224, 0, 124, 55, 3, 0, 32, 0, 65, 16, 106, 32, 1, 66, 177, 169, 172, 193, 173, 184, 212, 166, 61, 125, 55, 3, 0, 32, 0, 65, 24, 106, 32, 1, 55, 3, 0, 32, 0, 65, 32, 106, 32, 1, 66, 249, 234, 208, 208, 231, 201, 161, 228, 225, 0, 124, 55, 3, 0, 11, 244, 4, 2, 3, 127, 4, 126, 32, 1, 32, 2, 106, 33, 5, 32, 0, 65, 40, 106, 33, 4, 32, 0, 65, 200, 0, 106, 40, 2, 0, 33, 3, 32, 0, 32, 0, 41, 3, 0, 32, 2, 173, 124, 55, 3, 0, 32, 2, 32, 3, 106, 65, 32, 73, 4, 64, 32, 3, 32, 4, 106, 32, 1, 32, 2, 252, 10, 0, 0, 32, 0, 65, 200, 0, 106, 32, 2, 32, 3, 106, 54, 2, 0, 15, 11, 32, 3, 4, 64, 32, 3, 32, 4, 106, 32, 1, 65, 32, 32, 3, 107, 34, 2, 252, 10, 0, 0, 32, 0, 65, 8, 106, 34, 3, 32, 3, 41, 3, 0, 32, 4, 41, 3, 0, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 124, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 55, 3, 0, 32, 0, 65, 16, 106, 34, 3, 32, 3, 41, 3, 0, 32, 4, 65, 8, 106, 41, 3, 0, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 124, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 55, 3, 0, 32, 0, 65, 24, 106, 34, 3, 32, 3, 41, 3, 0, 32, 4, 65, 16, 106, 41, 3, 0, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 124, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 55, 3, 0, 32, 0, 65, 32, 106, 34, 3, 32, 3, 41, 3, 0, 32, 4, 65, 24, 106, 41, 3, 0, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 124, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 55, 3, 0, 32, 0, 65, 200, 0, 106, 65, 0, 54, 2, 0, 32, 1, 32, 2, 106, 33, 1, 11, 32, 1, 65, 32, 106, 32, 5, 77, 4, 64, 32, 5, 65, 32, 107, 33, 2, 32, 0, 65, 8, 106, 41, 3, 0, 33, 6, 32, 0, 65, 16, 106, 41, 3, 0, 33, 7, 32, 0, 65, 24, 106, 41, 3, 0, 33, 8, 32, 0, 65, 32, 106, 41, 3, 0, 33, 9, 3, 64, 32, 6, 32, 1, 41, 3, 0, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 124, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 33, 6, 32, 7, 32, 1, 65, 8, 106, 34, 1, 41, 3, 0, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 124, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 33, 7, 32, 8, 32, 1, 65, 8, 106, 34, 1, 41, 3, 0, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 124, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 33, 8, 32, 9, 32, 1, 65, 8, 106, 34, 1, 41, 3, 0, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 124, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 33, 9, 32, 2, 32, 1, 65, 8, 106, 34, 1, 79, 13, 0, 11, 32, 0, 65, 8, 106, 32, 6, 55, 3, 0, 32, 0, 65, 16, 106, 32, 7, 55, 3, 0, 32, 0, 65, 24, 106, 32, 8, 55, 3, 0, 32, 0, 65, 32, 106, 32, 9, 55, 3, 0, 11, 32, 1, 32, 5, 73, 4, 64, 32, 4, 32, 1, 32, 5, 32, 1, 107, 34, 1, 252, 10, 0, 0, 32, 0, 65, 200, 0, 106, 32, 1, 54, 2, 0, 11, 11, 188, 2, 1, 5, 126, 32, 0, 65, 24, 106, 41, 3, 0, 33, 1, 32, 0, 41, 3, 0, 34, 2, 66, 32, 90, 4, 126, 32, 0, 65, 8, 106, 41, 3, 0, 34, 3, 66, 1, 137, 32, 0, 65, 16, 106, 41, 3, 0, 34, 4, 66, 7, 137, 124, 32, 1, 66, 12, 137, 32, 0, 65, 32, 106, 41, 3, 0, 34, 5, 66, 18, 137, 124, 124, 32, 3, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 133, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 66, 157, 163, 181, 234, 131, 177, 141, 138, 250, 0, 125, 32, 4, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 133, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 66, 157, 163, 181, 234, 131, 177, 141, 138, 250, 0, 125, 32, 1, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 133, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 66, 157, 163, 181, 234, 131, 177, 141, 138, 250, 0, 125, 32, 5, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 133, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 66, 157, 163, 181, 234, 131, 177, 141, 138, 250, 0, 125, 5, 32, 1, 66, 197, 207, 217, 178, 241, 229, 186, 234, 39, 124, 11, 32, 2, 124, 32, 0, 65, 40, 106, 32, 2, 66, 31, 131, 167, 16, 6, 11]);
+async function e() {
+  return function(t2) {
+    const { exports: { mem: e2, xxh32: n, xxh64: r, init32: i, update32: a, digest32: o, init64: s, update64: u, digest64: c } } = t2;
+    let h = new Uint8Array(e2.buffer);
+    function g(t3, n2) {
+      if (e2.buffer.byteLength < t3 + n2) {
+        const r2 = Math.ceil((t3 + n2 - e2.buffer.byteLength) / 65536);
+        e2.grow(r2), h = new Uint8Array(e2.buffer);
+      }
+    }
+    function f(t3, e3, n2, r2, i2, a2) {
+      g(t3);
+      const o2 = new Uint8Array(t3);
+      return h.set(o2), n2(0, e3), o2.set(h.subarray(0, t3)), { update(e4) {
+        let n3;
+        return h.set(o2), "string" == typeof e4 ? (g(3 * e4.length, t3), n3 = w.encodeInto(e4, h.subarray(t3)).written) : (g(e4.byteLength, t3), h.set(e4, t3), n3 = e4.byteLength), r2(0, t3, n3), o2.set(h.subarray(0, t3)), this;
+      }, digest: () => (h.set(o2), a2(i2(0))) };
+    }
+    function y(t3) {
+      return t3 >>> 0;
+    }
+    const b = 2n ** 64n - 1n;
+    function d(t3) {
+      return t3 & b;
+    }
+    const w = new TextEncoder(), l = 0, p = 0n;
+    function x(t3, e3 = l) {
+      return g(3 * t3.length, 0), y(n(0, w.encodeInto(t3, h).written, e3));
+    }
+    function L(t3, e3 = p) {
+      return g(3 * t3.length, 0), d(r(0, w.encodeInto(t3, h).written, e3));
+    }
+    return { h32: x, h32ToString: (t3, e3 = l) => x(t3, e3).toString(16).padStart(8, "0"), h32Raw: (t3, e3 = l) => (g(t3.byteLength, 0), h.set(t3), y(n(0, t3.byteLength, e3))), create32: (t3 = l) => f(48, t3, i, a, o, y), h64: L, h64ToString: (t3, e3 = p) => L(t3, e3).toString(16).padStart(16, "0"), h64Raw: (t3, e3 = p) => (g(t3.byteLength, 0), h.set(t3), d(r(0, t3.byteLength, e3))), create64: (t3 = p) => f(88, t3, s, u, c, d) };
+  }((await WebAssembly.instantiate(t)).instance);
+}
+class Hasher {
+  constructor(hasher) {
+    __publicField(this, "hasher");
+    this.hasher = hasher;
+  }
+  static async init() {
+    return new this(await e());
+  }
+  /**
+   * Folds a buffer of coordinates into a single 64-bit key, so that geometry
+   * differing only in where its vertices sit hashes differently.
+   *
+   * Values are quantized to `1 / precision` before hashing, which is what lets
+   * float noise from the tessellator collapse while genuinely distinct positions
+   * stay apart. They are then hashed as raw bytes rather than as numbers, so
+   * neither sign nor magnitude needs any special handling.
+   *
+   * The fold is order-sensitive: `[1, 2, 3]` and `[3, 2, 1]` hash differently,
+   * which is the point - summing could not tell them apart. The tradeoff is that
+   * two buffers holding the same values in a different order are treated as
+   * different geometry.
+   *
+   * @param coordinates The values to fold, e.g. a flat XYZ position buffer.
+   * @param precision How finely to round before hashing, e.g. `10000` rounds
+   * to the nearest 1/10000.
+   * @returns An unsigned 64-bit integer.
+   */
+  hashCoordinates(coordinates, precision) {
+    const quantized = new Int32Array(coordinates.length);
+    for (let i = 0; i < coordinates.length; i++) {
+      quantized[i] = Math.round(coordinates[i] * precision);
+    }
+    return this.hasher.h64Raw(new Uint8Array(quantized.buffer));
   }
 }
 class IfcFileReader {
   constructor(_serializer) {
     __publicField(this, "_ifcAPI", null);
+    __publicField(this, "_hasher", null);
     __publicField(this, "wasm", {
       path: "../../../../node_modules/web-ifc/",
       absolute: false
@@ -39303,9 +39472,11 @@ class IfcFileReader {
       state: "start"
     });
     this._previousGeometriesIDs.clear();
-    this._ifcAPI = new WEBIFC.IfcAPI();
-    this._ifcAPI.SetWasmPath(this.wasm.path, this.wasm.absolute);
-    await this._ifcAPI.Init();
+    const ifcAPI = new WEBIFC.IfcAPI();
+    ifcAPI.SetWasmPath(this.wasm.path, this.wasm.absolute);
+    const [, hasher] = await Promise.all([ifcAPI.Init(), Hasher.init()]);
+    this._ifcAPI = ifcAPI;
+    this._hasher = hasher;
     let modelID = 0;
     if (data.readFromCallback && data.readCallback) {
       modelID = this._ifcAPI.OpenModelFromCallback(
@@ -39643,6 +39814,9 @@ class IfcFileReader {
     if (this._ifcAPI === null) {
       throw new Error("Fragments: IfcAPI not initialized");
     }
+    if (this._hasher === null) {
+      throw new Error("Fragments: Hasher not initialized");
+    }
     const geometryRef = mesh.geometries.get(geometryIndex);
     const transformArray = geometryRef.flatTransformation;
     const { units } = this.removeScale(transformArray);
@@ -39725,20 +39899,22 @@ class IfcFileReader {
       areaSum += area2;
     }
     centroid.divideScalar(index.length);
-    v1.set(position[0], position[1], position[2]);
-    v2.set(position[3], position[4], position[5]);
-    v3.set(position[6], position[7], position[8]);
     const p = 1e4;
     const hashAreaSum = GeomsFbUtils.round(areaSum, p);
     const hashBigArea = GeomsFbUtils.round(biggestArea, p);
     const hashVolume = GeomsFbUtils.round(volume, p);
-    const x1 = GeomsFbUtils.round(v1.x, p);
-    const y1 = GeomsFbUtils.round(v1.y, p);
-    const z1 = GeomsFbUtils.round(v1.z, p);
+    const aabb = GeomsFbUtils.getAABB(position);
+    const minX = GeomsFbUtils.round(aabb.min.x, p);
+    const minY = GeomsFbUtils.round(aabb.min.y, p);
+    const minZ = GeomsFbUtils.round(aabb.min.z, p);
+    const maxX = GeomsFbUtils.round(aabb.max.x, p);
+    const maxY = GeomsFbUtils.round(aabb.max.y, p);
+    const maxZ = GeomsFbUtils.round(aabb.max.z, p);
     const cx = GeomsFbUtils.round(centroid.x, p);
     const cy = GeomsFbUtils.round(centroid.y, p);
     const cz = GeomsFbUtils.round(centroid.z, p);
-    const hash = `${vertexCount}-${triangleCount}-${hashAreaSum}-${hashBigArea}-${hashVolume}-${cx}-${cy}-${cz}-${x1}-${y1}-${z1}`;
+    const vertexKey = this._hasher.hashCoordinates(position, p);
+    const hash = `${vertexCount}-${triangleCount}-${hashAreaSum}-${hashBigArea}-${hashVolume}-${cx}-${cy}-${cz}-${minX}-${minY}-${minZ}-${maxX}-${maxY}-${maxZ}-${vertexKey}`;
     if (this._problematicGeometriesHashes.has(hash)) {
       console.log(`Fragments: Problematic geometry: ${geometryData.id}`);
       element.geometries.pop();
@@ -41819,6 +41995,7 @@ export {
   DataMap,
   DataSet,
   DoubleVector,
+  ELEMENT_TYPES,
   EditRequestType,
   EditRequestTypeNames,
   EditUtils,
@@ -41826,6 +42003,8 @@ export {
   Element,
   Event,
   Extrusion,
+  FRAGMENTS_GENERATOR,
+  FRAGMENTS_VERSION,
   FloatVector,
   FragmentsIfcUtils,
   FragmentsModel,
@@ -41854,6 +42033,7 @@ export {
   Representation,
   RepresentationClass,
   Revolve,
+  SPATIAL_TYPES,
   Sample,
   Shell,
   ShellHole,
@@ -41875,6 +42055,7 @@ export {
   extractRefs,
   geometryTypes,
   getObject,
+  getProvenanceMetadata,
   ifcCategoryMap,
   ifcClasses,
   ifcGeometriesMap,
@@ -41882,6 +42063,7 @@ export {
   isIndexRequest,
   isRawBuffer,
   limitOf2Bytes,
+  listIdxByType,
   parseHashRef,
   parseStepArguments,
   splitIfcArgs,

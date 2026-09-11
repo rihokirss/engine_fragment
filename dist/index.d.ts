@@ -1103,6 +1103,12 @@ declare class Element_2 {
 }
 export { Element_2 as Element }
 
+/**
+ * The default {@link IfcSplitterConfig.elementTypes}.
+ * Exported so it can be extended rather than replaced.
+ */
+export declare const ELEMENT_TYPES: readonly ["IFCWALL", "IFCWALLSTANDARDCASE", "IFCWALLELEMENTEDCASE", "IFCSLAB", "IFCSLABSTANDARDCASE", "IFCSLABELEMENTEDCASE", "IFCBEAM", "IFCBEAMSTANDARDCASE", "IFCCOLUMN", "IFCCOLUMNSTANDARDCASE", "IFCDOOR", "IFCDOORSTANDARDCASE", "IFCWINDOW", "IFCWINDOWSTANDARDCASE", "IFCROOF", "IFCSTAIR", "IFCSTAIRFLIGHT", "IFCRAMP", "IFCRAMPFLIGHT", "IFCCURTAINWALL", "IFCCOVERING", "IFCRAILING", "IFCPLATE", "IFCPLATESTANDARDCASE", "IFCMEMBER", "IFCMEMBERSTANDARDCASE", "IFCFOOTING", "IFCPILE", "IFCFURNISHINGELEMENT", "IFCSANITARYTERMINAL", "IFCFLOWSEGMENT", "IFCFLOWTERMINAL", "IFCFLOWCONTROLLER", "IFCFLOWFITTING", "IFCFLOWMOVINGDEVICE", "IFCFLOWSTORAGEDEVICE", "IFCFLOWTREATMENTDEVICE", "IFCENERGYCONVERSIONDEVICE", "IFCDISTRIBUTIONFLOWELEMENT", "IFCDISTRIBUTIONCONTROLELEMENT", "IFCDISTRIBUTIONELEMENT", "IFCDISTRIBUTIONPORT", "IFCBUILDINGELEMENTPROXY", "IFCBUILDINGELEMENTPART", "IFCOPENINGELEMENT", "IFCSPACE", "IFCTRANSPORTELEMENT", "IFCVIRTUALELEMENT", "IFCSHADINGDEVICE", "IFCCHIMNEY", "IFCGEOGRAPHICELEMENT", "IFCPROXY", "IFCMECHANICALFASTENER"];
+
 export declare type ElementConfig = {
     data: {
         attributesDefault: true;
@@ -1314,6 +1320,20 @@ declare interface FontConfig {
      */
     offset: number;
 }
+
+/**
+ * The name of this package, used to identify it as the generator of the
+ * models it creates.
+ */
+export declare const FRAGMENTS_GENERATOR = "@thatopen/fragments";
+
+/**
+ * The version of this package. It's injected at build time from package.json
+ * (see the `define` option in vite.config.ts), so it's always in sync with
+ * the published version. When the code runs unbundled and the define is not
+ * applied (e.g. tsx scripts), it falls back to "unknown".
+ */
+export declare const FRAGMENTS_VERSION: string;
 
 declare class FragmentsConnection extends Connection {
     private readonly _data;
@@ -2610,6 +2630,16 @@ declare function getModelFromBuffer(bytes: Uint8Array, raw: boolean): TFB.Model;
  */
 export declare function getObject(obj: any, result: any): void;
 
+/**
+ * Provenance data stamped into the metadata of every model this library
+ * creates, so any fragments file records which package and version generated
+ * it (see ThatOpen/engine_fragment#273).
+ */
+export declare function getProvenanceMetadata(): {
+    generator: string;
+    version: string;
+};
+
 declare function getRelationData(relation: TFB.Relation): ET.RawRelationData;
 
 declare function getRepresentationData(representation: TFB.Representation): ET.RawRepresentation;
@@ -2649,6 +2679,16 @@ export declare type GridData = {
     uAxes: GridAxisData[];
     vAxes: GridAxisData[];
     wAxes: GridAxisData[];
+    /**
+     * Grid axes whose curve type the importer cannot represent yet (only
+     * point-list curves like IFCPOLYLINE and IFCINDEXEDPOLYCURVE are supported;
+     * e.g. IFCCIRCLE, IFCLINE or IFCTRIMMEDCURVE axes end up here). Optional so
+     * data serialized before this field existed still matches the type.
+     */
+    unsupportedAxes?: {
+        tag: string;
+        curveType: string;
+    }[];
 };
 
 declare interface GridsConfig {
@@ -2886,8 +2926,9 @@ export declare const ifcRelationsMap: Map<number, {
 
 export declare class IfcSplitter {
     protected readonly io: IfcSplitterIO;
+    protected readonly config: IfcSplitterResolvedConfig;
     protected readonly eventTarget: EventTarget;
-    constructor(ifcSplitterIO: IfcSplitterIO);
+    constructor(ifcSplitterIO: IfcSplitterIO, config?: IfcSplitterConfig);
     readonly onProgress: Event_2<IfcSplitterProgressEvent>;
     readonly onSplitsResolved: Event_2<IfcSplitterGroupsEvent>;
     /**
@@ -2931,6 +2972,22 @@ export declare class IfcSplitter {
     protected emitProgressEvent(stage: IfcSplitterStage, start: number): void;
 }
 
+export declare interface IfcSplitterConfig {
+    /**
+     * @default {@link ELEMENT_TYPES}
+     */
+    elementTypes?: string[];
+    /**
+     * @default {@link SPATIAL_TYPES}
+     */
+    spatialTypes?: string[];
+    /**
+     * @see {@link listIdxByType}
+     * @returns the index of the argument to parse as a ref list
+     */
+    listArgIndex?: (ifcType: string) => number | undefined;
+}
+
 export declare interface IfcSplitterGroupsEvent {
     /**
      * One entry per **non-empty** group, ascending by {@link GroupData.groupId}.
@@ -2957,6 +3014,21 @@ export declare interface IfcSplitterIO {
 export declare interface IfcSplitterProgressEvent {
     stage: IfcSplitterStage;
     timeElapsed: number;
+}
+
+declare interface IfcSplitterResolvedConfig {
+    /**
+     * @see {@link IfcSplitterConfig.elementTypes}
+     */
+    elementTypes: Set<string>;
+    /**
+     * @see {@link IfcSplitterConfig.spatialTypes}
+     */
+    spatialTypes: Set<string>;
+    /**
+     * @see {@link IfcSplitterConfig.listArgIndex}
+     */
+    listArgIndex: (ifcType: string) => number | undefined;
 }
 
 export declare type IfcSplitterStage = "parse" | "spatial" | "void-fill" | "style-maps" | "classify" | "aggregate" | "cluster" | "distribute" | "relations" | "resolve" | "build-index" | "write";
@@ -3565,6 +3637,18 @@ export declare interface LineMeta {
 }
 
 /**
+ * Returns the argument index at which a given IFC type stores its list of
+ * "related objects". Getting this wrong causes the rewriter to read the wrong
+ * field, end up with an empty list, and skip the line entirely — dropping all
+ * its transitive dependencies (property sets, materials, styles, etc.) from
+ * the split output.
+ *
+ * The default {@link IfcSplitterConfig.listArgIndex}. Exported so an override
+ * can delegate to it for the types it doesn't care about.
+ */
+export declare const listIdxByType: (type: string) => number;
+
+/**
  * Error thrown when a model load is aborted via `FragmentsModels.abort()`.
  */
 export declare class LoadAbortedError extends Error {
@@ -3776,6 +3860,22 @@ export declare type MaterialDefinition = {
      * @default true
      */
     depthWrite?: boolean;
+    /**
+     * Depth-bias factor mapped to THREE's polygonOffsetFactor. When either
+     * this or polygonOffsetUnits is a non-zero number, polygonOffset is
+     * enabled on the produced material. Useful to resolve z-fighting between
+     * exactly coplanar faces (e.g. an element sitting exactly on the surface
+     * that hosts it).
+     * @default 0 (no depth bias)
+     */
+    polygonOffsetFactor?: number;
+    /**
+     * Depth-bias units mapped to THREE's polygonOffsetUnits. When either
+     * this or polygonOffsetFactor is a non-zero number, polygonOffset is
+     * enabled on the produced material.
+     * @default 0 (no depth bias)
+     */
+    polygonOffsetUnits?: number;
     /** The local ID of the material */
     localId?: number;
     /**
@@ -3984,6 +4084,7 @@ declare class MeshManager {
      * Called from `FragmentsModels.update(true)`.
      */
     forceUpdateFinish(): Promise<void>;
+    private finishEmptyScene;
     /**
      * Called by `RequestsManager` whenever a FINISH tile request lands
      * on main. The FINISH is stamped with the worker's `lastSeenSeq`
@@ -4999,9 +5100,27 @@ export declare class SingleThreadedFragmentsModel implements IFragmentsModel<fal
     private readonly _modelId;
     private _virtualModel;
     /**
+     * The promise of the asynchronous part of the model setup, started by the
+     * constructor. See {@link ready}. It is memoized: the setup runs exactly
+     * once, no public path can re-trigger it.
+     */
+    private readonly _setup;
+    private _disposed;
+    /**
      * The ID of the model.
      */
     get modelId(): string;
+    /**
+     * Resolves when the model is fully set up. The constructor starts an
+     * asynchronous setup that spans multiple macrotasks; await this before
+     * relying on the model being completely initialized.
+     *
+     * If {@link dispose} is called while the setup is still running, this
+     * promise rejects with a {@link LoadAbortedError}. If nobody awaits it,
+     * the rejection is already handled internally, so it never surfaces as
+     * an unhandled rejection.
+     */
+    get ready(): Promise<void>;
     /**
      * The constructor of the fragments model.
      * @param raw - Whether `modelData` is raw (uncompressed) or deflated. If
@@ -5011,6 +5130,10 @@ export declare class SingleThreadedFragmentsModel implements IFragmentsModel<fal
     /**
      * Dispose the model. Use this when you're done with the model.
      * If you use the {@link FragmentsModels.dispose} method, this will be called automatically for all models.
+     *
+     * If the setup started by the constructor is still running, it is aborted
+     * at its next yield point and {@link ready} rejects with a
+     * {@link LoadAbortedError}. Calling this more than once is a no-op.
      */
     dispose(): void;
     /**
@@ -5293,6 +5416,12 @@ export declare interface SnappingRaycastData extends RaycastData {
 }
 
 declare function solveIds(requests: ET.EditRequest[], nextId: number): number[];
+
+/**
+ * The default {@link IfcSplitterConfig.spatialTypes}.
+ * Exported so it can be extended rather than replaced.
+ */
+export declare const SPATIAL_TYPES: readonly ["IFCPROJECT", "IFCSITE", "IFCBUILDING", "IFCBUILDINGSTOREY"];
 
 export declare class SpatialStructure {
     bb: flatbuffers.ByteBuffer | null;
@@ -5654,6 +5783,7 @@ declare class VirtualFragmentsModel {
     getInverseIndexEntry<K extends string | number, V extends string | number>(name: string, value: K): IndexArrayType<V> | null;
     getItemsByConfig(condition: (item: number) => boolean): number[];
     getItemsCategories(ids: number[]): (string | null)[];
+    getItemCategory(id: number): string | null;
     getItemIdsByLocalIds(localIds: number[]): number[];
     getItemAttributes(id: number): Record<string, {
         value: any;
@@ -5828,6 +5958,13 @@ declare class VirtualFragmentsModel {
  * Stored indexes are cached for the model's lifetime. Pending indexes are
  * cached per "request batch" (invalidated when `requests.length` changes,
  * which covers push, undo, redo, and `selectRequest`).
+ *
+ * Performance note: index reads cross the worker boundary by structured
+ * clone. Typed arrays clone at memcpy speed, so number-keyed indexes are
+ * cheap at any size; the expensive part of string keys is decoding the
+ * strings, not the crossing itself. For large indexes with long string
+ * keys, hash the keys to uint32 at build time and store the number-keyed
+ * index instead (see the discussion in #250).
  */
 declare class VirtualIndexesController {
     private readonly _vm;
@@ -5906,6 +6043,7 @@ declare class VirtualIndexesController {
 declare class VirtualMaterialController {
     private readonly _modelId;
     private readonly _list;
+    private readonly _idsByDefinition;
     private readonly _onTransfer;
     constructor(modelId: string, onTransfer: VirtualMaterialTransfer);
     update(model: Model): number[];
@@ -5915,7 +6053,6 @@ declare class VirtualMaterialController {
         localIds: number[];
         definition: MaterialDefinition;
     }[];
-    private checkMaterialExists;
     private deduplicateMaterials;
     private getAll;
     private transferMaterialData;

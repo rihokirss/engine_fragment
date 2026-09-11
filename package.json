@@ -43,10 +43,15 @@
     "earcut": "^3.0.1",
     "flatbuffers": "25.2.10",
     "lru-cache": "11.1.0",
-    "pako": "2.1.0"
+    "pako": "2.1.0",
+    "xxhash-wasm": "^1.1.0"
   },
   "peerDependencies": {
     "three": ">=0.182.0",
     "web-ifc": ">=0.0.77"
+  },
+  "structuraBuild": {
+    "repository": "ThatOpen/engine_fragment",
+    "commit": "9dc485ebe3a9044a5c883258cfa880d669f63aac"
   }
 }
