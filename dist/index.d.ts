@@ -2,7 +2,7 @@ import * as flatbuffers from 'flatbuffers';
 import { Font } from 'three/examples/jsm/Addons.js';
 import { LineMaterial } from 'three/examples/jsm/Addons.js';
 import { LineMaterialParameters } from 'three/examples/jsm/lines/LineMaterial.js';
-import type { ModelLoadCallback } from 'web-ifc';
+import { ModelLoadCallback } from 'web-ifc';
 import { ProfileSection } from 'web-ifc';
 import * as THREE from 'three';
 import * as WEBIFC from 'web-ifc';
@@ -2675,6 +2675,13 @@ export declare type GridAxisData = {
 
 export declare type GridData = {
     id: number;
+    /**
+     * The IFC GlobalId of the grid. Optional because `GridsController` rebuilds
+     * this type with `JSON.parse` from the "data" attribute of already-exported
+     * .frag files, which carry no guid, and because IFCGRID entities with an
+     * unset GlobalId produce no guid either.
+     */
+    guid?: string;
     transform: number[];
     uAxes: GridAxisData[];
     vAxes: GridAxisData[];

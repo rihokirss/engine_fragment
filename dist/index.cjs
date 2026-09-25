@@ -1,41 +1,4 @@
 "use strict";
-var __defProp = Object.defineProperty;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __publicField = (obj, key, value) => {
-  __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
-  return value;
-};
-var __accessCheck = (obj, member, msg) => {
-  if (!member.has(obj))
-    throw TypeError("Cannot " + msg);
-};
-var __privateGet = (obj, member, getter) => {
-  __accessCheck(obj, member, "read from private field");
-  return getter ? getter.call(obj) : member.get(obj);
-};
-var __privateAdd = (obj, member, value) => {
-  if (member.has(obj))
-    throw TypeError("Cannot add the same private member more than once");
-  member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
-};
-var __privateSet = (obj, member, value, setter) => {
-  __accessCheck(obj, member, "write to private field");
-  setter ? setter.call(obj, value) : member.set(obj, value);
-  return value;
-};
-var __privateWrapper = (obj, member, setter, getter) => ({
-  set _(value) {
-    __privateSet(obj, member, value, setter);
-  },
-  get _() {
-    return __privateGet(obj, member, getter);
-  }
-});
-var __privateMethod = (obj, member, method) => {
-  __accessCheck(obj, member, "access private method");
-  return method;
-};
-var _a, _constructing, _max, _maxSize, _dispose, _onInsert, _disposeAfter, _fetchMethod, _memoMethod, _size, _calculatedSize, _keyMap, _keyList, _valList, _next, _prev, _head, _tail, _free, _disposed, _sizes, _starts, _ttls, _hasDispose, _hasFetchMethod, _hasDisposeAfter, _hasOnInsert, _initializeTTLTracking, initializeTTLTracking_fn, _updateItemAge, _statusTTL, _setItemTTL, _isStale, _initializeSizeTracking, initializeSizeTracking_fn, _removeItemSize, _addItemSize, _requireSize, _indexes, indexes_fn, _rindexes, rindexes_fn, _isValidIndex, isValidIndex_fn, _b, _evict, evict_fn, _backgroundFetch, backgroundFetch_fn, _isBackgroundFetch, isBackgroundFetch_fn, _connect, connect_fn, _moveToTail, moveToTail_fn, _delete, delete_fn, _clear, clear_fn;
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 const THREE = require("three");
 const WEBIFC = require("web-ifc");
@@ -65,12 +28,9 @@ function getObject(obj, result) {
   const proto = Object.getPrototypeOf(obj);
   const propNames = Object.getOwnPropertyNames(proto);
   for (const name of propNames) {
-    if (name === "constructor" || name === "__init")
-      continue;
-    if (name.includes("mutate_"))
-      continue;
-    if (name.match(/.*Array$/))
-      continue;
+    if (name === "constructor" || name === "__init") continue;
+    if (name.includes("mutate_")) continue;
+    if (name.match(/.*Array$/)) continue;
     const value = proto[name];
     if (typeof value === "function") {
       const isArray = obj[`${name}Length`] !== void 0 && obj[`${name}Array`] !== void 0;
@@ -1246,72 +1206,65 @@ const ifcCategoryMap = {
   1109904537: "FILE_SCHEMA"
 };
 class Event {
-  constructor() {
-    __publicField(this, "enabled", true);
-    __publicField(this, "trigger", (data) => {
-      if (!this.enabled) {
-        return;
-      }
-      const handlers = this.handlers.slice(0);
-      for (const handler of handlers) {
-        handler(data);
-      }
-    });
-    __publicField(this, "handlers", []);
-  }
+  enabled = true;
   add(handler) {
     this.handlers.push(handler);
   }
   remove(handler) {
     this.handlers = this.handlers.filter((h) => h !== handler);
   }
+  trigger = (data) => {
+    if (!this.enabled) {
+      return;
+    }
+    const handlers = this.handlers.slice(0);
+    for (const handler of handlers) {
+      handler(data);
+    }
+  };
   reset() {
     this.handlers.length = 0;
   }
+  handlers = [];
 }
 class AsyncEvent {
-  constructor() {
-    __publicField(this, "enabled", true);
-    __publicField(this, "trigger", async (data) => {
-      if (!this.enabled) {
-        return;
-      }
-      const handlers = this.handlers.slice(0);
-      for (const handler of handlers) {
-        await handler(data);
-      }
-    });
-    __publicField(this, "handlers", []);
-  }
+  enabled = true;
   add(handler) {
     this.handlers.push(handler);
   }
   remove(handler) {
     this.handlers = this.handlers.filter((h) => h !== handler);
   }
+  trigger = async (data) => {
+    if (!this.enabled) {
+      return;
+    }
+    const handlers = this.handlers.slice(0);
+    for (const handler of handlers) {
+      await handler(data);
+    }
+  };
   reset() {
     this.handlers.length = 0;
   }
+  handlers = [];
 }
 class DataMap extends Map {
-  constructor(iterable) {
-    super(iterable);
-    __publicField(this, "onBeforeSet", new Event());
-    __publicField(this, "onItemSet", new Event());
-    __publicField(this, "onItemUpdated", new Event());
-    __publicField(this, "onBeforeDelete", new Event());
-    __publicField(this, "onItemDeleted", new Event());
-    __publicField(this, "onCleared", new Event());
-    __publicField(this, "guard", () => true);
-    __publicField(this, "deleteGuard", () => true);
-    __publicField(this, "updateGuard", () => true);
-  }
+  onBeforeSet = new Event();
+  onItemSet = new Event();
+  onItemUpdated = new Event();
+  onBeforeDelete = new Event();
+  onItemDeleted = new Event();
+  onCleared = new Event();
   set eventsEnabled(value) {
     this.onItemSet.enabled = value;
     this.onItemUpdated.enabled = value;
     this.onItemDeleted.enabled = value;
     this.onBeforeDelete.enabled = value;
     this.onCleared.enabled = value;
+  }
+  constructor(iterable) {
+    super(iterable);
   }
   clear() {
     for (const [key, value] of this) {
@@ -1324,8 +1277,7 @@ class DataMap extends Map {
     const triggerUpdate = this.has(key);
     const guard = this.guard ?? (() => true);
     const isValid = guard(key, value);
-    if (!isValid)
-      return this;
+    if (!isValid) return this;
     if (!triggerUpdate) {
       this.onBeforeSet.trigger({ key, value });
     }
@@ -1343,22 +1295,21 @@ class DataMap extends Map {
     }
     return result;
   }
+  guard = () => true;
+  deleteGuard = () => true;
+  updateGuard = () => true;
   delete(key) {
     const value = this.get(key);
-    if (!value)
-      return false;
-    if (!this.deleteGuard(key, value))
-      return false;
+    if (!value) return false;
+    if (!this.deleteGuard(key, value)) return false;
     this.onBeforeDelete.trigger({ key, value });
     const deleted = super.delete(key);
-    if (deleted)
-      this.onItemDeleted.trigger(key);
+    if (deleted) this.onItemDeleted.trigger(key);
     return deleted;
   }
   getKey(item) {
     for (const [key, value] of this) {
-      if (value === item)
-        return key;
+      if (value === item) return key;
     }
     return void 0;
   }
@@ -1408,11 +1359,9 @@ class DataMap extends Map {
    */
   replaceKey(oldKey, newKey, fullReplace = false) {
     const oldKeyItem = this.get(oldKey);
-    if (!oldKeyItem)
-      return false;
+    if (!oldKeyItem) return false;
     const newKeyItem = this.get(newKey);
-    if (newKeyItem && !fullReplace)
-      return false;
+    if (newKeyItem && !fullReplace) return false;
     this.eventsEnabled = false;
     this.delete(oldKey);
     this.eventsEnabled = true;
@@ -1429,22 +1378,20 @@ class DataMap extends Map {
   }
 }
 class DataSet extends Set {
-  constructor(iterable) {
-    super(iterable);
-    __publicField(this, "onUpdated", new Event());
-    __publicField(this, "onItemAdded", new Event());
-    __publicField(this, "onBeforeDelete", new Event());
-    __publicField(this, "onItemDeleted", new Event());
-    __publicField(this, "onCleared", new Event());
-    __publicField(this, "guard", () => true);
-    __publicField(this, "deleteGuard", () => true);
-  }
+  onUpdated = new Event();
+  onItemAdded = new Event();
+  onBeforeDelete = new Event();
+  onItemDeleted = new Event();
+  onCleared = new Event();
   set eventsEnabled(value) {
     this.onUpdated.enabled = value;
     this.onItemAdded.enabled = value;
     this.onItemDeleted.enabled = value;
     this.onBeforeDelete.enabled = value;
     this.onCleared.enabled = value;
+  }
+  constructor(iterable) {
+    super(iterable);
   }
   clear() {
     for (const item of this) {
@@ -1457,28 +1404,24 @@ class DataSet extends Set {
   add(...value) {
     for (const item of value) {
       const existing = this.has(item);
-      if (existing)
-        continue;
+      if (existing) continue;
       const guard = this.guard ?? (() => true);
       const isValid = guard(item);
-      if (!isValid)
-        continue;
+      if (!isValid) continue;
       super.add(item);
-      if (!this.onItemAdded)
-        this.onItemAdded = new Event();
+      if (!this.onItemAdded) this.onItemAdded = new Event();
       this.onItemAdded.trigger(item);
     }
-    if (!this.onUpdated)
-      this.onUpdated = new Event();
+    if (!this.onUpdated) this.onUpdated = new Event();
     this.onUpdated.trigger();
     return this;
   }
+  guard = () => true;
+  deleteGuard = () => true;
   delete(value) {
     const exist = this.has(value);
-    if (!exist)
-      return false;
-    if (!this.deleteGuard(value))
-      return false;
+    if (!exist) return false;
+    if (!this.deleteGuard(value)) return false;
     this.onBeforeDelete.trigger(value);
     const deleted = super.delete(value);
     if (deleted) {
@@ -1497,8 +1440,7 @@ class DataSet extends Set {
   getIndex(item) {
     let index = 0;
     for (const value of this) {
-      if (value === item)
-        return index;
+      if (value === item) return index;
       index++;
     }
     return -1;
@@ -2077,19 +2019,18 @@ class Builder {
     this.addInt16(len);
     let existing_vtable = 0;
     const vt1 = this.space;
-    outer_loop:
-      for (i = 0; i < this.vtables.length; i++) {
-        const vt2 = this.bb.capacity() - this.vtables[i];
-        if (len == this.bb.readInt16(vt2)) {
-          for (let j = SIZEOF_SHORT; j < len; j += SIZEOF_SHORT) {
-            if (this.bb.readInt16(vt1 + j) != this.bb.readInt16(vt2 + j)) {
-              continue outer_loop;
-            }
+    outer_loop: for (i = 0; i < this.vtables.length; i++) {
+      const vt2 = this.bb.capacity() - this.vtables[i];
+      if (len == this.bb.readInt16(vt2)) {
+        for (let j = SIZEOF_SHORT; j < len; j += SIZEOF_SHORT) {
+          if (this.bb.readInt16(vt1 + j) != this.bb.readInt16(vt2 + j)) {
+            continue outer_loop;
           }
-          existing_vtable = this.vtables[i];
-          break;
         }
+        existing_vtable = this.vtables[i];
+        break;
       }
+    }
     if (existing_vtable) {
       this.space = this.bb.capacity() - vtableloc;
       this.bb.writeInt32(this.space, existing_vtable - vtableloc);
@@ -2263,7 +2204,6 @@ class Builder {
     return this.endVector();
   }
 }
-/*! pako 2.1.0 https://github.com/nodeca/pako @license (MIT AND Zlib) */
 const Z_FIXED$1 = 4;
 const Z_BINARY = 0;
 const Z_TEXT = 1;
@@ -4390,10 +4330,8 @@ Deflate$1.prototype.push = function(data, flush_mode) {
   if (this.ended) {
     return false;
   }
-  if (flush_mode === ~~flush_mode)
-    _flush_mode = flush_mode;
-  else
-    _flush_mode = flush_mode === true ? Z_FINISH$2 : Z_NO_FLUSH$1;
+  if (flush_mode === ~~flush_mode) _flush_mode = flush_mode;
+  else _flush_mode = flush_mode === true ? Z_FINISH$2 : Z_NO_FLUSH$1;
   if (typeof data === "string") {
     strm.input = strings.string2buf(data);
   } else if (toString$1.call(data) === "[object ArrayBuffer]") {
@@ -4433,8 +4371,7 @@ Deflate$1.prototype.push = function(data, flush_mode) {
       strm.avail_out = 0;
       continue;
     }
-    if (strm.avail_in === 0)
-      break;
+    if (strm.avail_in === 0) break;
   }
   return true;
 };
@@ -5385,6 +5322,7 @@ const inflate$2 = (strm, flush) => {
           hold = 0;
           bits = 0;
           state.mode = TIME;
+        /* falls through */
         case TIME:
           while (bits < 32) {
             if (have === 0) {
@@ -5407,6 +5345,7 @@ const inflate$2 = (strm, flush) => {
           hold = 0;
           bits = 0;
           state.mode = OS;
+        /* falls through */
         case OS:
           while (bits < 16) {
             if (have === 0) {
@@ -5428,6 +5367,7 @@ const inflate$2 = (strm, flush) => {
           hold = 0;
           bits = 0;
           state.mode = EXLEN;
+        /* falls through */
         case EXLEN:
           if (state.flags & 1024) {
             while (bits < 16) {
@@ -5453,6 +5393,7 @@ const inflate$2 = (strm, flush) => {
             state.head.extra = null;
           }
           state.mode = EXTRA;
+        /* falls through */
         case EXTRA:
           if (state.flags & 1024) {
             copy = state.length;
@@ -5489,6 +5430,7 @@ const inflate$2 = (strm, flush) => {
           }
           state.length = 0;
           state.mode = NAME;
+        /* falls through */
         case NAME:
           if (state.flags & 2048) {
             if (have === 0) {
@@ -5514,6 +5456,7 @@ const inflate$2 = (strm, flush) => {
           }
           state.length = 0;
           state.mode = COMMENT;
+        /* falls through */
         case COMMENT:
           if (state.flags & 4096) {
             if (have === 0) {
@@ -5538,6 +5481,7 @@ const inflate$2 = (strm, flush) => {
             state.head.comment = null;
           }
           state.mode = HCRC;
+        /* falls through */
         case HCRC:
           if (state.flags & 512) {
             while (bits < 16) {
@@ -5576,6 +5520,7 @@ const inflate$2 = (strm, flush) => {
           hold = 0;
           bits = 0;
           state.mode = DICT;
+        /* falls through */
         case DICT:
           if (state.havedict === 0) {
             strm.next_out = put;
@@ -5588,10 +5533,12 @@ const inflate$2 = (strm, flush) => {
           }
           strm.adler = state.check = 1;
           state.mode = TYPE;
+        /* falls through */
         case TYPE:
           if (flush === Z_BLOCK || flush === Z_TREES) {
             break inf_leave;
           }
+        /* falls through */
         case TYPEDO:
           if (state.last) {
             hold >>>= bits & 7;
@@ -5656,8 +5603,10 @@ const inflate$2 = (strm, flush) => {
           if (flush === Z_TREES) {
             break inf_leave;
           }
+        /* falls through */
         case COPY_:
           state.mode = COPY;
+        /* falls through */
         case COPY:
           copy = state.length;
           if (copy) {
@@ -5705,6 +5654,7 @@ const inflate$2 = (strm, flush) => {
           }
           state.have = 0;
           state.mode = LENLENS;
+        /* falls through */
         case LENLENS:
           while (state.have < state.ncode) {
             while (bits < 3) {
@@ -5734,6 +5684,7 @@ const inflate$2 = (strm, flush) => {
           }
           state.have = 0;
           state.mode = CODELENS;
+        /* falls through */
         case CODELENS:
           while (state.have < state.nlen + state.ndist) {
             for (; ; ) {
@@ -5851,8 +5802,10 @@ const inflate$2 = (strm, flush) => {
           if (flush === Z_TREES) {
             break inf_leave;
           }
+        /* falls through */
         case LEN_:
           state.mode = LEN;
+        /* falls through */
         case LEN:
           if (have >= 6 && left >= 258) {
             strm.next_out = put;
@@ -5934,6 +5887,7 @@ const inflate$2 = (strm, flush) => {
           }
           state.extra = here_op & 15;
           state.mode = LENEXT;
+        /* falls through */
         case LENEXT:
           if (state.extra) {
             n = state.extra;
@@ -5952,6 +5906,7 @@ const inflate$2 = (strm, flush) => {
           }
           state.was = state.length;
           state.mode = DIST;
+        /* falls through */
         case DIST:
           for (; ; ) {
             here = state.distcode[hold & (1 << state.distbits) - 1];
@@ -6002,6 +5957,7 @@ const inflate$2 = (strm, flush) => {
           state.offset = here_val;
           state.extra = here_op & 15;
           state.mode = DISTEXT;
+        /* falls through */
         case DISTEXT:
           if (state.extra) {
             n = state.extra;
@@ -6024,6 +5980,7 @@ const inflate$2 = (strm, flush) => {
             break;
           }
           state.mode = MATCH;
+        /* falls through */
         case MATCH:
           if (left === 0) {
             break inf_leave;
@@ -6100,6 +6057,7 @@ const inflate$2 = (strm, flush) => {
             bits = 0;
           }
           state.mode = LENGTH;
+        /* falls through */
         case LENGTH:
           if (state.wrap && state.flags) {
             while (bits < 32) {
@@ -6119,6 +6077,7 @@ const inflate$2 = (strm, flush) => {
             bits = 0;
           }
           state.mode = DONE;
+        /* falls through */
         case DONE:
           ret = Z_STREAM_END$1;
           break inf_leave;
@@ -6128,6 +6087,7 @@ const inflate$2 = (strm, flush) => {
         case MEM:
           return Z_MEM_ERROR$1;
         case SYNC:
+        /* falls through */
         default:
           return Z_STREAM_ERROR$1;
       }
@@ -6139,8 +6099,7 @@ const inflate$2 = (strm, flush) => {
   state.hold = hold;
   state.bits = bits;
   if (state.wsize || _out !== strm.avail_out && state.mode < BAD && (state.mode < CHECK || flush !== Z_FINISH$1)) {
-    if (updatewindow(strm, strm.output, strm.next_out, _out - strm.avail_out))
-      ;
+    if (updatewindow(strm, strm.output, strm.next_out, _out - strm.avail_out)) ;
   }
   _in -= strm.avail_in;
   _out -= strm.avail_out;
@@ -6308,12 +6267,9 @@ Inflate$1.prototype.push = function(data, flush_mode) {
   const chunkSize = this.options.chunkSize;
   const dictionary = this.options.dictionary;
   let status, _flush_mode, last_avail_out;
-  if (this.ended)
-    return false;
-  if (flush_mode === ~~flush_mode)
-    _flush_mode = flush_mode;
-  else
-    _flush_mode = flush_mode === true ? Z_FINISH : Z_NO_FLUSH;
+  if (this.ended) return false;
+  if (flush_mode === ~~flush_mode) _flush_mode = flush_mode;
+  else _flush_mode = flush_mode === true ? Z_FINISH : Z_NO_FLUSH;
   if (toString.call(data) === "[object ArrayBuffer]") {
     strm.input = new Uint8Array(data);
   } else {
@@ -6358,24 +6314,21 @@ Inflate$1.prototype.push = function(data, flush_mode) {
           let utf8str = strings.buf2string(strm.output, next_out_utf8);
           strm.next_out = tail;
           strm.avail_out = chunkSize - tail;
-          if (tail)
-            strm.output.set(strm.output.subarray(next_out_utf8, next_out_utf8 + tail), 0);
+          if (tail) strm.output.set(strm.output.subarray(next_out_utf8, next_out_utf8 + tail), 0);
           this.onData(utf8str);
         } else {
           this.onData(strm.output.length === strm.next_out ? strm.output : strm.output.subarray(0, strm.next_out));
         }
       }
     }
-    if (status === Z_OK && last_avail_out === 0)
-      continue;
+    if (status === Z_OK && last_avail_out === 0) continue;
     if (status === Z_STREAM_END) {
       status = inflate_1$2.inflateEnd(this.strm);
       this.onEnd(status);
       this.ended = true;
       return true;
     }
-    if (strm.avail_in === 0)
-      break;
+    if (strm.avail_in === 0) break;
   }
   return true;
 };
@@ -6397,8 +6350,7 @@ Inflate$1.prototype.onEnd = function(status) {
 function inflate$1(input, options) {
   const inflator = new Inflate$1(options);
   inflator.push(input);
-  if (inflator.err)
-    throw inflator.msg || messages[inflator.err];
+  if (inflator.err) throw inflator.msg || messages[inflator.err];
   return inflator.result;
 }
 function inflateRaw$1(input, options) {
@@ -6439,10 +6391,8 @@ var pako = {
   constants: constants_1
 };
 class Attribute {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -6491,10 +6441,8 @@ class Attribute {
   }
 }
 class FloatVector {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -6533,10 +6481,8 @@ class FloatVector {
   }
 }
 class CircleCurve {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -6588,10 +6534,8 @@ class CircleCurve {
   }
 }
 class Wire {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -6620,10 +6564,8 @@ class Wire {
   }
 }
 class WireSet {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -6664,10 +6606,8 @@ class WireSet {
   }
 }
 class Axis {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -6809,10 +6749,8 @@ var AxisPartClass = /* @__PURE__ */ ((AxisPartClass2) => {
   return AxisPartClass2;
 })(AxisPartClass || {});
 class BigShellHole {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -6881,10 +6819,8 @@ class BigShellHole {
   }
 }
 class BigShellProfile {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -6937,10 +6873,8 @@ class BigShellProfile {
   }
 }
 class BoundingBox {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -6969,10 +6903,8 @@ class BoundingBox {
   }
 }
 class CircleExtrusion {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -7048,10 +6980,8 @@ class CircleExtrusion {
   }
 }
 class DoubleVector {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -7090,10 +7020,8 @@ class DoubleVector {
   }
 }
 class Material {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -7156,10 +7084,8 @@ class Material {
   }
 }
 class Representation {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -7203,10 +7129,8 @@ class Representation {
   }
 }
 class Sample {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -7253,10 +7177,8 @@ class Sample {
   }
 }
 class ShellHole {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -7325,10 +7247,8 @@ class ShellHole {
   }
 }
 class ShellProfile {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -7386,10 +7306,8 @@ var ShellType = /* @__PURE__ */ ((ShellType2) => {
   return ShellType2;
 })(ShellType || {});
 class Shell {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -7566,10 +7484,8 @@ class Shell {
   }
 }
 class Transform {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -7605,10 +7521,8 @@ class Transform {
   }
 }
 class Meshes {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -7926,10 +7840,8 @@ class Meshes {
   }
 }
 class ModelIndex {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -8111,10 +8023,8 @@ class ModelIndex {
   }
 }
 class Relation {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -8163,10 +8073,8 @@ class Relation {
   }
 }
 class SpatialStructure {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -8239,10 +8147,8 @@ class SpatialStructure {
   }
 }
 class Model {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -9088,15 +8994,13 @@ function createCircleExtrusion(builder, circleExtrusion) {
   return ceOffset;
 }
 function copySpatialStructure(builder, spatialStructure) {
-  if (!spatialStructure)
-    return null;
+  if (!spatialStructure) return null;
   const childrenLength = spatialStructure.childrenLength();
   const childrenOffsets = [];
   for (let i = 0; i < childrenLength; i++) {
     const current = spatialStructure.children(i);
     const childOffset = copySpatialStructure(builder, current);
-    if (childOffset === null)
-      continue;
+    if (childOffset === null) continue;
     childrenOffsets.push(childOffset);
   }
   const childrenOffset = SpatialStructure.createChildrenVector(
@@ -9127,8 +9031,7 @@ function createSpatialStructure(builder, spatialStructure) {
   for (let i = 0; i < childrenLength; i++) {
     const current = children[i];
     const childOffset = createSpatialStructure(builder, current);
-    if (childOffset === null)
-      continue;
+    if (childOffset === null) continue;
     childrenOffsets.push(childOffset);
   }
   const childrenOffset = SpatialStructure.createChildrenVector(
@@ -9172,15 +9075,14 @@ function buildSample(builder, localIdToIndex, itemId, matId, reprId, ltId) {
   Sample.createSample(builder, itemIndex, matIndex, reprIndex, ltIndex);
 }
 function buildIndex(builder, data) {
-  var _a2, _b2;
   const nameOffset = builder.createString(data.name);
   const { keysOffset, isStringKey } = createKeysVector(builder, data.keys);
   const { valuesOffset, isStringValue } = createValuesVector(
     builder,
     data.values
   );
-  const endOffset = ((_a2 = data.end) == null ? void 0 : _a2.length) ? ModelIndex.createEndVector(builder, data.end) : null;
-  const startOffset = ((_b2 = data.start) == null ? void 0 : _b2.length) ? ModelIndex.createStartVector(builder, data.start) : null;
+  const endOffset = data.end?.length ? ModelIndex.createEndVector(builder, data.end) : null;
+  const startOffset = data.start?.length ? ModelIndex.createStartVector(builder, data.start) : null;
   ModelIndex.startModelIndex(builder);
   ModelIndex.addName(builder, nameOffset);
   if (isStringKey) {
@@ -9195,10 +9097,8 @@ function buildIndex(builder, data) {
       ModelIndex.addNumberValues(builder, valuesOffset);
     }
   }
-  if (endOffset !== null)
-    ModelIndex.addEnd(builder, endOffset);
-  if (startOffset !== null)
-    ModelIndex.addStart(builder, startOffset);
+  if (endOffset !== null) ModelIndex.addEnd(builder, endOffset);
+  if (startOffset !== null) ModelIndex.addStart(builder, startOffset);
   return ModelIndex.endModelIndex(builder);
 }
 function copyIndex(builder, src) {
@@ -9215,8 +9115,7 @@ function readIndex(src) {
   let keys;
   if (stringKeysLen > 0) {
     const arr = new Array(stringKeysLen);
-    for (let i = 0; i < stringKeysLen; i++)
-      arr[i] = src.stringKeys(i) ?? "";
+    for (let i = 0; i < stringKeysLen; i++) arr[i] = src.stringKeys(i) ?? "";
     keys = arr;
   } else {
     const numberKeys = src.numberKeysArray();
@@ -9432,8 +9331,7 @@ function getIdsDelta(model, requests) {
   }
   const deletedReprs = EditUtils.getRepresentations(model, deletedRepsIds);
   for (const [id, repr] of deletedReprs) {
-    if (prevRepresentations.has(id))
-      continue;
+    if (prevRepresentations.has(id)) continue;
     if (repr.representationClass === RepresentationClass.SHELL) {
       detaDeletedShellsCount++;
     } else if (repr.representationClass === RepresentationClass.CIRCLE_EXTRUSION) {
@@ -9689,8 +9587,8 @@ function getAffectedItems(requests, editedSamples, meshes, model, affectedItems)
 }
 function edit(model, requests, config) {
   const meshes = model.meshes();
-  const raw = (config == null ? void 0 : config.raw) ?? false;
-  const delta = (config == null ? void 0 : config.delta) ?? false;
+  const raw = config?.raw ?? false;
+  const delta = config?.delta ?? false;
   let deltaItemIds = /* @__PURE__ */ new Set();
   let deltaGts = /* @__PURE__ */ new Set();
   let deltaLts = /* @__PURE__ */ new Set();
@@ -9975,7 +9873,7 @@ function edit(model, requests, config) {
         }
         const errors = [];
         for (let index = 0; index < keys.length; index++) {
-          const valuesStart = (start == null ? void 0 : start[index]) ?? end[index - 1] ?? 0;
+          const valuesStart = start?.[index] ?? end[index - 1] ?? 0;
           const valuesEnd = end[index];
           if (valuesStart < 0 || valuesEnd > values.length || valuesStart > valuesEnd) {
             errors.push({
@@ -10754,8 +10652,7 @@ function edit(model, requests, config) {
     for (const name in relationData.data) {
       const ids = relationData.data[name];
       const filteredIds = ids.filter((id) => !itemsToDelete.has(id));
-      if (!filteredIds.length)
-        continue;
+      if (!filteredIds.length) continue;
       const dataOffset2 = builder.createSharedString(
         JSON.stringify([name, ...filteredIds])
       );
@@ -10821,15 +10718,11 @@ function edit(model, requests, config) {
   const upsertNames = new Set(indexesToUpsert.keys());
   for (let i = 0; i < model.indexesLength(); i++) {
     const existing = model.indexes(i);
-    if (!existing)
-      continue;
+    if (!existing) continue;
     const name = existing.name();
-    if (!name)
-      continue;
-    if (indexesToDelete.has(name))
-      continue;
-    if (upsertNames.has(name))
-      continue;
+    if (!name) continue;
+    if (indexesToDelete.has(name)) continue;
+    if (upsertNames.has(name)) continue;
     indexOffsets.push(copyIndex(builder, existing));
   }
   for (const data of indexesToUpsert.values()) {
@@ -11215,8 +11108,7 @@ function getGlobalTransforms(model, ids) {
     const localId = meshes.globalTransformIds(i);
     const idIndex = meshes.meshesItems(i);
     const itemId = model.localIds(idIndex);
-    if (!source.has(localId))
-      continue;
+    if (!source.has(localId)) continue;
     const gtData = getTransformData(tempTransform);
     globalTransforms.set(localId, { ...gtData, itemId });
   }
@@ -11362,8 +11254,7 @@ function getItemSnapData(vModel, itemId) {
   const model = vModel.data;
   const meshes = model.meshes();
   const sampleIndices = vModel.boxes.sampleOf(itemId);
-  if (!sampleIndices || sampleIndices.length === 0)
-    return null;
+  if (!sampleIndices || sampleIndices.length === 0) return null;
   const result = {
     samples: {},
     localTransforms: {},
@@ -11397,8 +11288,7 @@ function getItemSnapData(vModel, itemId) {
     };
     meshes.localTransforms(ltIndex, tempTransform);
     result.localTransforms[ltId] = getTransformData(tempTransform);
-    if (result.representations[reprId])
-      continue;
+    if (result.representations[reprId]) continue;
     meshes.representations(representationIndex, tempRepresentation);
     const repr = getRepresentationData(tempRepresentation);
     if (repr.representationClass === RepresentationClass.SHELL) {
@@ -11444,8 +11334,7 @@ function solveIds(requests, nextId) {
   const tempIds = /* @__PURE__ */ new Map();
   const result = [];
   for (const request of requests) {
-    if (isIndexRequest(request))
-      continue;
+    if (isIndexRequest(request)) continue;
     if (request.localId !== void 0) {
       continue;
     }
@@ -11457,8 +11346,7 @@ function solveIds(requests, nextId) {
     result.push(newId);
   }
   for (const request of requests) {
-    if (isIndexRequest(request))
-      continue;
+    if (isIndexRequest(request)) continue;
     if (request.type === EditRequestType.UPDATE_SAMPLE || request.type === EditRequestType.CREATE_SAMPLE) {
       const sample = request.data;
       solveSampleTempId(sample, "item", tempIds);
@@ -11524,47 +11412,47 @@ function applyChangesToIds(actions, ids, key, addCreatedElements) {
   return Array.from(resultSet);
 }
 class EditUtils {
+  static edit = edit;
+  static solveIds = solveIds;
+  static newModel = newModel;
+  static applyChangesToRawData = applyChangesToRawData;
+  static applyChangesToSpecialData = applyChangesToSpecialData;
+  static applyChangesToIds = applyChangesToIds;
+  static getModelFromBuffer = getModelFromBuffer;
+  static getSampleData = getSampleData;
+  static getTransformData = getTransformData;
+  static getRelationData = getRelationData;
+  static getMaterialData = getMaterialData;
+  static getRepresentationData = getRepresentationData;
+  static getShellData = getShellData;
+  static getMaterialsIds = getMaterialsIds;
+  static getMaterials = getMaterials;
+  static getRepresentationsIds = getRepresentationsIds;
+  static getRepresentations = getRepresentations;
+  static getLocalTransformsIds = getLocalTransformsIds;
+  static getLocalTransforms = getLocalTransforms;
+  static getGlobalTransformsIds = getGlobalTransformsIds;
+  static getGlobalTransforms = getGlobalTransforms;
+  static getSamplesIds = getSamplesIds;
+  static getSamples = getSamples;
+  static getItemsIds = getItemsIds;
+  static getItems = getItems;
+  static getGlobalTranformsIdsOfItems = getGlobalTranformsIdsOfItems;
+  static getElementsData = getElementsData;
+  static getItemSnapData = getItemSnapData;
+  static getGeometryIndicesFromRepresentations = getGeometryIndicesFromRepresentations;
+  static getRootModelId = getRootModelId;
+  static getSerializedAttributes = getSerializedAttributes;
+  static itemDataToRawItemData = itemDataToRawItemData;
+  static DELTA_MODEL_ID = DELTA_MODEL_ID;
 }
-__publicField(EditUtils, "edit", edit);
-__publicField(EditUtils, "solveIds", solveIds);
-__publicField(EditUtils, "newModel", newModel);
-__publicField(EditUtils, "applyChangesToRawData", applyChangesToRawData);
-__publicField(EditUtils, "applyChangesToSpecialData", applyChangesToSpecialData);
-__publicField(EditUtils, "applyChangesToIds", applyChangesToIds);
-__publicField(EditUtils, "getModelFromBuffer", getModelFromBuffer);
-__publicField(EditUtils, "getSampleData", getSampleData);
-__publicField(EditUtils, "getTransformData", getTransformData);
-__publicField(EditUtils, "getRelationData", getRelationData);
-__publicField(EditUtils, "getMaterialData", getMaterialData);
-__publicField(EditUtils, "getRepresentationData", getRepresentationData);
-__publicField(EditUtils, "getShellData", getShellData);
-__publicField(EditUtils, "getMaterialsIds", getMaterialsIds);
-__publicField(EditUtils, "getMaterials", getMaterials);
-__publicField(EditUtils, "getRepresentationsIds", getRepresentationsIds);
-__publicField(EditUtils, "getRepresentations", getRepresentations);
-__publicField(EditUtils, "getLocalTransformsIds", getLocalTransformsIds);
-__publicField(EditUtils, "getLocalTransforms", getLocalTransforms);
-__publicField(EditUtils, "getGlobalTransformsIds", getGlobalTransformsIds);
-__publicField(EditUtils, "getGlobalTransforms", getGlobalTransforms);
-__publicField(EditUtils, "getSamplesIds", getSamplesIds);
-__publicField(EditUtils, "getSamples", getSamples);
-__publicField(EditUtils, "getItemsIds", getItemsIds);
-__publicField(EditUtils, "getItems", getItems);
-__publicField(EditUtils, "getGlobalTranformsIdsOfItems", getGlobalTranformsIdsOfItems);
-__publicField(EditUtils, "getElementsData", getElementsData);
-__publicField(EditUtils, "getItemSnapData", getItemSnapData);
-__publicField(EditUtils, "getGeometryIndicesFromRepresentations", getGeometryIndicesFromRepresentations);
-__publicField(EditUtils, "getRootModelId", getRootModelId);
-__publicField(EditUtils, "getSerializedAttributes", getSerializedAttributes);
-__publicField(EditUtils, "itemDataToRawItemData", itemDataToRawItemData);
-__publicField(EditUtils, "DELTA_MODEL_ID", DELTA_MODEL_ID);
 class Point {
+  x;
+  y;
+  z;
+  hash;
+  id;
   constructor(vertices, index, id, precision) {
-    __publicField(this, "x");
-    __publicField(this, "y");
-    __publicField(this, "z");
-    __publicField(this, "hash");
-    __publicField(this, "id");
     this.x = GeomsFbUtils.round(vertices[index * 3], precision);
     this.y = GeomsFbUtils.round(vertices[index * 3 + 1], precision);
     this.z = GeomsFbUtils.round(vertices[index * 3 + 2], precision);
@@ -11573,12 +11461,12 @@ class Point {
   }
 }
 class Points {
+  list = /* @__PURE__ */ new Map();
+  tempV1 = new THREE__namespace.Vector3();
+  tempV2 = new THREE__namespace.Vector3();
+  tempV3 = new THREE__namespace.Vector3();
+  precision;
   constructor(precision) {
-    __publicField(this, "list", /* @__PURE__ */ new Map());
-    __publicField(this, "tempV1", new THREE__namespace.Vector3());
-    __publicField(this, "tempV2", new THREE__namespace.Vector3());
-    __publicField(this, "tempV3", new THREE__namespace.Vector3());
-    __publicField(this, "precision");
     this.precision = precision;
   }
   create(vertices, index) {
@@ -11616,11 +11504,11 @@ class Points {
   }
 }
 class Face {
+  edges = /* @__PURE__ */ new Map();
+  openEdges = /* @__PURE__ */ new Set();
+  id;
+  plane;
   constructor(id, plane) {
-    __publicField(this, "edges", /* @__PURE__ */ new Map());
-    __publicField(this, "openEdges", /* @__PURE__ */ new Set());
-    __publicField(this, "id");
-    __publicField(this, "plane");
     this.id = id;
     this.plane = plane;
   }
@@ -11673,10 +11561,8 @@ class Face {
   }
 }
 class Faces {
-  constructor() {
-    __publicField(this, "list", /* @__PURE__ */ new Map());
-    __publicField(this, "nextFaceID", 0);
-  }
+  list = /* @__PURE__ */ new Map();
+  nextFaceID = 0;
   add(triangle3, plane) {
     const matches = this.match(triangle3, plane);
     if (matches.length === 0) {
@@ -11713,10 +11599,10 @@ class Faces {
   }
 }
 class Edge {
+  p1;
+  p2;
+  hash;
   constructor(p1, p2) {
-    __publicField(this, "p1");
-    __publicField(this, "p2");
-    __publicField(this, "hash");
     this.p1 = p1;
     this.p2 = p2;
     const points = [this.p1, this.p2];
@@ -11725,14 +11611,14 @@ class Edge {
   }
 }
 let Profile$1 = class Profile {
+  // Do we need edges here?
+  // edges = new Map<string, Edge>();
+  closed = false;
+  openStartPoint = null;
+  openEndPoint = null;
+  plane;
+  orderedPoints = [];
   constructor(plane) {
-    // Do we need edges here?
-    // edges = new Map<string, Edge>();
-    __publicField(this, "closed", false);
-    __publicField(this, "openStartPoint", null);
-    __publicField(this, "openEndPoint", null);
-    __publicField(this, "plane");
-    __publicField(this, "orderedPoints", []);
     this.plane = plane;
   }
   getEdges(reverse = false) {
@@ -11786,17 +11672,12 @@ let Profile$1 = class Profile {
     }
   }
   match(edge) {
-    if (this.closed)
-      return 0;
+    if (this.closed) return 0;
     let matchNumber = 0;
-    if (this.openStartPoint === edge.p1.hash)
-      matchNumber++;
-    if (this.openStartPoint === edge.p2.hash)
-      matchNumber++;
-    if (this.openEndPoint === edge.p1.hash)
-      matchNumber++;
-    if (this.openEndPoint === edge.p2.hash)
-      matchNumber++;
+    if (this.openStartPoint === edge.p1.hash) matchNumber++;
+    if (this.openStartPoint === edge.p2.hash) matchNumber++;
+    if (this.openEndPoint === edge.p1.hash) matchNumber++;
+    if (this.openEndPoint === edge.p2.hash) matchNumber++;
     return matchNumber;
   }
   merge(newProfile) {
@@ -11854,10 +11735,10 @@ let Profile$1 = class Profile {
   }
 };
 class Profiles {
+  list = /* @__PURE__ */ new Map();
+  plane;
+  nextProfileID = 0;
   constructor(plane) {
-    __publicField(this, "list", /* @__PURE__ */ new Map());
-    __publicField(this, "plane");
-    __publicField(this, "nextProfileID", 0);
     this.plane = plane;
   }
   add(edge) {
@@ -11898,8 +11779,7 @@ class Profiles {
     const profile = this.list.get(biggestProfile).getIndices();
     const holes = [];
     for (const [profileId, profile2] of this.list) {
-      if (profileId === biggestProfile)
-        continue;
+      if (profileId === biggestProfile) continue;
       holes.push(profile2.getIndices());
     }
     return { profile, holes };
@@ -11915,11 +11795,11 @@ class Profiles {
   }
 }
 class Plane {
+  normal;
+  constant;
+  id;
+  faces = [];
   constructor(plane, precision, normalPrecision) {
-    __publicField(this, "normal");
-    __publicField(this, "constant");
-    __publicField(this, "id");
-    __publicField(this, "faces", []);
     const nx = GeomsFbUtils.round(plane.normal.x, normalPrecision);
     const ny = GeomsFbUtils.round(plane.normal.y, normalPrecision);
     const nz = GeomsFbUtils.round(plane.normal.z, normalPrecision);
@@ -11930,7 +11810,9 @@ class Plane {
     this.id = `${nx}${planeSeparator}${ny}${planeSeparator}${nz}${planeSeparator}${c}`;
   }
 }
-const _GeomsFbUtils = class _GeomsFbUtils {
+class GeomsFbUtils {
+  // It's 65535, but we leave some margin
+  static ushortMaxValue = 65e3;
   static round(value, precision) {
     return Math.round(value * precision) / precision;
   }
@@ -11951,18 +11833,12 @@ const _GeomsFbUtils = class _GeomsFbUtils {
       const x = vertices[i];
       const y = vertices[i + 1];
       const z = vertices[i + 2];
-      if (x < minX)
-        minX = x;
-      if (y < minY)
-        minY = y;
-      if (z < minZ)
-        minZ = z;
-      if (x > maxX)
-        maxX = x;
-      if (y > maxY)
-        maxY = y;
-      if (z > maxZ)
-        maxZ = z;
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (z < minZ) minZ = z;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+      if (z > maxZ) maxZ = z;
     }
     return precision ? {
       min: {
@@ -12089,7 +11965,7 @@ const _GeomsFbUtils = class _GeomsFbUtils {
     const normals = normalsAttr.array;
     const indexAttr = newRepresentation.index;
     const index = indexAttr.array;
-    const newShell = _GeomsFbUtils.getShellData({
+    const newShell = GeomsFbUtils.getShellData({
       position,
       normals,
       index,
@@ -12103,7 +11979,7 @@ const _GeomsFbUtils = class _GeomsFbUtils {
     }
     const shellData = repr.geometry;
     const points = newShell.points;
-    const isBigShell = points.length > _GeomsFbUtils.ushortMaxValue;
+    const isBigShell = points.length > GeomsFbUtils.ushortMaxValue;
     shellData.type = isBigShell ? ShellType.BIG : ShellType.NONE;
     shellData.points = points;
     shellData.profilesFaceIds = newShell.profilesFaceIds;
@@ -12121,7 +11997,6 @@ const _GeomsFbUtils = class _GeomsFbUtils {
     return repr;
   }
   static getRawShellData(index, position, bbox, settings, category) {
-    var _a2;
     const pointsMap = /* @__PURE__ */ new Map();
     const profiles = /* @__PURE__ */ new Map();
     const { precision } = settings;
@@ -12169,7 +12044,7 @@ const _GeomsFbUtils = class _GeomsFbUtils {
       points,
       profilesFaceIds: []
     };
-    if (category && ((_a2 = settings.categoryFaceThresholds) == null ? void 0 : _a2.has(category))) {
+    if (category && settings.categoryFaceThresholds?.has(category)) {
       this.computeShellFaceIds(result, settings, category);
     } else {
       for (let i = 0; i < profiles.size; i++) {
@@ -12246,8 +12121,8 @@ const _GeomsFbUtils = class _GeomsFbUtils {
         profile.add(edge);
       }
       const resultProfiles = profile.getProfiles();
-      profiles.set(faceCounter, (resultProfiles == null ? void 0 : resultProfiles.profile) || []);
-      holes.set(faceCounter, (resultProfiles == null ? void 0 : resultProfiles.holes) || []);
+      profiles.set(faceCounter, resultProfiles?.profile || []);
+      holes.set(faceCounter, resultProfiles?.holes || []);
       faceCounter++;
     }
     let profileCounter = 0;
@@ -12279,9 +12154,8 @@ const _GeomsFbUtils = class _GeomsFbUtils {
     return result;
   }
   static computeShellFaceIds(shell, settings, category) {
-    var _a2;
     let faceThreshold = settings.faceThreshold;
-    if (category && ((_a2 = settings.categoryFaceThresholds) == null ? void 0 : _a2.has(category))) {
+    if (category && settings.categoryFaceThresholds?.has(category)) {
       faceThreshold = settings.categoryFaceThresholds.get(category);
     }
     const faceIdPerProfile = /* @__PURE__ */ new Map();
@@ -12359,8 +12233,7 @@ const _GeomsFbUtils = class _GeomsFbUtils {
       for (const edge of edges) {
         const facePair = edgeFacePair.get(edge);
         for (const currentProfile of facePair) {
-          if (currentProfile === profile)
-            continue;
+          if (currentProfile === profile) continue;
           const [nx2, ny2, nz2] = profilesNormal.get(currentProfile);
           const dot = Math.abs(nx1 * nx2 + ny1 * ny2 + nz1 * nz2);
           const isHard = dot < faceThreshold;
@@ -12400,16 +12273,12 @@ const _GeomsFbUtils = class _GeomsFbUtils {
     }
     return value / num;
   }
-};
-// It's 65535, but we leave some margin
-__publicField(_GeomsFbUtils, "ushortMaxValue", 65e3);
-let GeomsFbUtils = _GeomsFbUtils;
+}
 class FragmentsIfcUtils {
   static getAbsolutePlacement(webIfc, item, unitsFactor = this.getUnitsFactor(webIfc)) {
-    var _a2;
     const ifcResult = new THREE__namespace.Matrix4();
     ifcResult.identity();
-    const placementId = (_a2 = item.ObjectPlacement) == null ? void 0 : _a2.value;
+    const placementId = item.ObjectPlacement?.value;
     if (placementId !== null && placementId !== void 0) {
       const placement = webIfc.GetLine(0, placementId);
       this.getAbsolutePlacementRecursively(
@@ -12425,33 +12294,28 @@ class FragmentsIfcUtils {
     return ifcResult;
   }
   static getUnitsFactor(ifcApi) {
-    var _a2, _b2, _c, _d;
     const unitAssignmentIds = ifcApi.GetLineIDsWithType(
       0,
       WEBIFC__namespace.IFCUNITASSIGNMENT
     );
     let result = 1;
-    if (unitAssignmentIds.size() === 0)
-      return result;
+    if (unitAssignmentIds.size() === 0) return result;
     for (let i = 0; i < unitAssignmentIds.size(); i++) {
       const assignmentId = unitAssignmentIds.get(i);
       const assignmentAttrs = ifcApi.GetLine(0, assignmentId);
       for (const unitHandle of assignmentAttrs.Units) {
         const unit = ifcApi.GetLine(0, unitHandle.value);
-        const value = (_a2 = unit.UnitType) == null ? void 0 : _a2.value;
-        if (value !== "LENGTHUNIT")
-          continue;
+        const value = unit.UnitType?.value;
+        if (value !== "LENGTHUNIT") continue;
         let factor = 1;
         let unitValue = 1;
-        if (unit.Name.value === "METRE")
-          unitValue = 1;
-        if (unit.Name.value === "FOOT")
-          unitValue = 0.3048;
-        if (((_b2 = unit.Prefix) == null ? void 0 : _b2.value) === "MILLI") {
+        if (unit.Name.value === "METRE") unitValue = 1;
+        if (unit.Name.value === "FOOT") unitValue = 0.3048;
+        if (unit.Prefix?.value === "MILLI") {
           factor = 1e-3;
-        } else if (((_c = unit.Prefix) == null ? void 0 : _c.value) === "CENTI") {
+        } else if (unit.Prefix?.value === "CENTI") {
           factor = 0.01;
-        } else if (((_d = unit.Prefix) == null ? void 0 : _d.value) === "DECI") {
+        } else if (unit.Prefix?.value === "DECI") {
           factor = 0.1;
         }
         result = unitValue * factor;
@@ -12510,8 +12374,7 @@ class FragmentsIfcUtils {
       1
     ]);
     result.premultiply(tempMatrix2);
-    if (!placement.PlacementRelTo || !placement.PlacementRelTo.value)
-      return;
+    if (!placement.PlacementRelTo || !placement.PlacementRelTo.value) return;
     const parentPlacementId = placement.PlacementRelTo.value;
     const parentPlacement = webIfc.GetLine(0, parentPlacementId);
     this.getAbsolutePlacementRecursively(
@@ -13079,8 +12942,7 @@ async function toClassicWorker(workerURL) {
   return URL.createObjectURL(blob);
 }
 function extractLineMeta(raw) {
-  if (raw.charCodeAt(0) !== 35)
-    return null;
+  if (raw.charCodeAt(0) !== 35) return null;
   let id = 0;
   let i = 1;
   while (i < raw.length) {
@@ -13088,28 +12950,20 @@ function extractLineMeta(raw) {
     if (c >= 48 && c <= 57) {
       id = id * 10 + (c - 48);
       i++;
-    } else
-      break;
+    } else break;
   }
-  if (id === 0)
-    return null;
-  while (i < raw.length && raw.charCodeAt(i) <= 32)
-    i++;
-  if (raw.charCodeAt(i) !== 61)
-    return null;
+  if (id === 0) return null;
+  while (i < raw.length && raw.charCodeAt(i) <= 32) i++;
+  if (raw.charCodeAt(i) !== 61) return null;
   i++;
-  while (i < raw.length && raw.charCodeAt(i) <= 32)
-    i++;
+  while (i < raw.length && raw.charCodeAt(i) <= 32) i++;
   const ts = i;
   while (i < raw.length) {
     const c = raw.charCodeAt(i);
-    if (c >= 65 && c <= 90 || c >= 48 && c <= 57 || c === 95)
-      i++;
-    else
-      break;
+    if (c >= 65 && c <= 90 || c >= 48 && c <= 57 || c === 95) i++;
+    else break;
   }
-  if (i === ts)
-    return null;
+  if (i === ts) return null;
   return { id, type: raw.substring(ts, i) };
 }
 function extractRefs(raw, skipId) {
@@ -13123,11 +12977,9 @@ function extractRefs(raw, skipId) {
         if (c >= 48 && c <= 57) {
           id = id * 10 + (c - 48);
           i++;
-        } else
-          break;
+        } else break;
       }
-      if (id > 0 && id !== skipId)
-        refs.push(id);
+      if (id > 0 && id !== skipId) refs.push(id);
       i--;
     }
   }
@@ -13161,8 +13013,7 @@ function splitIfcArgs(s) {
       current += ch;
     }
   }
-  if (current.trim())
-    args.push(current.trim());
+  if (current.trim()) args.push(current.trim());
   return args;
 }
 function parseHashRef(s) {
@@ -13170,20 +13021,16 @@ function parseHashRef(s) {
   return m ? parseInt(m[1], 10) : null;
 }
 function extractArgsString(raw) {
-  if (!raw)
-    return null;
+  if (!raw) return null;
   const idx = raw.indexOf("(");
-  if (idx < 0)
-    return null;
+  if (idx < 0) return null;
   const lastParen = raw.lastIndexOf(")");
-  if (lastParen < 0)
-    return null;
+  if (lastParen < 0) return null;
   return raw.substring(idx + 1, lastParen);
 }
 const { STRING, LABEL, ENUM, REAL, REF, INTEGER } = WEBIFC__namespace;
 function decodeStepString(raw) {
-  if (raw.indexOf("'") === -1 && raw.indexOf("\\") === -1)
-    return raw;
+  if (raw.indexOf("'") === -1 && raw.indexOf("\\") === -1) return raw;
   let out = "";
   for (let i = 0; i < raw.length; i++) {
     const c = raw.charCodeAt(i);
@@ -13239,14 +13086,11 @@ function parseList(src, pos, end) {
           throw parseError(src, pos, "unterminated comment");
         }
         pos = close + 2;
-      } else
-        break;
+      } else break;
     }
-    if (pos >= end)
-      break;
+    if (pos >= end) break;
     const c = src.charCodeAt(pos);
-    if (c === 41)
-      break;
+    if (c === 41) break;
     if (c === 36) {
       items.push(null);
       pos++;
@@ -13261,8 +13105,7 @@ function parseList(src, pos, end) {
         if (d >= 48 && d <= 57) {
           id = id * 10 + (d - 48);
           pos++;
-        } else
-          break;
+        } else break;
       }
       if (pos === digitsStart)
         throw parseError(src, pos, "expected digits after '#'");
@@ -13270,34 +13113,24 @@ function parseList(src, pos, end) {
     } else if (c === 46) {
       pos++;
       const nameStart = pos;
-      while (pos < end && src.charCodeAt(pos) !== 46)
-        pos++;
-      if (pos >= end)
-        throw parseError(src, nameStart, "unterminated enum");
+      while (pos < end && src.charCodeAt(pos) !== 46) pos++;
+      if (pos >= end) throw parseError(src, nameStart, "unterminated enum");
       const name = src.substring(nameStart, pos);
       pos++;
-      if (name === "T")
-        items.push({ type: ENUM, value: true });
-      else if (name === "F")
-        items.push({ type: ENUM, value: false });
-      else if (name === "U")
-        items.push({ type: ENUM, value: void 0 });
-      else
-        items.push({ type: ENUM, value: name });
+      if (name === "T") items.push({ type: ENUM, value: true });
+      else if (name === "F") items.push({ type: ENUM, value: false });
+      else if (name === "U") items.push({ type: ENUM, value: void 0 });
+      else items.push({ type: ENUM, value: name });
     } else if (c === 39) {
       pos++;
       let i = pos;
       while (i < end) {
         if (src.charCodeAt(i) === 39) {
-          if (src.charCodeAt(i + 1) === 39 && i + 1 < end)
-            i += 2;
-          else
-            break;
-        } else
-          i++;
+          if (src.charCodeAt(i + 1) === 39 && i + 1 < end) i += 2;
+          else break;
+        } else i++;
       }
-      if (i >= end)
-        throw parseError(src, pos, "unterminated string");
+      if (i >= end) throw parseError(src, pos, "unterminated string");
       items.push({
         type: STRING,
         value: decodeStepString(src.substring(pos, i))
@@ -13306,8 +13139,7 @@ function parseList(src, pos, end) {
     } else if (c === 34) {
       pos++;
       const hexStart = pos;
-      while (pos < end && src.charCodeAt(pos) !== 34)
-        pos++;
+      while (pos < end && src.charCodeAt(pos) !== 34) pos++;
       if (pos >= end)
         throw parseError(src, hexStart, "unterminated binary literal");
       items.push({ type: REAL, value: src.substring(hexStart, pos) });
@@ -13321,8 +13153,7 @@ function parseList(src, pos, end) {
       items.push(inner.items);
     } else if (c === 45 || c === 43 || c >= 48 && c <= 57) {
       const numStart = pos;
-      if (c === 45 || c === 43)
-        pos++;
+      if (c === 45 || c === 43) pos++;
       let hasDigits = false;
       let isReal = false;
       while (pos < end) {
@@ -13337,13 +13168,10 @@ function parseList(src, pos, end) {
           isReal = true;
           pos++;
           const s = src.charCodeAt(pos);
-          if (s === 43 || s === 45)
-            pos++;
-        } else
-          break;
+          if (s === 43 || s === 45) pos++;
+        } else break;
       }
-      if (!hasDigits)
-        throw parseError(src, numStart, "malformed number");
+      if (!hasDigits) throw parseError(src, numStart, "malformed number");
       items.push(
         isReal ? { type: REAL, value: src.substring(numStart, pos) } : {
           type: INTEGER,
@@ -13356,12 +13184,10 @@ function parseList(src, pos, end) {
         const d = src.charCodeAt(pos);
         if (d >= 65 && d <= 90 || d >= 97 && d <= 122 || d >= 48 && d <= 57 || d === 95)
           pos++;
-        else
-          break;
+        else break;
       }
       const name = src.substring(nameStart, pos);
-      while (pos < end && src.charCodeAt(pos) <= 32)
-        pos++;
+      while (pos < end && src.charCodeAt(pos) <= 32) pos++;
       if (pos >= end || src.charCodeAt(pos) !== 40) {
         throw parseError(src, nameStart, `expected '(' after '${name}'`);
       }
@@ -13385,11 +13211,9 @@ function parseList(src, pos, end) {
 }
 function parseStepArguments(line) {
   const start = line.indexOf("(");
-  if (start < 0)
-    return [];
+  if (start < 0) return [];
   const end = line.lastIndexOf(")");
-  if (end < start)
-    return [];
+  if (end < start) return [];
   return parseList(line, start + 1, end).items;
 }
 const crCharCode = 13;
@@ -13401,14 +13225,12 @@ class IfcDecoderStream extends TransformStream {
     super({
       transform(chunk, controller) {
         const text = decoder.decode(chunk, { stream: true });
-        if (!text)
-          return;
+        if (!text) return;
         let start = 0;
         let idx = text.indexOf(nl);
         if (idx !== -1) {
           let end = idx;
-          if (end > 0 && text.charCodeAt(end - 1) === crCharCode)
-            end--;
+          if (end > 0 && text.charCodeAt(end - 1) === crCharCode) end--;
           else if (end === 0 && tail.charCodeAt(tail.length - 1) === crCharCode)
             tail = tail.slice(0, -1);
           controller.enqueue(
@@ -13423,20 +13245,17 @@ class IfcDecoderStream extends TransformStream {
         }
         while (idx !== -1) {
           let end = idx;
-          if (end > start && text.charCodeAt(end - 1) === crCharCode)
-            end--;
+          if (end > start && text.charCodeAt(end - 1) === crCharCode) end--;
           controller.enqueue(text.substring(start, end));
           start = idx + 1;
           idx = text.indexOf(nl, start);
         }
-        if (start < text.length)
-          tail = text.substring(start);
+        if (start < text.length) tail = text.substring(start);
       },
       flush(controller) {
         const remaining = decoder.decode();
         const full = tail + remaining;
-        if (full)
-          controller.enqueue(full);
+        if (full) controller.enqueue(full);
       }
     });
   }
@@ -13461,10 +13280,9 @@ class IfcParserStream extends TransformStream {
             let schemaIndex = -1;
             for (const name of fileSchemas) {
               schemaIndex = WEBIFC__namespace.SchemaNames.findIndex(
-                (names) => names == null ? void 0 : names.includes(name)
+                (names) => names?.includes(name)
               );
-              if (schemaIndex !== -1)
-                break;
+              if (schemaIndex !== -1) break;
             }
             if (schemaIndex === -1) {
               controller.error(
@@ -13484,8 +13302,7 @@ class IfcParserStream extends TransformStream {
                     schemas.push(item.value);
                   }
                 }
-                if (schemas.length)
-                  fileSchemas = schemas;
+                if (schemas.length) fileSchemas = schemas;
               }
             } catch {
             }
@@ -13502,11 +13319,9 @@ class IfcParserStream extends TransformStream {
             return;
           }
           const typeCode = WEBIFC__namespace[meta.type];
-          if (typeof typeCode !== "number")
-            return;
-          const factory = factories == null ? void 0 : factories[typeCode];
-          if (!factory)
-            return;
+          if (typeof typeCode !== "number") return;
+          const factory = factories?.[typeCode];
+          if (!factory) return;
           let entity;
           try {
             entity = factory(parseStepArguments(raw));
@@ -13521,10 +13336,8 @@ class IfcParserStream extends TransformStream {
           break;
         }
         case "between":
-          if (raw === "DATA")
-            section = "data";
-          else if (raw === "END-ISO-10303-21")
-            section = "end";
+          if (raw === "DATA") section = "data";
+          else if (raw === "END-ISO-10303-21") section = "end";
           break;
       }
     }
@@ -13540,13 +13353,11 @@ class IfcParserStream extends TransformStream {
               inComment = false;
               i += 2;
               segStart = i;
-            } else
-              i++;
+            } else i++;
             continue;
           }
           if (inString) {
-            if (c === 39)
-              inString = false;
+            if (c === 39) inString = false;
             i++;
             continue;
           }
@@ -13566,8 +13377,7 @@ class IfcParserStream extends TransformStream {
             statement = "";
             i++;
             segStart = i;
-            if (raw)
-              processStatement(raw, controller);
+            if (raw) processStatement(raw, controller);
             continue;
           }
           i++;
@@ -13601,9 +13411,8 @@ async function* streamAsyncIterator(stream) {
       yield value;
     }
   } finally {
-    if (!drained)
-      await reader.cancel().catch(() => {
-      });
+    if (!drained) await reader.cancel().catch(() => {
+    });
     reader.releaseLock();
   }
 }
@@ -13681,27 +13490,21 @@ const listIdxByType = (type) => {
   }
 };
 const shouldRewriteType = (type) => {
-  if (type === "IFCRELVOIDSELEMENT")
-    return false;
-  if (type === "IFCRELFILLSELEMENT")
-    return false;
-  if (type.startsWith("IFCREL"))
-    return true;
-  if (type === "IFCPRESENTATIONLAYERASSIGNMENT")
-    return true;
+  if (type === "IFCRELVOIDSELEMENT") return false;
+  if (type === "IFCRELFILLSELEMENT") return false;
+  if (type.startsWith("IFCREL")) return true;
+  if (type === "IFCPRESENTATIONLAYERASSIGNMENT") return true;
   return false;
 };
 class LineIndex {
-  constructor() {
-    __publicField(this, "types", []);
-    __publicField(this, "maxId", 0);
-    __publicField(this, "_typeIntern", /* @__PURE__ */ new Map());
-    __publicField(this, "specialRaws", /* @__PURE__ */ new Map());
-    __publicField(this, "_refBuf", new Int32Array(4 * 1024 * 1024));
-    __publicField(this, "_refBufUsed", 0);
-    __publicField(this, "_refStart", []);
-    __publicField(this, "_refLen", []);
-  }
+  types = [];
+  maxId = 0;
+  _typeIntern = /* @__PURE__ */ new Map();
+  specialRaws = /* @__PURE__ */ new Map();
+  _refBuf = new Int32Array(4 * 1024 * 1024);
+  _refBufUsed = 0;
+  _refStart = [];
+  _refLen = [];
   set(id, type, refs, raw) {
     let t2 = this._typeIntern.get(type);
     if (!t2) {
@@ -13709,8 +13512,7 @@ class LineIndex {
       this._typeIntern.set(type, t2);
     }
     this.types[id] = t2;
-    if (id > this.maxId)
-      this.maxId = id;
+    if (id > this.maxId) this.maxId = id;
     const start = this._refBufUsed;
     const needed = start + refs.length;
     if (needed > this._refBuf.length) {
@@ -13740,11 +13542,9 @@ class LineIndex {
   }
   getRefs(id) {
     const len = this._refLen[id];
-    if (len === void 0)
-      return null;
+    if (len === void 0) return null;
     const start = this._refStart[id];
-    if (start === void 0)
-      return null;
+    if (start === void 0) return null;
     return this._refBuf.subarray(start, start + len);
   }
   getRaw(id) {
@@ -13754,8 +13554,7 @@ class LineIndex {
     const allElementIds = /* @__PURE__ */ new Set();
     for (let id = 0; id <= this.maxId; id++) {
       const type = this.getType(id);
-      if (type && types.has(type))
-        allElementIds.add(id);
+      if (type && types.has(type)) allElementIds.add(id);
     }
     return allElementIds;
   }
@@ -13771,18 +13570,14 @@ function collectDeps(startId, index, visited, allElementIds) {
   const stack = [startId];
   while (stack.length > 0) {
     const id = stack.pop();
-    if (visited.has(id))
-      continue;
+    if (visited.has(id)) continue;
     const refs = index.getRefs(id);
-    if (!refs)
-      continue;
+    if (!refs) continue;
     visited.add(id);
     for (let i = 0; i < refs.length; i++) {
       const refId = refs[i];
-      if (visited.has(refId))
-        continue;
-      if (allElementIds.has(refId))
-        continue;
+      if (visited.has(refId)) continue;
+      if (allElementIds.has(refId)) continue;
       stack.push(refId);
     }
   }
@@ -13791,15 +13586,12 @@ function collectDepsAll(startId, index, visited) {
   const stack = [startId];
   while (stack.length > 0) {
     const id = stack.pop();
-    if (visited.has(id))
-      continue;
+    if (visited.has(id)) continue;
     const refs = index.getRefs(id);
-    if (!refs)
-      continue;
+    if (!refs) continue;
     visited.add(id);
     for (let i = 0; i < refs.length; i++) {
-      if (!visited.has(refs[i]))
-        stack.push(refs[i]);
+      if (!visited.has(refs[i])) stack.push(refs[i]);
     }
   }
 }
@@ -13811,8 +13603,7 @@ function buildVoidFillMap(index) {
   const relLineIds = /* @__PURE__ */ new Map();
   for (let id = 0; id <= index.maxId; id++) {
     const type = index.getType(id);
-    if (!type)
-      continue;
+    if (!type) continue;
     if (type === "IFCRELVOIDSELEMENT") {
       const raw = index.getRaw(id);
       const argsStr = extractArgsString(raw);
@@ -13865,22 +13656,17 @@ function buildAggregateMap(index, allElementIds) {
   const aggregateRelIds = /* @__PURE__ */ new Map();
   for (let id = 0; id <= index.maxId; id++) {
     const type = index.getType(id);
-    if (type !== "IFCRELAGGREGATES")
-      continue;
+    if (type !== "IFCRELAGGREGATES") continue;
     const raw = index.getRaw(id);
     const argsStr = extractArgsString(raw);
-    if (!argsStr)
-      continue;
+    if (!argsStr) continue;
     const args = splitIfcArgs(argsStr);
-    if (args.length < 6)
-      continue;
+    if (args.length < 6) continue;
     const parentId = parseHashRef(args[4]);
-    if (!parentId || !allElementIds.has(parentId))
-      continue;
+    if (!parentId || !allElementIds.has(parentId)) continue;
     const childRefs = extractRefs(args[5]);
     const elementChildren = childRefs.filter((r) => allElementIds.has(r));
-    if (elementChildren.length === 0)
-      continue;
+    if (elementChildren.length === 0) continue;
     if (!parentToChildren.has(parentId))
       parentToChildren.set(parentId, /* @__PURE__ */ new Set());
     for (const cid of elementChildren) {
@@ -13896,8 +13682,7 @@ function traverseSpatialStructure(index, spatialTypes) {
   const spatialIds = /* @__PURE__ */ new Set();
   for (let id = 0; id <= index.maxId; id++) {
     const type = index.getType(id);
-    if (type && spatialTypes.has(type))
-      spatialIds.add(id);
+    if (type && spatialTypes.has(type)) spatialIds.add(id);
   }
   const sharedIds = /* @__PURE__ */ new Set();
   for (const sid of spatialIds) {
@@ -13925,8 +13710,7 @@ function traverseSpatialStructure(index, spatialTypes) {
   return sharedIds;
 }
 function addToSetMap(map, key, value) {
-  if (!map.has(key))
-    map.set(key, /* @__PURE__ */ new Set());
+  if (!map.has(key)) map.set(key, /* @__PURE__ */ new Set());
   map.get(key).add(value);
 }
 function getCluster(elementId, vfMap, aggMap) {
@@ -13951,21 +13735,17 @@ function expandVoidFill(eid, vfMap, cluster, queue) {
     for (const oid of openings) {
       addIfNew(oid);
       const fillers = vfMap.openingToFillers.get(oid);
-      if (fillers)
-        for (const fid of fillers)
-          addIfNew(fid);
+      if (fillers) for (const fid of fillers) addIfNew(fid);
     }
   }
   const oid2 = vfMap.fillerToOpening.get(eid);
   if (oid2) {
     addIfNew(oid2);
     const wallId = vfMap.openingToWall.get(oid2);
-    if (wallId)
-      addIfNew(wallId);
+    if (wallId) addIfNew(wallId);
   }
   const wallId2 = vfMap.openingToWall.get(eid);
-  if (wallId2)
-    addIfNew(wallId2);
+  if (wallId2) addIfNew(wallId2);
 }
 function expandAggregate(eid, aggMap, cluster, queue) {
   function addIfNew(id) {
@@ -13976,16 +13756,14 @@ function expandAggregate(eid, aggMap, cluster, queue) {
   }
   const children = aggMap.parentToChildren.get(eid);
   if (children) {
-    for (const cid of children)
-      addIfNew(cid);
+    for (const cid of children) addIfNew(cid);
   }
   const parentId = aggMap.childToParent.get(eid);
   if (parentId) {
     addIfNew(parentId);
     const siblings = aggMap.parentToChildren.get(parentId);
     if (siblings) {
-      for (const sid of siblings)
-        addIfNew(sid);
+      for (const sid of siblings) addIfNew(sid);
     }
   }
 }
@@ -13994,13 +13772,11 @@ function buildStyleMaps(index) {
   const materialToDefReps = /* @__PURE__ */ new Map();
   for (let id = 0; id <= index.maxId; id++) {
     const type = index.getType(id);
-    if (!type)
-      continue;
+    if (!type) continue;
     if (type === "IFCSTYLEDITEM") {
       const raw = index.getRaw(id);
       const argsStr = extractArgsString(raw);
-      if (!argsStr)
-        continue;
+      if (!argsStr) continue;
       const args = splitIfcArgs(argsStr);
       if (args.length >= 1) {
         const geomRef = parseHashRef(args[0]);
@@ -14013,14 +13789,12 @@ function buildStyleMaps(index) {
     } else if (type === "IFCMATERIALDEFINITIONREPRESENTATION") {
       const raw = index.getRaw(id);
       const argsStr = extractArgsString(raw);
-      if (!argsStr)
-        continue;
+      if (!argsStr) continue;
       const args = splitIfcArgs(argsStr);
       if (args.length >= 4) {
         const matRef = parseHashRef(args[3]);
         if (matRef) {
-          if (!materialToDefReps.has(matRef))
-            materialToDefReps.set(matRef, []);
+          if (!materialToDefReps.has(matRef)) materialToDefReps.set(matRef, []);
           materialToDefReps.get(matRef).push(id);
         }
       }
@@ -14045,28 +13819,25 @@ function resolveStyles(fileIds, index, styleMaps, allElementIds) {
   }
 }
 class IdGroupIndex {
+  starts;
+  members;
+  maxId;
   constructor(groupsData, maxId) {
-    __publicField(this, "starts");
-    __publicField(this, "members");
-    __publicField(this, "maxId");
     const starts = new Uint32Array(maxId + 2);
     let total = 0;
     for (const groupData of groupsData) {
       for (const id of groupData.fileIds) {
-        if (id < 0 || id > maxId)
-          continue;
+        if (id < 0 || id > maxId) continue;
         starts[id + 1] += 1;
         total += 1;
       }
     }
-    for (let i = 1; i < starts.length; i++)
-      starts[i] += starts[i - 1];
+    for (let i = 1; i < starts.length; i++) starts[i] += starts[i - 1];
     const members = new Uint32Array(total);
     const cursor = starts.slice();
     for (let g = 0; g < groupsData.length; g++) {
       for (const id of groupsData[g].fileIds) {
-        if (id < 0 || id > maxId)
-          continue;
+        if (id < 0 || id > maxId) continue;
         members[cursor[id]] = g;
         cursor[id] += 1;
       }
@@ -14080,14 +13851,12 @@ class IdGroupIndex {
    * Empty if none.
    */
   groupsOf(id) {
-    if (id < 0 || id > this.maxId)
-      return new Uint32Array(0);
+    if (id < 0 || id > this.maxId) return new Uint32Array(0);
     return this.members.subarray(this.starts[id], this.starts[id + 1]);
   }
 }
 async function emitSplitLine(writers, raw, groupsData, idGroups) {
-  if (raw.charCodeAt(0) !== 35)
-    return;
+  if (raw.charCodeAt(0) !== 35) return;
   let id = 0;
   for (let i = 1; i < raw.length; i++) {
     const c = raw.charCodeAt(i);
@@ -14097,8 +13866,7 @@ async function emitSplitLine(writers, raw, groupsData, idGroups) {
       break;
     }
   }
-  if (id === 0)
-    return;
+  if (id === 0) return;
   const groups = idGroups.groupsOf(id);
   for (let i = 0; i < groups.length; i++) {
     const g = groups[i];
@@ -14108,8 +13876,7 @@ async function emitSplitLine(writers, raw, groupsData, idGroups) {
   }
 }
 async function emitExtractLine(writer, raw, includeSet, rewrittenLines) {
-  if (raw.charCodeAt(0) !== 35)
-    return;
+  if (raw.charCodeAt(0) !== 35) return;
   let id = 0;
   for (let i = 1; i < raw.length; i++) {
     const c = raw.charCodeAt(i);
@@ -14119,8 +13886,7 @@ async function emitExtractLine(writer, raw, includeSet, rewrittenLines) {
       break;
     }
   }
-  if (id === 0 || !includeSet.has(id))
-    return;
+  if (id === 0 || !includeSet.has(id)) return;
   const line = rewrittenLines.get(id) ?? raw;
   await writer.write(`${line}
 `);
@@ -14129,16 +13895,10 @@ async function abortWriters(writers, reason) {
   await Promise.allSettled(writers.map(async (writer) => writer.abort(reason)));
 }
 class IfcSplitter {
+  io;
+  config;
+  eventTarget;
   constructor(ifcSplitterIO, config = {}) {
-    __publicField(this, "io");
-    __publicField(this, "config");
-    __publicField(this, "eventTarget");
-    __publicField(this, "onProgress", new Event());
-    __publicField(this, "onSplitsResolved", new Event());
-    /**
-     * Fires from `extract` when an id is missing or has a wrong type
-     */
-    __publicField(this, "onExtractWarning", new Event());
     this.io = ifcSplitterIO;
     this.config = {
       elementTypes: new Set(config.elementTypes ?? ELEMENT_TYPES),
@@ -14147,6 +13907,12 @@ class IfcSplitter {
     };
     this.eventTarget = new EventTarget();
   }
+  onProgress = new Event();
+  onSplitsResolved = new Event();
+  /**
+   * Fires from `extract` when an id is missing or has a wrong type
+   */
+  onExtractWarning = new Event();
   /**
    * Split an IFC file into N roughly equal groups of building elements.
    * @param inputPath - Absolute or relative path to the source IFC file.
@@ -14185,8 +13951,7 @@ class IfcSplitter {
     const clusters = [];
     const assigned = /* @__PURE__ */ new Set();
     for (const eid of allElementIds) {
-      if (assigned.has(eid))
-        continue;
+      if (assigned.has(eid)) continue;
       const cluster = getCluster(eid, vfMap, aggMap);
       const elementCluster = /* @__PURE__ */ new Set();
       for (const cid of cluster) {
@@ -14209,11 +13974,9 @@ class IfcSplitter {
     for (const ci of clusterOrder) {
       let minIdx = 0;
       for (let g = 1; g < numGroups; g++) {
-        if (groupSizes[g] < groupSizes[minIdx])
-          minIdx = g;
+        if (groupSizes[g] < groupSizes[minIdx]) minIdx = g;
       }
-      for (const id of clusters[ci])
-        groups[minIdx].add(id);
+      for (const id of clusters[ci]) groups[minIdx].add(id);
       groupSizes[minIdx] += clusters[ci].size;
     }
     this.emitProgressEvent("distribute", distributeStart);
@@ -14224,18 +13987,14 @@ class IfcSplitter {
       if (type && shouldRewriteType(type)) {
         const raw = index.getRaw(id);
         const argsStr = extractArgsString(raw);
-        if (!argsStr)
-          continue;
+        if (!argsStr) continue;
         const args = splitIfcArgs(argsStr);
         const listIdx = this.config.listArgIndex(type) ?? -1;
-        if (listIdx < 0 || args.length <= listIdx)
-          continue;
+        if (listIdx < 0 || args.length <= listIdx) continue;
         const listRefs = extractRefs(args[listIdx]);
-        if (listRefs.length === 0)
-          continue;
+        if (listRefs.length === 0) continue;
         const idMatch = raw.match(/^(#\d+\s*=\s*)/);
-        if (!idMatch)
-          continue;
+        if (!idMatch) continue;
         relEntries.push({
           id,
           type,
@@ -14251,8 +14010,7 @@ class IfcSplitter {
     const groupsData = [];
     for (let g = 0; g < numGroups; g++) {
       const groupElementIds = groups[g];
-      if (groupElementIds.size === 0)
-        continue;
+      if (groupElementIds.size === 0) continue;
       const fileIds = new Set(sharedIds);
       for (const eid of groupElementIds) {
         collectDeps(eid, index, fileIds, allElementIds);
@@ -14275,8 +14033,7 @@ class IfcSplitter {
       const rewrittenLines = /* @__PURE__ */ new Map();
       for (const rel of relEntries) {
         const filtered = rel.listRefs.filter((r) => groupElementIds.has(r));
-        if (filtered.length === 0)
-          continue;
+        if (filtered.length === 0) continue;
         const newList = `(${filtered.map((r) => `#${r}`).join(",")})`;
         const newArgs = [...rel.args];
         newArgs[rel.listIdx] = newList;
@@ -14377,8 +14134,7 @@ class IfcSplitter {
     for (const eid of requestedIds) {
       const cluster = getCluster(eid, vfMap, aggMap);
       for (const cid of cluster) {
-        if (allElementIds.has(cid))
-          groupElementIds.add(cid);
+        if (allElementIds.has(cid)) groupElementIds.add(cid);
       }
     }
     this.emitProgressEvent("cluster", clusterStart);
@@ -14390,21 +14146,16 @@ class IfcSplitter {
       if (type && shouldRewriteType(type)) {
         const raw = index.getRaw(id);
         const argsStr = extractArgsString(raw);
-        if (!argsStr)
-          continue;
+        if (!argsStr) continue;
         const args = splitIfcArgs(argsStr);
         const listIdx = this.config.listArgIndex(type) ?? -1;
-        if (listIdx < 0 || args.length <= listIdx)
-          continue;
+        if (listIdx < 0 || args.length <= listIdx) continue;
         const listRefs = extractRefs(args[listIdx]);
-        if (listRefs.length === 0)
-          continue;
+        if (listRefs.length === 0) continue;
         const filtered = listRefs.filter((r) => groupElementIds.has(r));
-        if (filtered.length === 0)
-          continue;
+        if (filtered.length === 0) continue;
         const idMatch = raw.match(/^(#\d+\s*=\s*)/);
-        if (!idMatch)
-          continue;
+        if (!idMatch) continue;
         const newList = `(${filtered.map((r) => `#${r}`).join(",")})`;
         const newArgs = [...args];
         newArgs[listIdx] = newList;
@@ -14427,8 +14178,7 @@ class IfcSplitter {
     for (const eid of groupElementIds) {
       const rels = vfMap.relLineIds.get(eid);
       if (rels) {
-        for (const rid of rels)
-          collectDeps(rid, index, fileIds, allElementIds);
+        for (const rid of rels) collectDeps(rid, index, fileIds, allElementIds);
       }
       const aggRels = aggMap.aggregateRelIds.get(eid);
       if (aggRels) {
@@ -14449,8 +14199,7 @@ class IfcSplitter {
       let accumulator = "";
       await this.forEachLine(inputPath, async (line) => {
         if (section === "header") {
-          if (line.trim() === "DATA;")
-            section = "data";
+          if (line.trim() === "DATA;") section = "data";
           return;
         }
         if (section === "data") {
@@ -14484,8 +14233,7 @@ class IfcSplitter {
       await writer.close();
       closed = true;
     } finally {
-      if (!closed)
-        await abortWriters([writer]);
+      if (!closed) await abortWriters([writer]);
     }
     this.emitProgressEvent("write", writeStart);
     return fileIds;
@@ -14499,8 +14247,7 @@ class IfcSplitter {
     await this.forEachLine(filePath, (line) => {
       if (section === "header") {
         header.push(line);
-        if (line.trim() === "DATA;")
-          section = "data";
+        if (line.trim() === "DATA;") section = "data";
         return;
       }
       if (section === "data") {
@@ -14553,8 +14300,7 @@ class IfcSplitter {
     try {
       await this.forEachLine(inputPath, async (line) => {
         if (section === "header") {
-          if (line.trim() === "DATA;")
-            section = "data";
+          if (line.trim() === "DATA;") section = "data";
           return;
         }
         if (section === "data") {
@@ -14588,8 +14334,7 @@ class IfcSplitter {
       );
       closed = true;
     } finally {
-      if (!closed)
-        await abortWriters(writers);
+      if (!closed) await abortWriters(writers);
     }
   }
   /**
@@ -14689,6 +14434,8 @@ var LodMode = /* @__PURE__ */ ((LodMode2) => {
   return LodMode2;
 })(LodMode || {});
 class PlanesUtils {
+  static tempPoint = new THREE__namespace.Vector3();
+  static dimensions = ["x", "y", "z"];
   static containedInParallelPlanes(ps, point) {
     let result = true;
     for (const clipPlane of ps) {
@@ -14721,9 +14468,17 @@ class PlanesUtils {
     return plane.distanceToPoint(this.tempPoint);
   }
 }
-__publicField(PlanesUtils, "tempPoint", new THREE__namespace.Vector3());
-__publicField(PlanesUtils, "dimensions", ["x", "y", "z"]);
 class CameraUtils {
+  static tempSize = new THREE__namespace.Vector3();
+  /** Axis-aligned inward normals, in THREE's plane order. */
+  static axisNormals = [
+    [1, 0, 0],
+    [-1, 0, 0],
+    [0, 1, 0],
+    [0, -1, 0],
+    [0, 0, 1],
+    [0, 0, -1]
+  ];
   /**
    * A frustum containing all of `box`, used when no camera has been set.
    *
@@ -14788,26 +14543,14 @@ class CameraUtils {
     return PlanesUtils.collides(box, ps, false);
   }
 }
-__publicField(CameraUtils, "tempSize", new THREE__namespace.Vector3());
-/** Axis-aligned inward normals, in THREE's plane order. */
-__publicField(CameraUtils, "axisNormals", [
-  [1, 0, 0],
-  [-1, 0, 0],
-  [0, 1, 0],
-  [0, -1, 0],
-  [0, 0, 1],
-  [0, 0, -1]
-]);
 function earcut$1(data, holeIndices, dim = 2) {
   const hasHoles = holeIndices && holeIndices.length;
   const outerLen = hasHoles ? holeIndices[0] * dim : data.length;
   let outerNode = linkedList$1(data, 0, outerLen, dim, true);
   const triangles = [];
-  if (!outerNode || outerNode.next === outerNode.prev)
-    return triangles;
+  if (!outerNode || outerNode.next === outerNode.prev) return triangles;
   let minX, minY, invSize;
-  if (hasHoles)
-    outerNode = eliminateHoles$1(data, holeIndices, outerNode, dim);
+  if (hasHoles) outerNode = eliminateHoles$1(data, holeIndices, outerNode, dim);
   if (data.length > 80 * dim) {
     minX = Infinity;
     minY = Infinity;
@@ -14816,14 +14559,10 @@ function earcut$1(data, holeIndices, dim = 2) {
     for (let i = dim; i < outerLen; i += dim) {
       const x = data[i];
       const y = data[i + 1];
-      if (x < minX)
-        minX = x;
-      if (y < minY)
-        minY = y;
-      if (x > maxX)
-        maxX = x;
-      if (y > maxY)
-        maxY = y;
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
     }
     invSize = Math.max(maxX - minX, maxY - minY);
     invSize = invSize !== 0 ? 32767 / invSize : 0;
@@ -14834,11 +14573,9 @@ function earcut$1(data, holeIndices, dim = 2) {
 function linkedList$1(data, start, end, dim, clockwise) {
   let last;
   if (clockwise === signedArea$1(data, start, end, dim) > 0) {
-    for (let i = start; i < end; i += dim)
-      last = insertNode$1(i / dim | 0, data[i], data[i + 1], last);
+    for (let i = start; i < end; i += dim) last = insertNode$1(i / dim | 0, data[i], data[i + 1], last);
   } else {
-    for (let i = end - dim; i >= start; i -= dim)
-      last = insertNode$1(i / dim | 0, data[i], data[i + 1], last);
+    for (let i = end - dim; i >= start; i -= dim) last = insertNode$1(i / dim | 0, data[i], data[i + 1], last);
   }
   if (last && equals$1(last, last.next)) {
     removeNode$1(last);
@@ -14847,18 +14584,15 @@ function linkedList$1(data, start, end, dim, clockwise) {
   return last;
 }
 function filterPoints$1(start, end) {
-  if (!start)
-    return start;
-  if (!end)
-    end = start;
+  if (!start) return start;
+  if (!end) end = start;
   let p = start, again;
   do {
     again = false;
     if (!p.steiner && (equals$1(p, p.next) || area$1(p.prev, p, p.next) === 0)) {
       removeNode$1(p);
       p = end = p.prev;
-      if (p === p.next)
-        break;
+      if (p === p.next) break;
       again = true;
     } else {
       p = p.next;
@@ -14867,10 +14601,8 @@ function filterPoints$1(start, end) {
   return end;
 }
 function earcutLinked$1(ear, triangles, dim, minX, minY, invSize, pass) {
-  if (!ear)
-    return;
-  if (!pass && invSize)
-    indexCurve$1(ear, minX, minY, invSize);
+  if (!ear) return;
+  if (!pass && invSize) indexCurve$1(ear, minX, minY, invSize);
   let stop = ear;
   while (ear.prev !== ear.next) {
     const prev = ear.prev;
@@ -14898,42 +14630,35 @@ function earcutLinked$1(ear, triangles, dim, minX, minY, invSize, pass) {
 }
 function isEar$1(ear) {
   const a = ear.prev, b = ear, c = ear.next;
-  if (area$1(a, b, c) >= 0)
-    return false;
+  if (area$1(a, b, c) >= 0) return false;
   const ax = a.x, bx = b.x, cx = c.x, ay = a.y, by = b.y, cy = c.y;
   const x0 = Math.min(ax, bx, cx), y0 = Math.min(ay, by, cy), x1 = Math.max(ax, bx, cx), y1 = Math.max(ay, by, cy);
   let p = c.next;
   while (p !== a) {
-    if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1 && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, p.x, p.y) && area$1(p.prev, p, p.next) >= 0)
-      return false;
+    if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1 && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, p.x, p.y) && area$1(p.prev, p, p.next) >= 0) return false;
     p = p.next;
   }
   return true;
 }
 function isEarHashed$1(ear, minX, minY, invSize) {
   const a = ear.prev, b = ear, c = ear.next;
-  if (area$1(a, b, c) >= 0)
-    return false;
+  if (area$1(a, b, c) >= 0) return false;
   const ax = a.x, bx = b.x, cx = c.x, ay = a.y, by = b.y, cy = c.y;
   const x0 = Math.min(ax, bx, cx), y0 = Math.min(ay, by, cy), x1 = Math.max(ax, bx, cx), y1 = Math.max(ay, by, cy);
   const minZ = zOrder$1(x0, y0, minX, minY, invSize), maxZ = zOrder$1(x1, y1, minX, minY, invSize);
   let p = ear.prevZ, n = ear.nextZ;
   while (p && p.z >= minZ && n && n.z <= maxZ) {
-    if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1 && p !== a && p !== c && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, p.x, p.y) && area$1(p.prev, p, p.next) >= 0)
-      return false;
+    if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1 && p !== a && p !== c && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, p.x, p.y) && area$1(p.prev, p, p.next) >= 0) return false;
     p = p.prevZ;
-    if (n.x >= x0 && n.x <= x1 && n.y >= y0 && n.y <= y1 && n !== a && n !== c && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, n.x, n.y) && area$1(n.prev, n, n.next) >= 0)
-      return false;
+    if (n.x >= x0 && n.x <= x1 && n.y >= y0 && n.y <= y1 && n !== a && n !== c && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, n.x, n.y) && area$1(n.prev, n, n.next) >= 0) return false;
     n = n.nextZ;
   }
   while (p && p.z >= minZ) {
-    if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1 && p !== a && p !== c && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, p.x, p.y) && area$1(p.prev, p, p.next) >= 0)
-      return false;
+    if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1 && p !== a && p !== c && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, p.x, p.y) && area$1(p.prev, p, p.next) >= 0) return false;
     p = p.prevZ;
   }
   while (n && n.z <= maxZ) {
-    if (n.x >= x0 && n.x <= x1 && n.y >= y0 && n.y <= y1 && n !== a && n !== c && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, n.x, n.y) && area$1(n.prev, n, n.next) >= 0)
-      return false;
+    if (n.x >= x0 && n.x <= x1 && n.y >= y0 && n.y <= y1 && n !== a && n !== c && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, n.x, n.y) && area$1(n.prev, n, n.next) >= 0) return false;
     n = n.nextZ;
   }
   return true;
@@ -14976,8 +14701,7 @@ function eliminateHoles$1(data, holeIndices, outerNode, dim) {
     const start = holeIndices[i] * dim;
     const end = i < len - 1 ? holeIndices[i + 1] * dim : data.length;
     const list = linkedList$1(data, start, end, dim, false);
-    if (list === list.next)
-      list.steiner = true;
+    if (list === list.next) list.steiner = true;
     queue.push(getLeftmost$1(list));
   }
   queue.sort(compareXYSlope);
@@ -15013,24 +14737,20 @@ function findHoleBridge$1(hole, outerNode) {
   const hy = hole.y;
   let qx = -Infinity;
   let m;
-  if (equals$1(hole, p))
-    return p;
+  if (equals$1(hole, p)) return p;
   do {
-    if (equals$1(hole, p.next))
-      return p.next;
+    if (equals$1(hole, p.next)) return p.next;
     else if (hy <= p.y && hy >= p.next.y && p.next.y !== p.y) {
       const x = p.x + (hy - p.y) * (p.next.x - p.x) / (p.next.y - p.y);
       if (x <= hx && x > qx) {
         qx = x;
         m = p.x < p.next.x ? p : p.next;
-        if (x === hx)
-          return m;
+        if (x === hx) return m;
       }
     }
     p = p.next;
   } while (p !== outerNode);
-  if (!m)
-    return null;
+  if (!m) return null;
   const stop = m;
   const mx = m.x;
   const my = m.y;
@@ -15054,8 +14774,7 @@ function sectorContainsSector$1(m, p) {
 function indexCurve$1(start, minX, minY, invSize) {
   let p = start;
   do {
-    if (p.z === 0)
-      p.z = zOrder$1(p.x, p.y, minX, minY, invSize);
+    if (p.z === 0) p.z = zOrder$1(p.x, p.y, minX, minY, invSize);
     p.prevZ = p.prev;
     p.nextZ = p.next;
     p = p.next;
@@ -15080,8 +14799,7 @@ function sortLinked$1(list) {
       for (let i = 0; i < inSize; i++) {
         pSize++;
         q = q.nextZ;
-        if (!q)
-          break;
+        if (!q) break;
       }
       let qSize = inSize;
       while (pSize > 0 || qSize > 0 && q) {
@@ -15094,10 +14812,8 @@ function sortLinked$1(list) {
           q = q.nextZ;
           qSize--;
         }
-        if (tail)
-          tail.nextZ = e2;
-        else
-          list = e2;
+        if (tail) tail.nextZ = e2;
+        else list = e2;
         e2.prevZ = tail;
         tail = e2;
       }
@@ -15124,8 +14840,7 @@ function zOrder$1(x, y, minX, minY, invSize) {
 function getLeftmost$1(start) {
   let p = start, leftmost = start;
   do {
-    if (p.x < leftmost.x || p.x === leftmost.x && p.y < leftmost.y)
-      leftmost = p;
+    if (p.x < leftmost.x || p.x === leftmost.x && p.y < leftmost.y) leftmost = p;
     p = p.next;
   } while (p !== start);
   return leftmost;
@@ -15153,16 +14868,11 @@ function intersects$1(p1, q1, p2, q2) {
   const o2 = sign$1(area$1(p1, q1, q2));
   const o3 = sign$1(area$1(p2, q2, p1));
   const o4 = sign$1(area$1(p2, q2, q1));
-  if (o1 !== o2 && o3 !== o4)
-    return true;
-  if (o1 === 0 && onSegment$1(p1, p2, q1))
-    return true;
-  if (o2 === 0 && onSegment$1(p1, q2, q1))
-    return true;
-  if (o3 === 0 && onSegment$1(p2, p1, q2))
-    return true;
-  if (o4 === 0 && onSegment$1(p2, q1, q2))
-    return true;
+  if (o1 !== o2 && o3 !== o4) return true;
+  if (o1 === 0 && onSegment$1(p1, p2, q1)) return true;
+  if (o2 === 0 && onSegment$1(p1, q2, q1)) return true;
+  if (o3 === 0 && onSegment$1(p2, p1, q2)) return true;
+  if (o4 === 0 && onSegment$1(p2, q1, q2)) return true;
   return false;
 }
 function onSegment$1(p, q, r) {
@@ -15174,8 +14884,7 @@ function sign$1(num) {
 function intersectsPolygon$1(a, b) {
   let p = a;
   do {
-    if (p.i !== a.i && p.next.i !== a.i && p.i !== b.i && p.next.i !== b.i && intersects$1(p, p.next, a, b))
-      return true;
+    if (p.i !== a.i && p.next.i !== a.i && p.i !== b.i && p.next.i !== b.i && intersects$1(p, p.next, a, b)) return true;
     p = p.next;
   } while (p !== a);
   return false;
@@ -15223,10 +14932,8 @@ function insertNode$1(i, x, y, last) {
 function removeNode$1(p) {
   p.next.prev = p.prev;
   p.prev.next = p.next;
-  if (p.prevZ)
-    p.prevZ.nextZ = p.nextZ;
-  if (p.nextZ)
-    p.nextZ.prevZ = p.prevZ;
+  if (p.prevZ) p.prevZ.nextZ = p.nextZ;
+  if (p.nextZ) p.nextZ.prevZ = p.prevZ;
 }
 function createNode$1(i, x, y) {
   return {
@@ -15256,15 +14963,13 @@ function signedArea$1(data, start, end, dim) {
   return sum;
 }
 class SectionGenerator {
-  constructor() {
-    __publicField(this, "_inverseMatrix", new THREE__namespace.Matrix4());
-    __publicField(this, "_localPlane", new THREE__namespace.Plane());
-    __publicField(this, "_tempLine", new THREE__namespace.Line3());
-    __publicField(this, "_tempVector", new THREE__namespace.Vector3());
-    __publicField(this, "_plane");
-    __publicField(this, "_plane2DCoordinateSystem", new THREE__namespace.Matrix4());
-    __publicField(this, "_precission", 1e4);
-  }
+  _inverseMatrix = new THREE__namespace.Matrix4();
+  _localPlane = new THREE__namespace.Plane();
+  _tempLine = new THREE__namespace.Line3();
+  _tempVector = new THREE__namespace.Vector3();
+  _plane;
+  _plane2DCoordinateSystem = new THREE__namespace.Matrix4();
+  _precission = 1e4;
   // Used if the plane is orthogonal to the cartesian planes
   // private _planeAxis?: "x" | "y" | "z";
   get plane() {
@@ -15625,12 +15330,12 @@ class SectionGenerator {
   }
 }
 class CRCData {
+  int;
+  float;
+  buffer;
+  s1 = 4;
+  s2 = 8;
   constructor() {
-    __publicField(this, "int");
-    __publicField(this, "float");
-    __publicField(this, "buffer");
-    __publicField(this, "s1", 4);
-    __publicField(this, "s2", 8);
     const { intBuffer, floatBuffer, buffer } = this.newBuffers();
     this.int = intBuffer;
     this.float = floatBuffer;
@@ -15645,6 +15350,8 @@ class CRCData {
   }
 }
 class IntHelper {
+  static _max = 2147483647;
+  static _min = -2147483648;
   static check(data) {
     const isInteger = Number.isInteger(data);
     const notOverflow = data < this._max;
@@ -15652,8 +15359,6 @@ class IntHelper {
     return isInteger && notOverflow && notUnderflow;
   }
 }
-__publicField(IntHelper, "_max", 2147483647);
-__publicField(IntHelper, "_min", -2147483648);
 class MaterialUtils {
   static isSame(a, b) {
     return this.getKey(a) === this.getKey(b);
@@ -15662,8 +15367,8 @@ class MaterialUtils {
   static getKey(material) {
     const { color, _explicitProps, ...properties } = material;
     if (!material.preserveOriginalMaterial) {
-      properties.opacity ?? (properties.opacity = 1);
-      properties.renderedFaces ?? (properties.renderedFaces = RenderedFaces.ONE);
+      properties.opacity ??= 1;
+      properties.renderedFaces ??= RenderedFaces.ONE;
     }
     return JSON.stringify([
       color && [color.r, color.g, color.b, color.isColor === true],
@@ -15672,46 +15377,16 @@ class MaterialUtils {
     ]);
   }
 }
-const _CRC = class _CRC {
-  constructor() {
-    __publicField(this, "_core", new CRCData());
-    __publicField(this, "_handlers");
-    __publicField(this, "_result", -1);
-    __publicField(this, "handleObject", (input) => {
-      const keys = Object.keys(input);
-      for (const key of keys) {
-        if (!input.hasOwnProperty(key)) {
-          continue;
-        }
-        this.compute(input[key]);
-      }
-    });
-    __publicField(this, "handleString", (input) => {
-      const size = input.length;
-      for (let i = 0; i < size; ++i) {
-        const result = input.codePointAt(i);
-        this._core.int[0] = result;
-        this.update();
-      }
-    });
-    __publicField(this, "handleBoolean", (input) => {
-      if (input) {
-        this._core.int[0] = 1;
-      } else {
-        this._core.int[0] = 0;
-      }
-      this.update();
-    });
-    __publicField(this, "handleNumber", (input) => {
-      const isInt = IntHelper.check(input);
-      const target = isInt ? this._core.int : this._core.float;
-      target[0] = input;
-      this.update();
-    });
-    this._handlers = this.newHandlers();
-  }
+class CRC {
+  static _polynomial = 2197175160;
+  _core = new CRCData();
+  _handlers;
+  _result = -1;
   get value() {
     return ~this._result;
+  }
+  constructor() {
+    this._handlers = this.newHandlers();
   }
   fromMaterialData(data) {
     const {
@@ -15760,24 +15435,56 @@ const _CRC = class _CRC {
       object: this.handleObject
     };
   }
+  handleObject = (input) => {
+    const keys = Object.keys(input);
+    for (const key of keys) {
+      if (!input.hasOwnProperty(key)) {
+        continue;
+      }
+      this.compute(input[key]);
+    }
+  };
+  handleString = (input) => {
+    const size = input.length;
+    for (let i = 0; i < size; ++i) {
+      const result = input.codePointAt(i);
+      this._core.int[0] = result;
+      this.update();
+    }
+  };
+  handleBoolean = (input) => {
+    if (input) {
+      this._core.int[0] = 1;
+    } else {
+      this._core.int[0] = 0;
+    }
+    this.update();
+  };
+  handleNumber = (input) => {
+    const isInt = IntHelper.check(input);
+    const target = isInt ? this._core.int : this._core.float;
+    target[0] = input;
+    this.update();
+  };
   update() {
     for (let i = 0; i < this._core.s1; ++i) {
       this._result ^= this._core.buffer[i];
       for (let j = 0; j < this._core.s2; ++j) {
         if (this._result & 1) {
-          this._result = this._result >> 1 ^ _CRC._polynomial;
+          this._result = this._result >> 1 ^ CRC._polynomial;
         } else {
           this._result >>= 1;
         }
       }
     }
   }
-};
-__publicField(_CRC, "_polynomial", 2197175160);
-let CRC = _CRC;
-const _MultiBufferData = class _MultiBufferData {
+}
+class MultiBufferData {
+  static _stash = [];
+  _first;
+  static _tempData = { position: 0, size: 0 };
+  static _inf = 4294967295;
   constructor(size, firstElement) {
-    __publicField(this, "_first");
     this._first = this.newData(size, firstElement);
   }
   static getComplementary(data, callback) {
@@ -15852,11 +15559,11 @@ const _MultiBufferData = class _MultiBufferData {
     }
   }
   add(position, size, data) {
-    const stashExists = _MultiBufferData._stash.length;
+    const stashExists = MultiBufferData._stash.length;
     if (!stashExists) {
       return this.newData(size, data, position);
     }
-    const stashed = _MultiBufferData._stash.pop();
+    const stashed = MultiBufferData._stash.pop();
     if (!stashed) {
       throw new Error("Fragments: No stash found");
     }
@@ -15869,7 +15576,7 @@ const _MultiBufferData = class _MultiBufferData {
     if (data) {
       data.following = null;
       data.past = null;
-      _MultiBufferData._stash.push(data);
+      MultiBufferData._stash.push(data);
     }
   }
   static getData(data, filter) {
@@ -15934,8 +15641,7 @@ const _MultiBufferData = class _MultiBufferData {
     this.setupMiddleBufferEnd(b);
   }
   setupMiddleBufferEnd(b) {
-    var _a2;
-    if (((_a2 = b.following) == null ? void 0 : _a2.data) === b.data) {
+    if (b.following?.data === b.data) {
       if (!b.following) {
         return;
       }
@@ -15961,8 +15667,7 @@ const _MultiBufferData = class _MultiBufferData {
     }
   }
   setupMiddleBufferStart(b) {
-    var _a2;
-    if (((_a2 = b.past) == null ? void 0 : _a2.data) === b.data) {
+    if (b.past?.data === b.data) {
       if (!b.past) {
         return;
       }
@@ -16036,11 +15741,7 @@ const _MultiBufferData = class _MultiBufferData {
       found = found.following;
     }
   }
-};
-__publicField(_MultiBufferData, "_stash", []);
-__publicField(_MultiBufferData, "_tempData", { position: 0, size: 0 });
-__publicField(_MultiBufferData, "_inf", 4294967295);
-let MultiBufferData = _MultiBufferData;
+}
 class MiscHelper {
   static fixNumber(value) {
     if (Number.isNaN(value)) {
@@ -16063,6 +15764,16 @@ class MiscHelper {
   }
 }
 class GPU {
+  static capacityFactor = 200;
+  /**
+   * Ceiling for the estimated tile-cache budget, in bytes. The
+   * screen-size heuristic explodes on hidpi displays (a 4K screen at
+   * devicePixelRatio 2 yields ~6.6 GB), and this budget only caps the
+   * cache of *invisible* tiles — visible geometry is never evicted —
+   * so a bounded cache costs at most some re-uploads when the camera
+   * returns to a previously culled area.
+   */
+  static maxCapacity = 1e9;
   static estimateCapacity() {
     const factor = this.capacityFactor;
     const width = window.screen.width;
@@ -16072,16 +15783,6 @@ class GPU {
     return Math.min(result, this.maxCapacity);
   }
 }
-__publicField(GPU, "capacityFactor", 200);
-/**
- * Ceiling for the estimated tile-cache budget, in bytes. The
- * screen-size heuristic explodes on hidpi displays (a 4K screen at
- * devicePixelRatio 2 yields ~6.6 GB), and this budget only caps the
- * cache of *invisible* tiles — visible geometry is never evicted —
- * so a bounded cache costs at most some re-uploads when the camera
- * returns to a previously culled area.
- */
-__publicField(GPU, "maxCapacity", 1e9);
 class BitUtils {
   static check(data, id, config) {
     const filter = this.get(config);
@@ -16107,13 +15808,20 @@ class BitUtils {
   }
 }
 function isRawBuffer(bytes) {
-  if (bytes.length < 2)
-    return true;
+  if (bytes.length < 2) return true;
   const isDeflateMethod = (bytes[0] & 15) === 8;
   const headerIsMultipleOf31 = (bytes[0] << 8 | bytes[1]) % 31 === 0;
   return !(isDeflateMethod && headerIsMultipleOf31);
 }
 class ParserHelper {
+  static _temp = {
+    position: new THREE__namespace.Vector3(),
+    xDirection: new THREE__namespace.Vector3(),
+    yDirection: new THREE__namespace.Vector3(),
+    zDirection: new THREE__namespace.Vector3()
+  };
+  static _doubleVector = new DoubleVector();
+  static _floatVector = new FloatVector();
   static parseMaterial(material) {
     const r = material.r() / 255;
     const g = material.g() / 255;
@@ -16192,15 +15900,21 @@ class ParserHelper {
     );
   }
 }
-__publicField(ParserHelper, "_temp", {
-  position: new THREE__namespace.Vector3(),
-  xDirection: new THREE__namespace.Vector3(),
-  yDirection: new THREE__namespace.Vector3(),
-  zDirection: new THREE__namespace.Vector3()
-});
-__publicField(ParserHelper, "_doubleVector", new DoubleVector());
-__publicField(ParserHelper, "_floatVector", new FloatVector());
-const _TransformHelper = class _TransformHelper {
+class TransformHelper {
+  static _transform = new Transform();
+  static _min = new THREE__namespace.Vector3();
+  static _max = new THREE__namespace.Vector3();
+  static _center = new THREE__namespace.Vector3();
+  static _distance = new THREE__namespace.Vector3();
+  static _edge = new THREE__namespace.Line3();
+  static _item = new THREE__namespace.Matrix4();
+  static _sample = new THREE__namespace.Matrix4();
+  static _box = new BoundingBox();
+  static _transformers = {
+    x: () => this.setBoxX(),
+    y: () => this.setBoxY(),
+    z: () => this.setBoxZ()
+  };
   static get(sample, meshes, transform) {
     this.fetchSampleTransform(sample, meshes);
     this.fetchItemTransform(sample, meshes);
@@ -16257,23 +15971,11 @@ const _TransformHelper = class _TransformHelper {
     this._min.set(this._min.x, this._center.y, this._center.z);
     this._max.set(this._max.x, this._center.y, this._center.z);
   }
-};
-__publicField(_TransformHelper, "_transform", new Transform());
-__publicField(_TransformHelper, "_min", new THREE__namespace.Vector3());
-__publicField(_TransformHelper, "_max", new THREE__namespace.Vector3());
-__publicField(_TransformHelper, "_center", new THREE__namespace.Vector3());
-__publicField(_TransformHelper, "_distance", new THREE__namespace.Vector3());
-__publicField(_TransformHelper, "_edge", new THREE__namespace.Line3());
-__publicField(_TransformHelper, "_item", new THREE__namespace.Matrix4());
-__publicField(_TransformHelper, "_sample", new THREE__namespace.Matrix4());
-__publicField(_TransformHelper, "_box", new BoundingBox());
-__publicField(_TransformHelper, "_transformers", {
-  x: () => _TransformHelper.setBoxX(),
-  y: () => _TransformHelper.setBoxY(),
-  z: () => _TransformHelper.setBoxZ()
-});
-let TransformHelper = _TransformHelper;
+}
 class BoxUtils {
+  static _temp = {
+    vector: new THREE__namespace.Vector3()
+  };
   static getWidth(box) {
     box.getSize(this._temp.vector);
     if (this._temp.vector.x > this._temp.vector.y) {
@@ -16300,9 +16002,6 @@ class BoxUtils {
     return this._temp.vector.y;
   }
 }
-__publicField(BoxUtils, "_temp", {
-  vector: new THREE__namespace.Vector3()
-});
 class FaceUtils {
   static getEarcutDimensions(normal) {
     const absX = Math.abs(normal.x);
@@ -16335,68 +16034,68 @@ class FaceUtils {
   }
 }
 class AlignmentsManager {
-  constructor(model) {
-    __publicField(this, "model");
-    __publicField(this, "_endpointsMaterials", {
-      interior: new THREE__namespace.PointsMaterial({
-        color: 15658734,
-        size: 8,
-        sizeAttenuation: false,
-        depthTest: false
-      }),
-      exterior: new THREE__namespace.PointsMaterial({
+  model;
+  _endpointsMaterials = {
+    interior: new THREE__namespace.PointsMaterial({
+      color: 15658734,
+      size: 8,
+      sizeAttenuation: false,
+      depthTest: false
+    }),
+    exterior: new THREE__namespace.PointsMaterial({
+      color: 16777215,
+      size: 16,
+      sizeAttenuation: false,
+      depthTest: false
+    })
+  };
+  // Each alignment is a THREE.Group of THREE.Line2 (curves) and THREE.Points (endpoints)
+  _absoluteAlignments = new THREE__namespace.Group();
+  _horizontalAlignments = new THREE__namespace.Group();
+  _verticalAlignments = new THREE__namespace.Group();
+  _alignmentMaterials = /* @__PURE__ */ new Map([
+    [
+      AlignmentCurveType.NONE,
+      new LineMaterial_js.LineMaterial({
         color: 16777215,
-        size: 16,
-        sizeAttenuation: false,
+        linewidth: 5,
         depthTest: false
       })
-    });
-    // Each alignment is a THREE.Group of THREE.Line2 (curves) and THREE.Points (endpoints)
-    __publicField(this, "_absoluteAlignments", new THREE__namespace.Group());
-    __publicField(this, "_horizontalAlignments", new THREE__namespace.Group());
-    __publicField(this, "_verticalAlignments", new THREE__namespace.Group());
-    __publicField(this, "_alignmentMaterials", /* @__PURE__ */ new Map([
-      [
-        AlignmentCurveType.NONE,
-        new LineMaterial_js.LineMaterial({
-          color: 16777215,
-          linewidth: 5,
-          depthTest: false
-        })
-      ],
-      [
-        AlignmentCurveType.LINES,
-        new LineMaterial_js.LineMaterial({
-          color: 16711935,
-          linewidth: 5,
-          depthTest: false
-        })
-      ],
-      [
-        AlignmentCurveType.CLOTHOID,
-        new LineMaterial_js.LineMaterial({
-          color: 16711680,
-          linewidth: 5,
-          depthTest: false
-        })
-      ],
-      [
-        AlignmentCurveType.ELLIPSE_ARC,
-        new LineMaterial_js.LineMaterial({
-          color: 65535,
-          linewidth: 5,
-          depthTest: false
-        })
-      ],
-      [
-        AlignmentCurveType.PARABOLA,
-        new LineMaterial_js.LineMaterial({
-          color: 255,
-          linewidth: 5,
-          depthTest: false
-        })
-      ]
-    ]));
+    ],
+    [
+      AlignmentCurveType.LINES,
+      new LineMaterial_js.LineMaterial({
+        color: 16711935,
+        linewidth: 5,
+        depthTest: false
+      })
+    ],
+    [
+      AlignmentCurveType.CLOTHOID,
+      new LineMaterial_js.LineMaterial({
+        color: 16711680,
+        linewidth: 5,
+        depthTest: false
+      })
+    ],
+    [
+      AlignmentCurveType.ELLIPSE_ARC,
+      new LineMaterial_js.LineMaterial({
+        color: 65535,
+        linewidth: 5,
+        depthTest: false
+      })
+    ],
+    [
+      AlignmentCurveType.PARABOLA,
+      new LineMaterial_js.LineMaterial({
+        color: 255,
+        linewidth: 5,
+        depthTest: false
+      })
+    ]
+  ]);
+  constructor(model) {
     this.model = model;
   }
   async getAlignments() {
@@ -16487,8 +16186,7 @@ class AlignmentsManager {
     for (const group of groups) {
       group.traverse((child) => {
         const object = child;
-        if (!object.geometry)
-          return;
+        if (!object.geometry) return;
         object.geometry.dispose();
         object.geometry = void 0;
         object.material = void 0;
@@ -16525,8 +16223,7 @@ class BoxManager {
     return merged;
   }
   getIndividualBoxesIds(localIds) {
-    if (!localIds)
-      return void 0;
+    if (!localIds) return void 0;
     const ids = [];
     for (const id of localIds) {
       ids.push([id]);
@@ -16553,9 +16250,7 @@ class BoxManager {
   }
 }
 class CoordinatesManager {
-  constructor() {
-    __publicField(this, "_coordinationMatrices", /* @__PURE__ */ new Map());
-  }
+  _coordinationMatrices = /* @__PURE__ */ new Map();
   async getCoordinationMatrix(model) {
     let matrix = this._coordinationMatrices.get(model.modelId);
     if (matrix) {
@@ -16616,7 +16311,7 @@ class DataManager {
     meshes.list.delete(model.modelId);
     await this.requestModelDelete(model);
     model.threads.delete(model.modelId);
-    if (options == null ? void 0 : options.keepInScene) {
+    if (options?.keepInScene) {
       meshes.materials.releaseModelSlot(model.modelId);
       return;
     }
@@ -16790,10 +16485,10 @@ const RENDER_AFFECTING_REQUESTS = /* @__PURE__ */ new Set([
   EditRequestType.DELETE_ITEM
 ]);
 class EditHelper {
+  _deltaModels = {};
+  _fragments;
+  _connection;
   constructor(core, connection) {
-    __publicField(this, "_deltaModels", {});
-    __publicField(this, "_fragments");
-    __publicField(this, "_connection");
     this._fragments = core;
     this._connection = connection;
   }
@@ -16814,8 +16509,7 @@ class EditHelper {
     let idsIdx = 0;
     for (let i = 0; i < actions.length; i++) {
       const action = actions[i];
-      if (isIndexRequest(action))
-        continue;
+      if (isIndexRequest(action)) continue;
       if (action.localId !== void 0) {
         continue;
       }
@@ -16942,14 +16636,14 @@ class EditHelper {
   }
 }
 class ElementsHelper {
+  _nextTempIds = {};
+  _requests = {};
+  _fragments;
+  // Indexes are name-keyed, not localId-keyed, so they don't fit cleanly
+  // into the create/update/remove maps above. They get their own queue,
+  // appended to the request list at applyChanges time.
+  _indexRequests = {};
   constructor(fragments) {
-    __publicField(this, "_nextTempIds", {});
-    __publicField(this, "_requests", {});
-    __publicField(this, "_fragments");
-    // Indexes are name-keyed, not localId-keyed, so they don't fit cleanly
-    // into the create/update/remove maps above. They get their own queue,
-    // appended to the request list at applyChanges time.
-    __publicField(this, "_indexRequests", {});
     this._fragments = fragments;
   }
   getRequests(modelId) {
@@ -17244,8 +16938,7 @@ class ElementsHelper {
       const currentRequests = element.getRequests();
       if (currentRequests) {
         for (const request of currentRequests) {
-          if (isIndexRequest(request))
-            continue;
+          if (isIndexRequest(request)) continue;
           const id = request.localId;
           if (id) {
             this.addRequest(modelId, id, "remove", request);
@@ -17416,13 +17109,13 @@ class ElementsHelper {
   }
 }
 class Editor {
+  /**
+   * Event triggered when an edit is made.
+   */
+  onEdit = new Event();
+  _editHelper;
+  _elementsHelper;
   constructor(core, connection) {
-    /**
-     * Event triggered when an edit is made.
-     */
-    __publicField(this, "onEdit", new Event());
-    __publicField(this, "_editHelper");
-    __publicField(this, "_elementsHelper");
     this._editHelper = new EditHelper(core, connection);
     this._elementsHelper = new ElementsHelper(core);
   }
@@ -17664,29 +17357,29 @@ class Editor {
   }
 }
 class Element {
-  constructor(id, data, model) {
-    __publicField(this, "localId");
-    __publicField(this, "model");
-    __publicField(this, "core");
-    __publicField(this, "config", {
-      data: {
-        attributesDefault: true,
-        relations: {
-          IsDefinedBy: { attributes: true, relations: true },
-          DefinesOccurrence: { attributes: false, relations: false }
-        }
+  localId;
+  model;
+  core;
+  config = {
+    data: {
+      attributesDefault: true,
+      relations: {
+        IsDefinedBy: { attributes: true, relations: true },
+        DefinesOccurrence: { attributes: false, relations: false }
       }
-    });
-    __publicField(this, "updateRequests", {});
-    __publicField(this, "createRequests", {});
-    __publicField(this, "removeRequests", {});
-    __publicField(this, "_elementChanged", false);
+    }
+  };
+  updateRequests = {};
+  createRequests = {};
+  removeRequests = {};
+  _elementChanged = false;
+  get elementChanged() {
+    return this._elementChanged;
+  }
+  constructor(id, data, model) {
     this.localId = id;
     this.core = data;
     this.model = model;
-  }
-  get elementChanged() {
-    return this._elementChanged;
   }
   getRequests() {
     const createRequests = Object.values(this.createRequests);
@@ -17767,8 +17460,8 @@ class Element {
     return parseInt(Object.keys(this.core.globalTransforms)[0], 10);
   }
   disposeMeshes(meshes, config) {
-    const disposeGeometry = (config == null ? void 0 : config.disposeGeometry) ?? true;
-    const disposeMaterial = (config == null ? void 0 : config.disposeMaterial) ?? true;
+    const disposeGeometry = config?.disposeGeometry ?? true;
+    const disposeMaterial = config?.disposeMaterial ?? true;
     meshes.removeFromParent();
     meshes.traverse((child) => {
       if (child instanceof THREE__namespace.Mesh) {
@@ -18321,33 +18014,32 @@ class EditManager {
   }
 }
 class GridsManager {
-  constructor(model) {
-    __publicField(this, "model");
-    __publicField(this, "_grids", new THREE__namespace.Group());
-    __publicField(this, "_gridMaterial", new THREE__namespace.LineDashedMaterial(
-      {
-        color: 16777215,
-        linewidth: 5,
-        depthTest: false,
-        dashSize: 1,
-        gapSize: 0.3
-      }
-    ));
-    __publicField(this, "_labelMaterial", new THREE__namespace.MeshPhongMaterial({
+  model;
+  _grids = new THREE__namespace.Group();
+  _gridMaterial = new THREE__namespace.LineDashedMaterial(
+    {
       color: 16777215,
-      flatShading: true,
-      side: THREE__namespace.FrontSide,
-      depthTest: false
-    }));
-    __publicField(this, "_labelConfig");
-    __publicField(this, "_labelMap", /* @__PURE__ */ new Map());
+      linewidth: 5,
+      depthTest: false,
+      dashSize: 1,
+      gapSize: 0.3
+    }
+  );
+  _labelMaterial = new THREE__namespace.MeshPhongMaterial({
+    color: 16777215,
+    flatShading: true,
+    side: THREE__namespace.FrontSide,
+    depthTest: false
+  });
+  _labelConfig;
+  _labelMap = /* @__PURE__ */ new Map();
+  constructor(model) {
     this.model = model;
   }
   async getGrids({ labels } = {}) {
-    var _a2;
     let labelsNeedUpdate = false;
     let labelsNeedRepositioning = false;
-    if (labels == null ? void 0 : labels.show) {
+    if (labels?.show) {
       const incomingConfig = {
         size: 0.2,
         direction: "ltr",
@@ -18410,12 +18102,11 @@ class GridsManager {
     }
     for (const group of axisGroups) {
       const [line, label0, label1] = group.children;
-      const position = line == null ? void 0 : line.geometry.getAttribute("position").array;
-      if (!position)
-        continue;
+      const position = line?.geometry.getAttribute("position").array;
+      if (!position) continue;
       const [m0, m1] = this.getGridLabelMatrices(
         position,
-        ((_a2 = this._labelConfig) == null ? void 0 : _a2.offset) ?? 0.5
+        this._labelConfig?.offset ?? 0.5
       );
       if (label0) {
         label0.matrix.copy(m0);
@@ -18459,8 +18150,7 @@ class GridsManager {
         child.material = material;
       }
     });
-    if (prev !== material)
-      prev.dispose();
+    if (prev !== material) prev.dispose();
   }
   /**
    * The shared material used for every grid axis label. Mutating its
@@ -18485,8 +18175,7 @@ class GridsManager {
         child.material = material;
       }
     });
-    if (prev !== material)
-      prev.dispose();
+    if (prev !== material) prev.dispose();
   }
   async constructGrids() {
     const result = await this.model.threads.invoke(
@@ -18588,8 +18277,7 @@ class GridsManager {
   }
 }
 class LodShaders {
-}
-__publicField(LodShaders, "vertex", `
+  static vertex = `
             #include <common>
             #include <clipping_planes_pars_vertex>
 
@@ -18676,8 +18364,8 @@ __publicField(LodShaders, "vertex", `
                 vec4 mvPosition = isFirst ? first : last;
                 #include <clipping_planes_vertex>
             }
-    `);
-__publicField(LodShaders, "fragment", `
+    `;
+  static fragment = `
             #include <common>
             #include <clipping_planes_pars_fragment>
 
@@ -18699,16 +18387,19 @@ __publicField(LodShaders, "fragment", `
                 gl_FragColor = vec4(color, alpha);
                 #include <colorspace_fragment>
             }
-    `);
-const _LodHelper = class _LodHelper {
+    `;
+}
+class LodHelper {
+  static tempVec = new THREE__namespace.Vector3();
+  static tempBox = new THREE__namespace.Box3();
   static setupLodMeshResize(mesh) {
     mesh.onBeforeRender = (renderer) => {
       renderer.getSize(mesh.material[0].lodSize);
     };
   }
   static setupLodAttributes(geometry) {
-    geometry.setIndex(_LodHelper.indices);
-    geometry.setAttribute("position", _LodHelper.vertices);
+    geometry.setIndex(LodHelper.indices);
+    geometry.setAttribute("position", LodHelper.vertices);
   }
   static setLodBuffer(lodGeometry, data, onFinish) {
     let itemFirst = lodGeometry.getItemFirst();
@@ -18734,8 +18425,8 @@ const _LodHelper = class _LodHelper {
     }
     const itemFirst = geometry.getItemFirst();
     if (itemFirst) {
-      const midPoint = _LodHelper.getLodMidPoint(geometry, itemFirst);
-      const radius = _LodHelper.getLodRadius(midPoint, itemFirst);
+      const midPoint = LodHelper.getLodMidPoint(geometry, itemFirst);
+      const radius = LodHelper.getLodRadius(midPoint, itemFirst);
       geometry.boundingSphere.radius = radius;
     }
   }
@@ -18793,8 +18484,7 @@ const _LodHelper = class _LodHelper {
   // `colors[i]` is parallel to `data`'s chunks; undefined entries are skipped.
   static setLodHighlightColors(geometry, data, colors) {
     const itemFilter = geometry.getItemFilter();
-    if (!itemFilter)
-      return;
+    if (!itemFilter) return;
     const count = itemFilter.count;
     let colorAttr = this.getInstancedAttribute(geometry, "itemHighlightColor");
     if (!colorAttr || colorAttr.count !== count) {
@@ -18807,8 +18497,7 @@ const _LodHelper = class _LodHelper {
     const bufferData = colorAttr.array;
     for (let i = 0; i < data.position.length; ++i) {
       const color = colors[i];
-      if (!color)
-        continue;
+      if (!color) continue;
       const first = Math.floor(data.position[i] / 2);
       const size = data.size[i] / 2;
       const end = size === 4294967295 ? count : Math.min(first + size, count);
@@ -18847,7 +18536,7 @@ const _LodHelper = class _LodHelper {
     delete geometry.attributes.position;
     geometry.index = null;
     geometry.dispose();
-    _LodHelper.setupLodAttributes(geometry);
+    LodHelper.setupLodAttributes(geometry);
   }
   static setItemFirst(lodGeometry, itemFirst, data, itemLast) {
     let dataBuffer = null;
@@ -18907,70 +18596,67 @@ const _LodHelper = class _LodHelper {
     const size = itemFirst.data.array.length;
     for (let i = 0; i < size; i += 3) {
       const dataBuffer = itemFirst.data.array;
-      _LodHelper.tempVec.fromArray(dataBuffer, i);
-      const distance = midPoint.distanceToSquared(_LodHelper.tempVec);
+      LodHelper.tempVec.fromArray(dataBuffer, i);
+      const distance = midPoint.distanceToSquared(LodHelper.tempVec);
       threshold = Math.max(threshold, distance);
     }
     return Math.sqrt(threshold);
   }
-};
-__publicField(_LodHelper, "tempVec", new THREE__namespace.Vector3());
-__publicField(_LodHelper, "tempBox", new THREE__namespace.Box3());
-// prettier-ignore
-__publicField(_LodHelper, "vertices", new THREE__namespace.Float32BufferAttribute(
-  [
-    -1,
-    2,
-    0,
-    1,
-    2,
-    0,
-    -1,
-    1,
-    0,
-    1,
-    1,
-    0,
-    -1,
-    0,
-    0,
-    1,
-    0,
-    0,
-    -1,
-    -1,
-    0,
-    1,
-    -1,
-    0
-  ],
-  3
-));
-// prettier-ignore
-__publicField(_LodHelper, "indices", new THREE__namespace.Uint8BufferAttribute(
-  [
-    0,
-    2,
-    1,
-    2,
-    3,
-    1,
-    2,
-    4,
-    3,
-    4,
-    5,
-    3,
-    4,
-    6,
-    5,
-    6,
-    7,
-    5
-  ],
-  1
-));
-let LodHelper = _LodHelper;
+  // prettier-ignore
+  static vertices = new THREE__namespace.Float32BufferAttribute(
+    [
+      -1,
+      2,
+      0,
+      1,
+      2,
+      0,
+      -1,
+      1,
+      0,
+      1,
+      1,
+      0,
+      -1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      -1,
+      -1,
+      0,
+      1,
+      -1,
+      0
+    ],
+    3
+  );
+  // prettier-ignore
+  static indices = new THREE__namespace.Uint8BufferAttribute(
+    [
+      0,
+      2,
+      1,
+      2,
+      3,
+      1,
+      2,
+      4,
+      3,
+      4,
+      5,
+      3,
+      4,
+      6,
+      5,
+      6,
+      7,
+      5
+    ],
+    1
+  );
+}
 class LODMesh extends THREE__namespace.Mesh {
   constructor(geometry, material) {
     super(geometry, material);
@@ -18980,14 +18666,14 @@ class LODMesh extends THREE__namespace.Mesh {
   }
 }
 class LODGeometry extends THREE__namespace.InstancedBufferGeometry {
-  constructor() {
-    super();
-    __publicField(this, "isLODGeometry", true);
-    LodHelper.setupLodAttributes(this);
-  }
+  isLODGeometry = true;
   isFiltered() {
     const filter = this.getItemFilter();
     return Boolean(filter);
+  }
+  constructor() {
+    super();
+    LodHelper.setupLodAttributes(this);
   }
   computeBoundingBox() {
     if (!this.boundingBox) {
@@ -19031,14 +18717,8 @@ class LODGeometry extends THREE__namespace.InstancedBufferGeometry {
   }
 }
 class LodMaterial extends THREE__namespace.ShaderMaterial {
-  constructor(parameters) {
-    super(LodHelper.newLodMaterialParams(parameters));
-    __publicField(this, "isLodMaterial", true);
-    __publicField(this, "isLineMaterial", true);
-    this.clipping = true;
-    this.lights = false;
-    this.needsUpdate = true;
-  }
+  isLodMaterial = true;
+  isLineMaterial = true;
   get lodSize() {
     return this.uniforms.lodSize.value;
   }
@@ -19069,22 +18749,24 @@ class LodMaterial extends THREE__namespace.ShaderMaterial {
   get highlightOpacity() {
     return this.uniforms.highlightOpacity.value;
   }
+  constructor(parameters) {
+    super(LodHelper.newLodMaterialParams(parameters));
+    this.clipping = true;
+    this.lights = false;
+    this.needsUpdate = true;
+  }
 }
 class MaterialManager {
-  constructor() {
-    __publicField(this, "list", new DataMap());
-    __publicField(this, "_modelMaterialMapping", /* @__PURE__ */ new Map());
-    __publicField(this, "_definitions", /* @__PURE__ */ new Map());
-    __publicField(this, "_idGenerator", new CRC());
-    __publicField(this, "white", 4294967295);
-  }
+  list = new DataMap();
+  _modelMaterialMapping = /* @__PURE__ */ new Map();
+  _definitions = /* @__PURE__ */ new Map();
+  _idGenerator = new CRC();
+  white = 4294967295;
   static resetColors(definitions) {
     for (const definition of definitions) {
-      if (!(definition && definition.color))
-        continue;
+      if (!(definition && definition.color)) continue;
       const { color } = definition;
-      if (color.isColor)
-        continue;
+      if (color.isColor) continue;
       const { r, g, b } = color;
       definition.color = new THREE__namespace.Color().setRGB(
         r,
@@ -19097,12 +18779,10 @@ class MaterialManager {
   dispose(modelId) {
     this._definitions.delete(modelId);
     const ids = this._modelMaterialMapping.get(modelId);
-    if (!ids)
-      return;
+    if (!ids) return;
     for (const id of ids) {
       const material = this.list.get(id);
-      if (!material)
-        continue;
+      if (!material) continue;
       material.dispose();
       this.list.delete(id);
     }
@@ -19154,8 +18834,7 @@ class MaterialManager {
     const materials = mesh.material.slice(0, 2);
     const localMap = /* @__PURE__ */ new Map();
     const materialDefinitions = this._definitions.get(modelId);
-    if (!materialDefinitions)
-      return materials;
+    if (!materialDefinitions) return materials;
     for (let i = 0; i < highlightData.position.length; i++) {
       const highlightIndex = highlightIds[i];
       this.processHighlight(
@@ -19176,12 +18855,10 @@ class MaterialManager {
   }
   getHighlightProps(highlightIndex, originalIndex, modelId) {
     const materialDefinitions = this._definitions.get(modelId);
-    if (!materialDefinitions)
-      return void 0;
+    if (!materialDefinitions) return void 0;
     const originalDefinition = materialDefinitions[originalIndex];
     const newDefinition = materialDefinitions[highlightIndex];
-    if (!newDefinition || !originalDefinition)
-      return void 0;
+    if (!newDefinition || !originalDefinition) return void 0;
     const {
       preserveOriginalMaterial,
       _explicitProps,
@@ -19202,7 +18879,7 @@ class MaterialManager {
   getFromRequest(request) {
     const { material: index, modelId } = request;
     const modelMaterials = this._definitions.get(modelId);
-    const definition = modelMaterials == null ? void 0 : modelMaterials[index];
+    const definition = modelMaterials?.[index];
     if (!definition) {
       throw new Error(`Fragments: Missing mesh material for index ${index}`);
     }
@@ -19290,8 +18967,7 @@ class MaterialManager {
   getUniqueMaterial(id, data, request) {
     const modelId = request.modelId;
     const material = this.list.get(id);
-    if (material)
-      return material;
+    if (material) return material;
     const newMaterial = this.new(data, request);
     this.list.set(id, newMaterial);
     this.addMaterialToModel(modelId, id);
@@ -19338,34 +19014,14 @@ class HighlightManager {
 }
 class ItemAttributes extends Map {
   /**
-   * Creates a new ItemAttributes instance.
-   * @param localId - The local ID of the item.
-   * @param iterable - An optional iterable of key-value pairs to initialize the map with.
+   * A map of local IDs to their corresponding attribute changes.
+   * This is used to track changes to the attributes over time.
    */
-  constructor(localId, iterable) {
-    super(iterable);
-    /**
-     * A map of local IDs to their corresponding attribute changes.
-     * This is used to track changes to the attributes over time.
-     */
-    __publicField(this, "tracker", null);
-    /**
-     * The local ID of the item.
-     */
-    __publicField(this, "localId");
-    /**
-     * A function that acts as a guard for adding items to the set.
-     * It determines whether a given value should be allowed to be added to the set.
-     *
-     * @param key - The key of the entry to be checked against the guard.
-     * @param value - The value of the entry to be checked against the guard.
-     * @returns A boolean indicating whether the value should be allowed to be added to the set.
-     *          By default, this function always returns true, allowing all values to be added.
-     *          You can override this behavior by providing a custom implementation.
-     */
-    __publicField(this, "guard", () => true);
-    this.localId = localId;
-  }
+  tracker = null;
+  /**
+   * The local ID of the item.
+   */
+  localId;
   /**
    * Gets the attributes as a plain javascript object.
    */
@@ -19377,6 +19033,26 @@ class ItemAttributes extends Map {
     return attr;
   }
   /**
+   * Creates a new ItemAttributes instance.
+   * @param localId - The local ID of the item.
+   * @param iterable - An optional iterable of key-value pairs to initialize the map with.
+   */
+  constructor(localId, iterable) {
+    super(iterable);
+    this.localId = localId;
+  }
+  /**
+   * A function that acts as a guard for adding items to the set.
+   * It determines whether a given value should be allowed to be added to the set.
+   *
+   * @param key - The key of the entry to be checked against the guard.
+   * @param value - The value of the entry to be checked against the guard.
+   * @returns A boolean indicating whether the value should be allowed to be added to the set.
+   *          By default, this function always returns true, allowing all values to be added.
+   *          You can override this behavior by providing a custom implementation.
+   */
+  guard = () => true;
+  /**
    * Sets an attribute in the map.
    * @param key - The key of the attribute to set.
    * @param attr - The attribute data to set.
@@ -19385,11 +19061,9 @@ class ItemAttributes extends Map {
   set(key, attr) {
     const guard = this.guard ?? (() => true);
     const isValid = guard(key, attr);
-    if (!isValid)
-      return this;
+    if (!isValid) return this;
     const value = attr.type !== void 0 ? attr : { value: attr.value, type: this.getType(key) };
-    if (!this.tracker)
-      return super.set(key, value);
+    if (!this.tracker) return super.set(key, value);
     if (this.localId === null) {
       console.warn(
         "Item attributes are missing a valid localId. Changes can't be tracked."
@@ -19432,8 +19106,7 @@ class ItemAttributes extends Map {
    */
   setType(key, type) {
     const value = this.getValue(key);
-    if (!value)
-      return this;
+    if (!value) return this;
     return this.set(key, { value, type });
   }
   /**
@@ -19442,21 +19115,17 @@ class ItemAttributes extends Map {
    * @returns The updated map.
    */
   delete(key) {
-    if (!this.tracker)
-      return super.delete(key);
+    if (!this.tracker) return super.delete(key);
     const localId = this.get("localId");
     if (localId === void 0 || typeof localId !== "number") {
       console.warn(
         "Item attributes are missing a valid localId. Changes can't be tracked."
       );
-      if (key === "localId")
-        return false;
+      if (key === "localId") return false;
       return super.delete(key);
     }
-    if (key === "localId")
-      return false;
-    if (!this.has(key))
-      return false;
+    if (key === "localId") return false;
+    if (!this.has(key)) return false;
     let itemChanges = this.tracker.get(localId);
     if (!itemChanges) {
       itemChanges = { type: "modified", added: {}, deleted: [], modified: {} };
@@ -19482,8 +19151,7 @@ class ItemAttributes extends Map {
    */
   getValue(key) {
     const data = this.get(key);
-    if (!data)
-      return null;
+    if (!data) return null;
     return data.value;
   }
   /**
@@ -19491,8 +19159,7 @@ class ItemAttributes extends Map {
    * @param key - The key of the attribute to get.
    */
   getType(key) {
-    var _a2;
-    return (_a2 = this.get(key)) == null ? void 0 : _a2.type;
+    return this.get(key)?.type;
   }
   // async getRelationAttribute(relation: string, attribute: string) {
   //   return (await this.relations.getItems(relation))?.map((item) =>
@@ -19502,40 +19169,15 @@ class ItemAttributes extends Map {
 }
 class ItemRelations extends Map {
   /**
-   * Creates a new ItemRelations instance.
-   * @param localId - The local ID of the item.
-   * @param iterable - An optional iterable of key-value pairs to initialize the map with.
+   * A map that tracks the changes to the relations of the item.
    */
-  constructor(localId, iterable) {
-    super(iterable);
-    /**
-     * A map that tracks the changes to the relations of the item.
-     */
-    __publicField(this, "tracker", null);
-    /**
-     * The local ID of the item.
-     */
-    __publicField(this, "localId");
-    /**
-     * A function that acts as a guard for adding items to the set.
-     * It determines whether a given value should be allowed to be added to the set.
-     *
-     * @param key - The key of the entry to be checked against the guard.
-     * @param value - The value of the entry to be checked against the guard.
-     * @returns A boolean indicating whether the value should be allowed to be added to the set.
-     *          By default, this function always returns true, allowing all values to be added.
-     *          You can override this behavior by providing a custom implementation.
-     */
-    __publicField(this, "guard", () => true);
-    /**
-     * An event handler that is called when items are requested.
-     */
-    __publicField(this, "onItemsRequested", null);
-    this.localId = localId;
-  }
+  tracker = null;
+  /**
+   * The local ID of the item.
+   */
+  localId;
   get itemChanges() {
-    if (!this.tracker)
-      return null;
+    if (!this.tracker) return null;
     if (!this.localId) {
       console.warn("Item relations can't be tracked.");
       return null;
@@ -19554,6 +19196,26 @@ class ItemRelations extends Map {
     return itemChanges;
   }
   /**
+   * Creates a new ItemRelations instance.
+   * @param localId - The local ID of the item.
+   * @param iterable - An optional iterable of key-value pairs to initialize the map with.
+   */
+  constructor(localId, iterable) {
+    super(iterable);
+    this.localId = localId;
+  }
+  /**
+   * A function that acts as a guard for adding items to the set.
+   * It determines whether a given value should be allowed to be added to the set.
+   *
+   * @param key - The key of the entry to be checked against the guard.
+   * @param value - The value of the entry to be checked against the guard.
+   * @returns A boolean indicating whether the value should be allowed to be added to the set.
+   *          By default, this function always returns true, allowing all values to be added.
+   *          You can override this behavior by providing a custom implementation.
+   */
+  guard = () => true;
+  /**
    * Sets a new relation in the map.
    * @param key - The key of the relation.
    * @param value - The value of the relation.
@@ -19563,11 +19225,9 @@ class ItemRelations extends Map {
     const keyExisted = this.has(key);
     const guard = this.guard ?? (() => true);
     const isValid = guard(key, value);
-    if (!isValid)
-      return this;
+    if (!isValid) return this;
     const itemChanges = this.itemChanges;
-    if (!itemChanges)
-      return super.set(key, value);
+    if (!itemChanges) return super.set(key, value);
     if (keyExisted) {
       itemChanges.modified[key] = value;
     } else {
@@ -19581,7 +19241,6 @@ class ItemRelations extends Map {
    * @param item - The item to add to the relation.
    */
   add(key, item) {
-    var _a2;
     const keyExisted = this.has(key);
     let items = this.get(key);
     if (!items) {
@@ -19589,15 +19248,14 @@ class ItemRelations extends Map {
       this.set(key, items);
       return true;
     }
-    if (!items || items.has(item))
-      return false;
+    if (!items || items.has(item)) return false;
     const itemChanges = this.itemChanges;
     if (!itemChanges) {
       items.add(item);
       return true;
     }
     if (keyExisted) {
-      if ((_a2 = itemChanges.removed[key]) == null ? void 0 : _a2.has(item)) {
+      if (itemChanges.removed[key]?.has(item)) {
         itemChanges.removed[key].delete(item);
         if (itemChanges.removed[key].size === 0)
           delete itemChanges.removed[key];
@@ -19627,16 +19285,12 @@ class ItemRelations extends Map {
    * @returns A boolean indicating whether the item was removed from the relation.
    */
   remove(key, item) {
-    var _a2;
     const items = this.get(key);
-    if (!items)
-      return false;
-    if (!items.has(item))
-      return false;
+    if (!items) return false;
+    if (!items.has(item)) return false;
     const itemChanges = this.itemChanges;
-    if (!itemChanges)
-      return items.delete(item);
-    if ((_a2 = itemChanges.modified[key]) == null ? void 0 : _a2.has(item)) {
+    if (!itemChanges) return items.delete(item);
+    if (itemChanges.modified[key]?.has(item)) {
       itemChanges.modified[key].delete(item);
       if (itemChanges.modified[key].size === 0)
         delete itemChanges.modified[key];
@@ -19655,51 +19309,43 @@ class ItemRelations extends Map {
    * @param key - The key of the relation to delete.
    */
   delete(key) {
-    if (!this.has(key))
-      return false;
+    if (!this.has(key)) return false;
     const itemChanges = this.itemChanges;
-    if (!itemChanges)
-      return super.delete(key);
+    if (!itemChanges) return super.delete(key);
     itemChanges.deleted.add(key);
     return super.delete(key);
   }
+  /**
+   * An event handler that is called when items are requested.
+   */
+  onItemsRequested = null;
   /**
    * Gets the items of a relation.
    * @param key - The key of the relation.
    */
   async getItems(key) {
-    if (!this.onItemsRequested)
-      return null;
+    if (!this.onItemsRequested) return null;
     const relations = this.get(key);
-    if (!relations)
-      return null;
+    if (!relations) return null;
     const items = await this.onItemsRequested([...relations]);
     return items;
   }
 }
 class ItemGeometry {
   /**
+   * The model that the geometry belongs to.
+   */
+  model;
+  /**
+   * The local ID of the item.
+   */
+  localId;
+  /**
    * Creates a new ItemGeometry instance.
    * @param model - The model that the geometry belongs to.
    * @param localId - The local ID of the item.
    */
   constructor(model, localId) {
-    /**
-     * The model that the geometry belongs to.
-     */
-    __publicField(this, "model");
-    /**
-     * The local ID of the item.
-     */
-    __publicField(this, "localId");
-    __publicField(this, "_indices", null);
-    __publicField(this, "_transform", null);
-    __publicField(this, "_normals", null);
-    __publicField(this, "_positions", null);
-    __publicField(this, "_vertices", null);
-    __publicField(this, "_triangles", null);
-    __publicField(this, "_position", null);
-    __publicField(this, "_box", null);
     this.model = model;
     this.localId = localId;
   }
@@ -19714,14 +19360,10 @@ class ItemGeometry {
         geometryData.transform.elements
       );
       const { indices, normals, positions, transform } = geometryData;
-      if (!this._indices)
-        this._indices = [];
-      if (!this._normals)
-        this._normals = [];
-      if (!this._positions)
-        this._positions = [];
-      if (!this._transform)
-        this._transform = [];
+      if (!this._indices) this._indices = [];
+      if (!this._normals) this._normals = [];
+      if (!this._positions) this._positions = [];
+      if (!this._transform) this._transform = [];
       this._indices.push(indices);
       this._normals.push(normals);
       this._positions.push(positions);
@@ -19729,58 +19371,56 @@ class ItemGeometry {
     }
     return geometries;
   }
+  _indices = null;
   /**
    * Gets the indices of the item.
    */
   async getIndices() {
-    if (this._indices !== null)
-      return this._indices;
+    if (this._indices !== null) return this._indices;
     await this.get();
     return this._indices;
   }
+  _transform = null;
   /**
    * Gets the transform of the item.
    */
   async getTransform() {
-    if (this._transform !== null)
-      return this._transform;
+    if (this._transform !== null) return this._transform;
     await this.get();
     return this._transform;
   }
+  _normals = null;
   /**
    * Gets the normals of the item.
    */
   async getNormals() {
-    if (this._normals !== null)
-      return this._normals;
+    if (this._normals !== null) return this._normals;
     await this.get();
     return this._normals;
   }
+  _positions = null;
   /**
    * Gets the positions of the item.
    */
   async getPositions() {
-    if (this._positions !== null)
-      return this._positions;
+    if (this._positions !== null) return this._positions;
     await this.get();
     return this._positions;
   }
+  _vertices = null;
   /**
    * Gets the vertices of the item.
    */
   async getVertices() {
-    if (this._vertices)
-      return this._vertices;
+    if (this._vertices) return this._vertices;
     const allPositions = await this.getPositions();
     const allTransforms = await this.getTransform();
-    if (!allPositions || !allTransforms)
-      return this._vertices;
+    if (!allPositions || !allTransforms) return this._vertices;
     this._vertices = [];
     for (let i = 0; i < allPositions.length; i++) {
       const positions = allPositions[i];
       const transform = allTransforms[i];
-      if (!positions || !transform)
-        continue;
+      if (!positions || !transform) continue;
       const currentVertices = [];
       this._vertices.push(currentVertices);
       const numVertices = Object.keys(positions).length / 3;
@@ -19793,8 +19433,7 @@ class ItemGeometry {
           continue;
         }
         const hash = `${x},${y},${z}`;
-        if (hashes.includes(hash))
-          continue;
+        if (hashes.includes(hash)) continue;
         hashes.push(hash);
         const vertex = new THREE__namespace.Vector3(x, y, z);
         vertex.applyMatrix4(transform);
@@ -19803,24 +19442,22 @@ class ItemGeometry {
     }
     return this._vertices;
   }
+  _triangles = null;
   /**
    * Gets the triangles of the item.
    */
   async getTriangles() {
-    if (this._triangles)
-      return this._triangles;
+    if (this._triangles) return this._triangles;
     const allIndices = await this.getIndices();
     const allPositions = await this.getPositions();
     const allTransforms = await this.getTransform();
-    if (!allIndices || !allPositions || !allTransforms)
-      return this._triangles;
+    if (!allIndices || !allPositions || !allTransforms) return this._triangles;
     this._triangles = [];
     for (let i = 0; i < allIndices.length; i++) {
       const indices = allIndices[i];
       const positions = allPositions[i];
       const transform = allTransforms[i];
-      if (!indices || !positions || !transform)
-        continue;
+      if (!indices || !positions || !transform) continue;
       const currentTriangles = [];
       this._triangles.push(currentTriangles);
       for (let i2 = 0; i2 < indices.length; i2 += 3) {
@@ -19850,24 +19487,24 @@ class ItemGeometry {
     }
     return this._triangles;
   }
+  _position = null;
   /**
    * Gets the position of the item.
    */
   async getPosition() {
     if (!this._position) {
-      if (this.localId === null)
-        return null;
+      if (this.localId === null) return null;
       this._position = await this.model.getPositions([this.localId]);
     }
     return this._position;
   }
+  _box = null;
   /**
    * Gets the box of the item.
    */
   async getBox() {
     if (!this._box) {
-      if (this.localId === null)
-        return null;
+      if (this.localId === null) return null;
       this._box = await this.model.getBoxes([this.localId]);
     }
     return this._box;
@@ -19889,27 +19526,20 @@ class ItemGeometry {
 }
 class Item {
   /**
+   * The FragmentsModel instance that this item belongs to.
+   */
+  model;
+  /**
    * Creates a new Item instance.
    * @param model - The FragmentsModel instance that this item belongs to.
    * @param id - The identifier for the item, which can be either a number or a string.
    */
   constructor(model, id) {
-    /**
-     * The FragmentsModel instance that this item belongs to.
-     */
-    __publicField(this, "model");
-    __publicField(this, "_localId", null);
-    __publicField(this, "_attributes", null);
-    __publicField(this, "_relations", null);
-    __publicField(this, "_guid", null);
-    __publicField(this, "_category", null);
-    __publicField(this, "_geometry", null);
     this.model = model;
-    if (typeof id === "number")
-      this._localId = id;
-    if (typeof id === "string")
-      this._guid = id;
+    if (typeof id === "number") this._localId = id;
+    if (typeof id === "string") this._guid = id;
   }
+  _localId = null;
   /**
    * Gets the local ID of the item.
    */
@@ -19928,15 +19558,14 @@ class Item {
     }
     return this._localId;
   }
+  _attributes = null;
   /**
    * Gets all the attributes of the item.
    */
   async getAttributes() {
-    if (this._attributes)
-      return this._attributes;
+    if (this._attributes) return this._attributes;
     const localId = await this.getLocalId();
-    if (localId === null)
-      return null;
+    if (localId === null) return null;
     const data = await this.model.threads.invoke(
       this.model.modelId,
       "getItemAttributes",
@@ -19946,8 +19575,7 @@ class Item {
     this._attributes = new ItemAttributes(localId);
     if (!data) {
       const changes2 = this.model.attrsChanges.get(localId);
-      if (!(changes2 && changes2.type === "added"))
-        return null;
+      if (!(changes2 && changes2.type === "added")) return null;
       this._attributes.localId = localId;
       for (const [key, value] of Object.entries(changes2.data))
         this._attributes.set(key, value);
@@ -19960,9 +19588,9 @@ class Item {
     }
     for (const name in data) {
       const { value, type } = data[name];
-      if ((changes == null ? void 0 : changes.type) === "modified" && changes.deleted.includes(name))
+      if (changes?.type === "modified" && changes.deleted.includes(name))
         continue;
-      if ((changes == null ? void 0 : changes.type) === "modified" && name in changes.modified) {
+      if (changes?.type === "modified" && name in changes.modified) {
         this._attributes.set(name, changes.modified[name]);
       } else {
         this._attributes.set(name, { value, type });
@@ -19971,30 +19599,27 @@ class Item {
     this._attributes.tracker = this.model.attrsChanges;
     return this._attributes;
   }
+  _relations = null;
   /**
    * Gets all the relations of the item to other items.
    */
   async getRelations() {
-    if (this._relations)
-      return this._relations;
+    if (this._relations) return this._relations;
     const localId = await this.getLocalId();
-    if (localId === null)
-      return null;
+    if (localId === null) return null;
     const data = await this.model.threads.invoke(
       this.model.modelId,
       "getItemRelations",
       // @ts-ignore
       [localId]
     );
-    if (!data)
-      return null;
+    if (!data) return null;
     this._relations = new ItemRelations(localId);
     this._relations.onItemsRequested = async (ids) => {
       const items = [];
       for (const id of ids) {
         const item = this.model.getItem(id);
-        if (!item)
-          continue;
+        if (!item) continue;
         items.push(item);
       }
       return items;
@@ -20005,9 +19630,9 @@ class Item {
         this._relations.set(key, value);
     }
     for (const [relation, localIds] of Object.entries(data)) {
-      if ((changes == null ? void 0 : changes.type) === "modified" && changes.deleted.has(relation))
+      if (changes?.type === "modified" && changes.deleted.has(relation))
         continue;
-      if ((changes == null ? void 0 : changes.type) === "modified" && relation in changes.modified) {
+      if (changes?.type === "modified" && relation in changes.modified) {
         const data2 = /* @__PURE__ */ new Set([...changes.modified[relation], ...localIds]);
         this._relations.set(relation, new Set(data2));
       } else {
@@ -20017,14 +19642,14 @@ class Item {
     this._relations.tracker = this.model.relsChanges;
     return this._relations;
   }
+  _guid = null;
   /**
    * Gets the GUID of the item.
    */
   async getGuid() {
     if (!this._guid) {
       const localId = await this.getLocalId();
-      if (localId === null)
-        return null;
+      if (localId === null) return null;
       [this._guid] = await this.model.threads.invoke(
         this.model.modelId,
         "getGuidsByLocalIds",
@@ -20034,14 +19659,14 @@ class Item {
     }
     return this._guid;
   }
+  _category = null;
   /**
    * Gets the category of the item.
    */
   async getCategory() {
     if (!this._category) {
       const localId = await this.getLocalId();
-      if (localId === null)
-        return null;
+      if (localId === null) return null;
       this._category = await this.model.threads.invoke(
         this.model.modelId,
         "getItemCategory",
@@ -20051,12 +19676,11 @@ class Item {
     }
     return this._category;
   }
+  _geometry = null;
   async getGeometry() {
-    if (this._geometry)
-      return this._geometry;
+    if (this._geometry) return this._geometry;
     const localId = await this.getLocalId();
-    if (localId === null)
-      return null;
+    if (localId === null) return null;
     const geometry = new ItemGeometry(this.model, localId);
     return geometry;
   }
@@ -20064,12 +19688,10 @@ class Item {
    * Gets all the data of the item.
    */
   async getData(collector = []) {
-    var _a2;
     const localId = await this.getLocalId();
-    if (localId == null)
-      return {};
+    if (localId == null) return {};
     collector.push(localId);
-    const attrs = (_a2 = await this.getAttributes()) == null ? void 0 : _a2.object;
+    const attrs = (await this.getAttributes())?.object;
     const rels = await this.getRelations();
     const relAttrs = {};
     if (rels) {
@@ -20077,19 +19699,16 @@ class Item {
         const keyItems = [];
         relAttrs[key] = keyItems;
         const relItems = await rels.getItems(key);
-        if (!relItems)
-          continue;
+        if (!relItems) continue;
         for (const item of relItems) {
           const itemId = await item.getLocalId();
-          if (!itemId)
-            continue;
+          if (!itemId) continue;
           if (collector.find((id) => id === itemId) !== void 0) {
             continue;
           }
           collector.push(itemId);
           const itemAttrs = await item.getData(collector);
-          if (!itemAttrs)
-            continue;
+          if (!itemAttrs) continue;
           keyItems.push(itemAttrs);
         }
       }
@@ -20115,32 +19734,29 @@ class ItemsManager {
   }
 }
 class RaycastManager {
-  constructor() {
-    __publicField(this, "_caster", new THREE__namespace.Raycaster());
-    __publicField(this, "_ray", new THREE__namespace.Ray());
-    __publicField(this, "_frustum", new THREE__namespace.Frustum());
-    __publicField(this, "_inverseTransform", new THREE__namespace.Matrix4());
-    __publicField(this, "_t", new THREE__namespace.Plane());
-    __publicField(this, "_r", new THREE__namespace.Plane());
-    __publicField(this, "_b", new THREE__namespace.Plane());
-    __publicField(this, "_l", new THREE__namespace.Plane());
-    __publicField(this, "_n", new THREE__namespace.Plane());
-    __publicField(this, "_f", new THREE__namespace.Plane());
-    __publicField(this, "_tl", new THREE__namespace.Vector3());
-    __publicField(this, "_tr", new THREE__namespace.Vector3());
-    __publicField(this, "_bl", new THREE__namespace.Vector3());
-    __publicField(this, "_br", new THREE__namespace.Vector3());
-    __publicField(this, "_tln", new THREE__namespace.Vector3());
-    __publicField(this, "_brn", new THREE__namespace.Vector3());
-    __publicField(this, "_tlp", new THREE__namespace.Vector2());
-    __publicField(this, "_brp", new THREE__namespace.Vector2());
-    __publicField(this, "distance", 10);
-  }
+  _caster = new THREE__namespace.Raycaster();
+  _ray = new THREE__namespace.Ray();
+  _frustum = new THREE__namespace.Frustum();
+  _inverseTransform = new THREE__namespace.Matrix4();
+  _t = new THREE__namespace.Plane();
+  _r = new THREE__namespace.Plane();
+  _b = new THREE__namespace.Plane();
+  _l = new THREE__namespace.Plane();
+  _n = new THREE__namespace.Plane();
+  _f = new THREE__namespace.Plane();
+  _tl = new THREE__namespace.Vector3();
+  _tr = new THREE__namespace.Vector3();
+  _bl = new THREE__namespace.Vector3();
+  _br = new THREE__namespace.Vector3();
+  _tln = new THREE__namespace.Vector3();
+  _brn = new THREE__namespace.Vector3();
+  _tlp = new THREE__namespace.Vector2();
+  _brp = new THREE__namespace.Vector2();
+  distance = 10;
   async raycast(model, data) {
     const { frustum, ray } = this.getRayAndFrustum(data);
     const request = this.getRequest(model, frustum, ray);
-    if (!request)
-      return null;
+    if (!request) return null;
     const response = await model.threads.fetch(request);
     if (response.results && response.results.length) {
       const [firstHit] = response.results;
@@ -20156,8 +19772,7 @@ class RaycastManager {
   async raycastAll(model, data) {
     const { frustum, ray } = this.getRayAndFrustum(data);
     const request = this.getRequest(model, frustum, ray);
-    if (!request)
-      return null;
+    if (!request) return null;
     request.returnAll = true;
     const allResults = [];
     const response = await model.threads.fetch(request);
@@ -20179,8 +19794,7 @@ class RaycastManager {
   async rectangleRaycast(model, meshes, data) {
     const frustum = this.getFrustum(data);
     const request = this.getRequest(model, frustum);
-    if (!request)
-      return null;
+    if (!request) return null;
     request.fullyIncluded = data.fullyIncluded;
     const response = await model.threads.fetch(request);
     if (response.localIds && response.localIds.length) {
@@ -20191,8 +19805,7 @@ class RaycastManager {
   async raycastWithSnapping(model, data) {
     const { frustum, ray } = this.getRayAndFrustum(data);
     const request = this.getRequest(model, frustum, ray);
-    if (!request)
-      return null;
+    if (!request) return null;
     request.snappingClass = data.snappingClasses;
     const response = await model.threads.fetch(request);
     if (response.results) {
@@ -20463,30 +20076,28 @@ class SetupManager {
   }
 }
 class ViewManager {
-  constructor() {
-    __publicField(this, "getClippingPlanesEvent", () => []);
-    __publicField(this, "currentCamera", null);
-    __publicField(this, "_noCameraWarned", false);
-    __publicField(this, "_tempMatrix", new THREE__namespace.Matrix4());
-    __publicField(this, "_tempVec", new THREE__namespace.Vector3());
-    __publicField(this, "_tempFrustum", new THREE__namespace.Frustum());
-    /**
-     * Numeric fingerprint of the last view dispatched to the worker.
-     * `refreshView` skips the REFRESH_VIEW RPC when the view is
-     * identical to the previous one (unless forced), so an idle camera
-     * produces zero worker traffic instead of a full re-cull of every
-     * sample on every update tick. See {@link refreshView}.
-     */
-    __publicField(this, "_lastViewSignature", null);
-    __publicField(this, "_updateCameraPositionEvent", () => {
-    });
-    __publicField(this, "_updateCameraFrustumEvent", () => {
-    });
-    __publicField(this, "_updateFOVEvent", () => {
-    });
-    __publicField(this, "_updateOrthoSizeEvent", () => {
-    });
-  }
+  getClippingPlanesEvent = () => [];
+  currentCamera = null;
+  _noCameraWarned = false;
+  _tempMatrix = new THREE__namespace.Matrix4();
+  _tempVec = new THREE__namespace.Vector3();
+  _tempFrustum = new THREE__namespace.Frustum();
+  /**
+   * Numeric fingerprint of the last view dispatched to the worker.
+   * `refreshView` skips the REFRESH_VIEW RPC when the view is
+   * identical to the previous one (unless forced), so an idle camera
+   * produces zero worker traffic instead of a full re-cull of every
+   * sample on every update tick. See {@link refreshView}.
+   */
+  _lastViewSignature = null;
+  _updateCameraPositionEvent = () => {
+  };
+  _updateCameraFrustumEvent = () => {
+  };
+  _updateFOVEvent = () => {
+  };
+  _updateOrthoSizeEvent = () => {
+  };
   /**
    * Sends the current view to the worker so it can re-evaluate culling
    * and LOD. Returns `true` if a REFRESH_VIEW was actually dispatched.
@@ -20679,93 +20290,70 @@ class VisibilityManager {
     ]);
   }
 }
-const _FragmentsModel = class _FragmentsModel {
+class FragmentsModel {
   /**
-   * The constructor of the fragments model. Don't use this directly. Use the {@link FragmentsModels.load} instead.
+   * A map of attribute changes that have occurred in the model.
+   * The key is the local ID of the item, and the value is the change.
    */
-  constructor(modelId, meshManager, threads, editor, threadGroup) {
-    /**
-     * A map of attribute changes that have occurred in the model.
-     * The key is the local ID of the item, and the value is the change.
-     */
-    __publicField(this, "attrsChanges", /* @__PURE__ */ new Map());
-    /**
-     * A map of relation changes that have occurred in the model.
-     * The key is the local ID of the item, and the value is the change.
-     */
-    __publicField(this, "relsChanges", /* @__PURE__ */ new Map());
-    /**
-     * The connection to the threads that handle the model data.
-     */
-    __publicField(this, "threads");
-    /**
-     * A map of tiles that have been loaded for the model.
-     * The key is the tile ID, and the value is the tile.
-     */
-    __publicField(this, "tiles", new DataMap());
-    /**
-     * Event triggered after a view update cycle finishes processing.
-     * Listeners receive this FragmentsModel instance, allowing queries
-     * like {@link getItemsByVisibility} to retrieve seen/unseen elements.
-     */
-    __publicField(this, "onViewUpdated", new Event());
-    /**
-     * A set of item IDs that are currently visible (i.e. have at least
-     * one tile rendered on screen). Updated automatically as tiles are
-     * created and deleted by the mesh manager.
-     */
-    __publicField(this, "visibleItems", /* @__PURE__ */ new Set());
-    /**
-     * The object that represents the model in the Three.js scene.
-     */
-    __publicField(this, "object", new THREE__namespace.Object3D());
-    /**
-     * The graphics quality of the model. It ranges from 0 (lowest) to 1 (highest).
-     */
-    __publicField(this, "graphicsQuality", 0);
-    __publicField(this, "deltaModelId", null);
-    __publicField(this, "_boxManager", new BoxManager());
-    __publicField(this, "_itemsManager", new ItemsManager());
-    __publicField(this, "_coordinatesManager", new CoordinatesManager());
-    __publicField(this, "_setupManager", new SetupManager());
-    __publicField(this, "_viewManager", new ViewManager());
-    __publicField(this, "_raycastManager", new RaycastManager());
-    __publicField(this, "_visibilityManager", new VisibilityManager());
-    __publicField(this, "_highlightManager", new HighlightManager());
-    __publicField(this, "_sectionManager", new SectionManager());
-    __publicField(this, "_dataManager", new DataManager());
-    __publicField(this, "_sequenceManager", new SequenceManager());
-    __publicField(this, "_bbox", new THREE__namespace.Box3());
-    __publicField(this, "_alignmentsManager");
-    __publicField(this, "_gridsManager");
-    __publicField(this, "_meshManager");
-    __publicField(this, "_editManager", new EditManager());
-    __publicField(this, "_editor");
-    __publicField(this, "_isProcessing", false);
-    __publicField(this, "_isLoaded", false);
-    __publicField(this, "_frozen", false);
-    __publicField(this, "_isSetup", false);
-    __publicField(this, "_parentModelId", null);
-    /**
-     * The thread group this model was loaded into, or `undefined` if it was
-     * loaded into the default pool. Set once at load time, never changes.
-     */
-    __publicField(this, "threadGroup");
-    this.object.name = modelId;
-    this.object.up.set(0, 0, 1);
-    this._meshManager = meshManager;
-    this.threads = threads;
-    this._editor = editor;
-    this.threadGroup = threadGroup;
-    this._alignmentsManager = new AlignmentsManager(this);
-    this._gridsManager = new GridsManager(this);
-    this.tiles.onItemSet.add(({ value: mesh }) => this.object.add(mesh));
-    this.tiles.onBeforeDelete.add(({ value: mesh }) => {
-      this.object.remove(mesh);
-      mesh.geometry.dispose();
-      MiscHelper.forEach(mesh.material, (mat) => mat.dispose());
-    });
-  }
+  attrsChanges = /* @__PURE__ */ new Map();
+  /**
+   * A map of relation changes that have occurred in the model.
+   * The key is the local ID of the item, and the value is the change.
+   */
+  relsChanges = /* @__PURE__ */ new Map();
+  /**
+   * The connection to the threads that handle the model data.
+   */
+  threads;
+  /**
+   * A map of tiles that have been loaded for the model.
+   * The key is the tile ID, and the value is the tile.
+   */
+  tiles = new DataMap();
+  /**
+   * Event triggered after a view update cycle finishes processing.
+   * Listeners receive this FragmentsModel instance, allowing queries
+   * like {@link getItemsByVisibility} to retrieve seen/unseen elements.
+   */
+  onViewUpdated = new Event();
+  /**
+   * A set of item IDs that are currently visible (i.e. have at least
+   * one tile rendered on screen). Updated automatically as tiles are
+   * created and deleted by the mesh manager.
+   */
+  visibleItems = /* @__PURE__ */ new Set();
+  /**
+   * The object that represents the model in the Three.js scene.
+   */
+  object = new THREE__namespace.Object3D();
+  /**
+   * The graphics quality of the model. It ranges from 0 (lowest) to 1 (highest).
+   */
+  graphicsQuality = 0;
+  deltaModelId = null;
+  _boxManager = new BoxManager();
+  _itemsManager = new ItemsManager();
+  _coordinatesManager = new CoordinatesManager();
+  _setupManager = new SetupManager();
+  _viewManager = new ViewManager();
+  _raycastManager = new RaycastManager();
+  _visibilityManager = new VisibilityManager();
+  _highlightManager = new HighlightManager();
+  _sectionManager = new SectionManager();
+  _dataManager = new DataManager();
+  _sequenceManager = new SequenceManager();
+  _bbox = new THREE__namespace.Box3();
+  _alignmentsManager;
+  _gridsManager;
+  _meshManager;
+  _editManager = new EditManager();
+  _editor;
+  _isProcessing = false;
+  _isLoaded = false;
+  _frozen = false;
+  _isSetup = false;
+  static _deltaModelId = "isDeltaModel";
+  _parentModelId = null;
   /**
    * The ID of the model.
    */
@@ -20795,11 +20383,9 @@ const _FragmentsModel = class _FragmentsModel {
    * Whether the model should stop updating..
    */
   set frozen(value) {
-    if (value === this._frozen)
-      return;
+    if (value === this._frozen) return;
     this._frozen = value;
-    if (value)
-      return;
+    if (value) return;
     this._refreshView();
   }
   /**
@@ -20820,10 +20406,34 @@ const _FragmentsModel = class _FragmentsModel {
     return this._viewManager.currentCamera;
   }
   get isDeltaModel() {
-    return this.object.userData[_FragmentsModel._deltaModelId];
+    return this.object.userData[FragmentsModel._deltaModelId];
   }
   get parentModelId() {
     return this._parentModelId;
+  }
+  /**
+   * The thread group this model was loaded into, or `undefined` if it was
+   * loaded into the default pool. Set once at load time, never changes.
+   */
+  threadGroup;
+  /**
+   * The constructor of the fragments model. Don't use this directly. Use the {@link FragmentsModels.load} instead.
+   */
+  constructor(modelId, meshManager, threads, editor, threadGroup) {
+    this.object.name = modelId;
+    this.object.up.set(0, 0, 1);
+    this._meshManager = meshManager;
+    this.threads = threads;
+    this._editor = editor;
+    this.threadGroup = threadGroup;
+    this._alignmentsManager = new AlignmentsManager(this);
+    this._gridsManager = new GridsManager(this);
+    this.tiles.onItemSet.add(({ value: mesh }) => this.object.add(mesh));
+    this.tiles.onBeforeDelete.add(({ value: mesh }) => {
+      this.object.remove(mesh);
+      mesh.geometry.dispose();
+      MiscHelper.forEach(mesh.material, (mat) => mat.dispose());
+    });
   }
   /**
    * Dispose the model. Use this when you're done with the model.
@@ -21595,18 +21205,16 @@ const _FragmentsModel = class _FragmentsModel {
     this.onViewUpdated.trigger(this);
   }
   _setDeltaModel(modelId) {
-    this.object.userData[_FragmentsModel._deltaModelId] = true;
+    this.object.userData[FragmentsModel._deltaModelId] = true;
     this._parentModelId = modelId;
   }
   /**
    * Internal method to refresh the view of the model. You shouldn't call this directly. Instead, use {@link FragmentsModels.update}.
    */
   async _refreshView(force = false) {
-    if (this.frozen)
-      return;
+    if (this.frozen) return;
     const mainPromise = this._viewManager.refreshView(this, this._meshManager, force).then((sent) => {
-      if (sent)
-        this._isProcessing = true;
+      if (sent) this._isProcessing = true;
     });
     const deltaPromise = this._editor._update(this.modelId);
     await Promise.all([mainPromise, deltaPromise]);
@@ -21615,8 +21223,7 @@ const _FragmentsModel = class _FragmentsModel {
    * Internal method to set up the model. Don't use this directly.
    */
   async _setup(data, raw, config) {
-    if (this._isSetup)
-      return;
+    if (this._isSetup) return;
     await this._setupManager.setup(this, this._bbox, data, raw, config);
     this._isLoaded = true;
     this._isProcessing = true;
@@ -21661,25 +21268,12 @@ const _FragmentsModel = class _FragmentsModel {
   _selectRequest(index) {
     return this._editManager.selectRequest(this, index);
   }
-};
-__publicField(_FragmentsModel, "_deltaModelId", "isDeltaModel");
-let FragmentsModel = _FragmentsModel;
+}
 class RequestsManager {
-  constructor() {
-    /**
-     * List of requests.
-     */
-    __publicField(this, "list", []);
-    /**
-     * Callback function to be invoked when a request with
-     * `TileRequestClass.FINISH` is added. Receives the FINISH's `seq`
-     * stamp (the highest RPC seq the worker had processed when emitting
-     * this FINISH); used by the fence-based `forceUpdateFinish` to
-     * resolve waiters whose target seq has now settled.
-     */
-    __publicField(this, "onFinish", () => {
-    });
-  }
+  /**
+   * List of requests.
+   */
+  list = [];
   /**
    * Checks if there are any pending requests.
    *
@@ -21688,6 +21282,15 @@ class RequestsManager {
   get arePending() {
     return this.list.length > 0;
   }
+  /**
+   * Callback function to be invoked when a request with
+   * `TileRequestClass.FINISH` is added. Receives the FINISH's `seq`
+   * stamp (the highest RPC seq the worker had processed when emitting
+   * this FINISH); used by the fence-based `forceUpdateFinish` to
+   * resolve waiters whose target seq has now settled.
+   */
+  onFinish = () => {
+  };
   async handleRequest(meshes, request) {
     if (request.class === MultiThreadingRequestClass.RECOMPUTE_MESHES) {
       this.add(request.list);
@@ -21709,8 +21312,7 @@ class RequestsManager {
    */
   add(requests) {
     for (const request of requests) {
-      if (!this.insert(request))
-        this.list.push(request);
+      if (!this.insert(request)) this.list.push(request);
       if (request.tileRequestClass === TileRequestClass.FINISH) {
         this.onFinish(request.seq);
       }
@@ -21735,8 +21337,7 @@ class RequestsManager {
    */
   insert(request) {
     const { modelId, tileId, tileRequestClass, tileData } = request;
-    if (tileId === void 0)
-      return false;
+    if (tileId === void 0) return false;
     if (tileRequestClass === TileRequestClass.DELETE) {
       const list = this.list.filter(
         (request2) => !((request2.tileRequestClass === TileRequestClass.CREATE || request2.tileRequestClass === TileRequestClass.DELETE) && request2.modelId === modelId && request2.tileId === tileId)
@@ -21763,10 +21364,10 @@ class RequestsManager {
   }
 }
 class LODManager {
+  _materials;
+  // TODO: Deduplicate with other white values
+  white = 4294967295;
   constructor(materials) {
-    __publicField(this, "_materials");
-    // TODO: Deduplicate with other white values
-    __publicField(this, "white", 4294967295);
     this._materials = materials;
   }
   createMesh(geometry, request) {
@@ -21801,8 +21402,7 @@ class LODManager {
       modelId,
       material: index
     } = request;
-    if (!highlightData || !highlightIds)
-      return;
+    if (!highlightData || !highlightIds) return;
     const material = mesh.material[0];
     const colors = [];
     let opacity = material.highlightOpacity;
@@ -21855,7 +21455,7 @@ class LODManager {
     return callback;
   }
 }
-const _MultithreadingHelper = class _MultithreadingHelper {
+class MultithreadingHelper {
   static newThread(url, classic) {
     return classic ? new Worker(url) : new Worker(url, { type: "module" });
   }
@@ -21877,50 +21477,63 @@ const _MultithreadingHelper = class _MultithreadingHelper {
     return planeSet;
   }
   static data(data) {
-    var _a2, _b2;
-    const isTransform = (data == null ? void 0 : data.elements) !== void 0;
+    const isTransform = data?.elements !== void 0;
     if (isTransform) {
-      return _MultithreadingHelper.transform(data);
+      return MultithreadingHelper.transform(data);
     }
-    const isBeam = (data == null ? void 0 : data.origin) !== void 0 && (data == null ? void 0 : data.direction) !== void 0;
+    const isBeam = data?.origin !== void 0 && data?.direction !== void 0;
     if (isBeam) {
-      return _MultithreadingHelper.beam(data);
+      return MultithreadingHelper.beam(data);
     }
-    const isFrustum = (data == null ? void 0 : data.planes) !== void 0;
+    const isFrustum = data?.planes !== void 0;
     if (isFrustum) {
-      return _MultithreadingHelper.frustum(data);
+      return MultithreadingHelper.frustum(data);
     }
-    const hasNormal = (data == null ? void 0 : data.normal) !== void 0;
-    const hasConstant = (data == null ? void 0 : data.constant) !== void 0;
+    const hasNormal = data?.normal !== void 0;
+    const hasConstant = data?.constant !== void 0;
     const isPlane = hasNormal && hasConstant;
     if (isPlane) {
-      return _MultithreadingHelper.plane(data);
+      return MultithreadingHelper.plane(data);
     }
-    const hasNormalSet = ((_a2 = data[0]) == null ? void 0 : _a2.normal) !== void 0;
-    const hasConstantSet = ((_b2 = data[0]) == null ? void 0 : _b2.constant) !== void 0;
+    const hasNormalSet = data[0]?.normal !== void 0;
+    const hasConstantSet = data[0]?.constant !== void 0;
     const isPlaneSet = hasNormalSet && hasConstantSet;
     if (isPlaneSet) {
-      return _MultithreadingHelper.planeSet(data);
+      return MultithreadingHelper.planeSet(data);
     }
-    const hasX = (data == null ? void 0 : data.x) !== void 0;
-    const hasY = (data == null ? void 0 : data.y) !== void 0;
-    const hasZ = (data == null ? void 0 : data.z) !== void 0;
+    const hasX = data?.x !== void 0;
+    const hasY = data?.y !== void 0;
+    const hasZ = data?.z !== void 0;
     const isArray = hasX && hasY && hasZ;
     if (isArray) {
-      return _MultithreadingHelper.array(data);
+      return MultithreadingHelper.array(data);
     }
     return data;
   }
+  /**
+   * Monotonic sequence counter for RPC fence tracking. Every EXECUTE
+   * request gets a fresh seq; the worker tags emitted FINISH tile
+   * requests with the highest seq it has processed since the previous
+   * FINISH, and main uses that to resolve `forceUpdateFinish` waiters
+   * without polling.
+   *
+   * Module-level rather than per-FragmentsModels because the seq
+   * space only needs to be unique across messages a single main
+   * thread is sending; multiple FragmentsModels in the same window
+   * would race on a shared counter regardless. This is simpler and
+   * avoids threading through the helper's API.
+   */
+  static _seq = 0;
   /**
    * Last seq dispatched. Snapshot at `forceUpdateFinish` call time
    * to know which seq must settle before we can resolve.
    */
   static get lastDispatchedSeq() {
-    return _MultithreadingHelper._seq;
+    return MultithreadingHelper._seq;
   }
   static nextSeq() {
-    _MultithreadingHelper._seq += 1;
-    return _MultithreadingHelper._seq;
+    MultithreadingHelper._seq += 1;
+    return MultithreadingHelper._seq;
   }
   static getExecuteRequest(modelId, method, args) {
     const parameters = Array.from(args);
@@ -21936,8 +21549,8 @@ const _MultithreadingHelper = class _MultithreadingHelper {
   static getRequestContent(input) {
     const content = [];
     for (const request of input.list) {
-      _MultithreadingHelper.setupCreateRequest(request, content);
-      _MultithreadingHelper.setupUpdateRequest(request, content);
+      MultithreadingHelper.setupCreateRequest(request, content);
+      MultithreadingHelper.setupUpdateRequest(request, content);
     }
     return content;
   }
@@ -21948,7 +21561,7 @@ const _MultithreadingHelper = class _MultithreadingHelper {
   }
   static cleanRequests(list) {
     const tasks = [];
-    const helper = _MultithreadingHelper;
+    const helper = MultithreadingHelper;
     for (const request of list) {
       const isFinish = helper.isFinishRequest(request);
       if (!isFinish) {
@@ -21976,7 +21589,7 @@ const _MultithreadingHelper = class _MultithreadingHelper {
     clearInterval(updater);
   }
   static areCoresAvailable(currentThreads) {
-    const capacity = _MultithreadingHelper.getCpuCapacity();
+    const capacity = MultithreadingHelper.getCpuCapacity();
     const availableThreads = Math.max(capacity, 2);
     return currentThreads < availableThreads;
   }
@@ -21995,7 +21608,7 @@ const _MultithreadingHelper = class _MultithreadingHelper {
       }
       return Math.floor(override);
     }
-    const capacity = _MultithreadingHelper.getCpuCapacity();
+    const capacity = MultithreadingHelper.getCpuCapacity();
     return Math.max(capacity, 2);
   }
   static isFinishRequest(request) {
@@ -22007,9 +21620,8 @@ const _MultithreadingHelper = class _MultithreadingHelper {
     }
   }
   static getCpuCapacity() {
-    var _a2;
     const freeCores = 3;
-    if ((_a2 = globalThis.navigator) == null ? void 0 : _a2.hardwareConcurrency) {
+    if (globalThis.navigator?.hardwareConcurrency) {
       return navigator.hardwareConcurrency - freeCores;
     }
     return 0;
@@ -22020,8 +21632,7 @@ const _MultithreadingHelper = class _MultithreadingHelper {
     this.addRequestTileData(request, content, "highlightData", extras);
   }
   static addRequestContent(id, request, content) {
-    if (!request[id])
-      return;
+    if (!request[id]) return;
     const buffer = request[id].buffer;
     content.push(buffer);
   }
@@ -22048,50 +21659,33 @@ const _MultithreadingHelper = class _MultithreadingHelper {
   static getCreateRequestIds() {
     return ["positions", "indices", "normals", "itemIds"];
   }
-};
-/**
- * Monotonic sequence counter for RPC fence tracking. Every EXECUTE
- * request gets a fresh seq; the worker tags emitted FINISH tile
- * requests with the highest seq it has processed since the previous
- * FINISH, and main uses that to resolve `forceUpdateFinish` waiters
- * without polling.
- *
- * Module-level rather than per-FragmentsModels because the seq
- * space only needs to be unique across messages a single main
- * thread is sending; multiple FragmentsModels in the same window
- * would race on a shared counter regardless. This is simpler and
- * avoids threading through the helper's API.
- */
-__publicField(_MultithreadingHelper, "_seq", 0);
-let MultithreadingHelper = _MultithreadingHelper;
-const _MeshManager = class _MeshManager {
+}
+class MeshManager {
+  /**
+   * A map of FragmentsModel instances by their model ID.
+   */
+  list = new DataMap();
+  materials = new MaterialManager();
+  lod = new LODManager(this.materials);
+  requests = new RequestsManager();
+  updateThreshold = 4;
+  /**
+   * Highest seq stamped on any FINISH the worker has emitted to us
+   * so far. Updated by `requests.onFinish`. Monotonically increases.
+   * `forceUpdateFinish` waiters resolve once this catches up to their
+   * snapshotted target seq.
+   */
+  _lastSettledSeq = 0;
+  /**
+   * Pending fence resolvers from `forceUpdateFinish` callers.
+   * Each entry's `targetSeq` is what the caller snapshotted at call
+   * time; once `_lastSettledSeq >= targetSeq`, we drain the queue
+   * to completion and resolve. Sorted insertion order isn't needed
+   * — we walk the whole list on each FINISH.
+   */
+  _fenceWaiters = [];
+  _onUpdate;
   constructor(onUpdate) {
-    /**
-     * A map of FragmentsModel instances by their model ID.
-     */
-    __publicField(this, "list", new DataMap());
-    __publicField(this, "materials", new MaterialManager());
-    __publicField(this, "lod", new LODManager(this.materials));
-    __publicField(this, "requests", new RequestsManager());
-    __publicField(this, "updateThreshold", 4);
-    /**
-     * Highest seq stamped on any FINISH the worker has emitted to us
-     * so far. Updated by `requests.onFinish`. Monotonically increases.
-     * `forceUpdateFinish` waiters resolve once this catches up to their
-     * snapshotted target seq.
-     */
-    __publicField(this, "_lastSettledSeq", 0);
-    /**
-     * Pending fence resolvers from `forceUpdateFinish` callers.
-     * Each entry's `targetSeq` is what the caller snapshotted at call
-     * time; once `_lastSettledSeq >= targetSeq`, we drain the queue
-     * to completion and resolve. Sorted insertion order isn't needed
-     * — we walk the whole list on each FINISH.
-     */
-    __publicField(this, "_fenceWaiters", []);
-    __publicField(this, "_onUpdate");
-    // TODO: Deduplicate with other white values (LODManager, MaterialManager)
-    __publicField(this, "white", 4294967295);
     this._onUpdate = onUpdate;
     this.requests.onFinish = (seq) => this.handleFinish(seq);
     this.list.onItemDeleted.add(() => this.finishEmptyScene());
@@ -22125,13 +21719,11 @@ const _MeshManager = class _MeshManager {
     });
   }
   finishEmptyScene() {
-    if (this.list.size !== 0)
-      return;
+    if (this.list.size !== 0) return;
     this.drainAll();
     const waiters = this._fenceWaiters;
     this._fenceWaiters = [];
-    for (const waiter of waiters)
-      waiter.resolve();
+    for (const waiter of waiters) waiter.resolve();
   }
   /**
    * Called by `RequestsManager` whenever a FINISH tile request lands
@@ -22148,21 +21740,16 @@ const _MeshManager = class _MeshManager {
       this._lastSettledSeq = seq;
     }
     this.drainAll();
-    if (this._fenceWaiters.length === 0)
-      return;
+    if (this._fenceWaiters.length === 0) return;
     const ready = [];
     const remaining = [];
     for (const w of this._fenceWaiters) {
-      if (w.targetSeq <= this._lastSettledSeq)
-        ready.push(w.resolve);
-      else
-        remaining.push(w);
+      if (w.targetSeq <= this._lastSettledSeq) ready.push(w.resolve);
+      else remaining.push(w);
     }
-    if (ready.length === 0)
-      return;
+    if (ready.length === 0) return;
     this._fenceWaiters = remaining;
-    for (const r of ready)
-      r();
+    for (const r of ready) r();
   }
   /**
    * Process every queued tile request without the per-frame
@@ -22174,8 +21761,7 @@ const _MeshManager = class _MeshManager {
   drainAll() {
     while (this.requests.arePending) {
       const request = this.requests.list.shift();
-      if (!request)
-        continue;
+      if (!request) continue;
       this.processTileRequest(request);
       this._onUpdate();
     }
@@ -22184,12 +21770,10 @@ const _MeshManager = class _MeshManager {
     const start = performance.now();
     while (this.requests.arePending) {
       const request = this.requests.list.shift();
-      if (!request)
-        continue;
+      if (!request) continue;
       this.processTileRequest(request);
       this._onUpdate();
-      if (performance.now() - start > this.updateThreshold)
-        return;
+      if (performance.now() - start > this.updateThreshold) return;
     }
   }
   setTileData(mesh, request) {
@@ -22201,11 +21785,9 @@ const _MeshManager = class _MeshManager {
   processTileRequest(request) {
     const { tileRequestClass, tileId, modelId } = request;
     const model = this.list.get(modelId);
-    if (!model)
-      return;
+    if (!model) return;
     if (tileRequestClass === TileRequestClass.CREATE) {
-      if (request.objectClass === void 0)
-        return;
+      if (request.objectClass === void 0) return;
       const tile = this.create(request);
       this.setTileData(tile, request);
       const uniqueIds = this.extractUniqueItemIds(request.itemIds);
@@ -22214,22 +21796,20 @@ const _MeshManager = class _MeshManager {
       model.tiles.set(tile.userData.tileId, tile);
     } else if (tileRequestClass === TileRequestClass.DELETE) {
       const tile = model.tiles.get(tileId);
-      if (tile == null ? void 0 : tile.userData.itemIds) {
+      if (tile?.userData.itemIds) {
         this.trackVisibleItems(model, tile.userData.itemIds, false);
       }
       model.tiles.delete(tileId);
     } else if (tileRequestClass === TileRequestClass.UPDATE) {
       const tileObject = model.tiles.get(tileId);
-      if (tileObject)
-        this.updateStatus(tileObject, request);
+      if (tileObject) this.updateStatus(tileObject, request);
     } else if (tileRequestClass === TileRequestClass.FINISH) {
       model._finishProcessing();
     }
   }
   extractUniqueItemIds(itemIds) {
     const unique = /* @__PURE__ */ new Set();
-    if (!itemIds)
-      return unique;
+    if (!itemIds) return unique;
     for (let i = 0; i < itemIds.length; i++) {
       unique.add(itemIds[i]);
     }
@@ -22285,8 +21865,7 @@ const _MeshManager = class _MeshManager {
       return;
     }
     this.lod.processMesh(mesh, request);
-    if (!highlightData)
-      return;
+    if (!highlightData) return;
     if (currentLod === CurrentLod.WIRES) {
       this.lod.applyHighlight(mesh, request);
       return;
@@ -22294,6 +21873,13 @@ const _MeshManager = class _MeshManager {
     const materials = this.materials.createHighlights(mesh, request);
     mesh.material = materials;
   }
+  /**
+   * Minimum number of visibility runs before a shell tile switches from
+   * one geometry.group per run (one draw call each) to a compacted index
+   * buffer drawn with a single call. Small run counts stay on the group
+   * path: the copy is not worth it and highlights need groups anyway.
+   */
+  static compactMinRuns = 3;
   /**
    * Rewrite the tile's GPU index with just the visible runs so the whole
    * tile is one draw call. Returns false (after restoring the full index
@@ -22304,10 +21890,9 @@ const _MeshManager = class _MeshManager {
   applyCompactIndex(geometry, visibilityData, hasHighlight) {
     const full = geometry.userData.fullIndex;
     const index = geometry.index;
-    if (!full || !index)
-      return false;
+    if (!full || !index) return false;
     const runs = visibilityData ? visibilityData.position.length : 0;
-    if (hasHighlight || runs < _MeshManager.compactMinRuns) {
+    if (hasHighlight || runs < MeshManager.compactMinRuns) {
       this.restoreFullIndex(geometry, full);
       return false;
     }
@@ -22318,8 +21903,7 @@ const _MeshManager = class _MeshManager {
       const start = position[i];
       const isWhite = size[i] === this.white;
       const end = isWhite ? full.length : Math.min(full.length, start + size[i]);
-      if (end <= start)
-        continue;
+      if (end <= start) continue;
       target.set(full.subarray(start, end), count);
       count += end - start;
     }
@@ -22330,14 +21914,15 @@ const _MeshManager = class _MeshManager {
     return true;
   }
   restoreFullIndex(geometry, full) {
-    if (!geometry.userData.compactIndex)
-      return;
+    if (!geometry.userData.compactIndex) return;
     const index = geometry.index;
     index.array.set(full);
     index.needsUpdate = true;
     geometry.setDrawRange(0, Infinity);
     geometry.userData.compactIndex = false;
   }
+  // TODO: Deduplicate with other white values (LODManager, MaterialManager)
+  white = 4294967295;
   cleanAttributeMemory(geometry, name) {
     const attr = geometry.attributes[name];
     attr.onUpload(this.deleteAttribute(geometry));
@@ -22392,15 +21977,7 @@ const _MeshManager = class _MeshManager {
     mesh.applyMatrix4(matrix);
     mesh.matrix.copy(matrix);
   }
-};
-/**
- * Minimum number of visibility runs before a shell tile switches from
- * one geometry.group per run (one draw call each) to a compacted index
- * buffer drawn with a single call. Small run counts stay on the group
- * path: the copy is not worth it and highlights need groups anyway.
- */
-__publicField(_MeshManager, "compactMinRuns", 3);
-let MeshManager = _MeshManager;
+}
 const CENTER = 0;
 const AVERAGE = 1;
 const SAH = 2;
@@ -22411,7 +21988,7 @@ const BYTES_PER_NODE = 6 * 4 + 4 + 4;
 const UINT32_PER_NODE = BYTES_PER_NODE / 4;
 const IS_LEAFNODE_FLAG = 65535;
 const FLOAT32_EPSILON = Math.pow(2, -24);
-const SKIP_GENERATION = Symbol("SKIP_GENERATION");
+const SKIP_GENERATION = /* @__PURE__ */ Symbol("SKIP_GENERATION");
 const DEFAULT_OPTIONS = {
   strategy: CENTER,
   maxDepth: 40,
@@ -22521,38 +22098,26 @@ function getBounds(primitiveBounds, offset, count, target, centroidTarget) {
     const hx = primitiveBounds[i + 1];
     const lx = cx - hx;
     const rx = cx + hx;
-    if (lx < minx)
-      minx = lx;
-    if (rx > maxx)
-      maxx = rx;
-    if (cx < cminx)
-      cminx = cx;
-    if (cx > cmaxx)
-      cmaxx = cx;
+    if (lx < minx) minx = lx;
+    if (rx > maxx) maxx = rx;
+    if (cx < cminx) cminx = cx;
+    if (cx > cmaxx) cmaxx = cx;
     const cy = primitiveBounds[i + 2];
     const hy = primitiveBounds[i + 3];
     const ly = cy - hy;
     const ry = cy + hy;
-    if (ly < miny)
-      miny = ly;
-    if (ry > maxy)
-      maxy = ry;
-    if (cy < cminy)
-      cminy = cy;
-    if (cy > cmaxy)
-      cmaxy = cy;
+    if (ly < miny) miny = ly;
+    if (ry > maxy) maxy = ry;
+    if (cy < cminy) cminy = cy;
+    if (cy > cmaxy) cmaxy = cy;
     const cz = primitiveBounds[i + 4];
     const hz = primitiveBounds[i + 5];
     const lz = cz - hz;
     const rz = cz + hz;
-    if (lz < minz)
-      minz = lz;
-    if (rz > maxz)
-      maxz = rz;
-    if (cz < cminz)
-      cminz = cz;
-    if (cz > cmaxz)
-      cmaxz = cz;
+    if (lz < minz) minz = lz;
+    if (rz > maxz) maxz = rz;
+    if (cz < cminz) cminz = cz;
+    if (cz > cmaxz) cmaxz = cz;
   }
   target[0] = minx;
   target[1] = miny;
@@ -22683,8 +22248,7 @@ function getOptimalSplit(nodeBoundingData, centroidBoundingData, primitiveBounds
           const triCenter = primitiveBounds[c + 2 * a];
           const relativeCenter = triCenter - axisLeft;
           let binIndex = ~~(relativeCenter / binWidth);
-          if (binIndex >= BIN_COUNT)
-            binIndex = BIN_COUNT - 1;
+          if (binIndex >= BIN_COUNT) binIndex = BIN_COUNT - 1;
           const bin = sahBins[binIndex];
           bin.count++;
           expandByPrimitiveBounds(c, primitiveBounds, bin.bounds);
@@ -23051,8 +22615,7 @@ function shapecastTraverse(nodeIndex32, geometry, intersectsBoundsFunc, intersec
         depth + 1
       );
     }
-    if (c1StopTraversal)
-      return true;
+    if (c1StopTraversal) return true;
     box2 = _box2;
     arrayToBox(BOUNDING_DATA_INDEX(c2), float32Array2, box2);
     const isC2Leaf = IS_LEAF(c2 * 2, uint16Array2);
@@ -23074,8 +22637,7 @@ function shapecastTraverse(nodeIndex32, geometry, intersectsBoundsFunc, intersec
         depth + 1
       );
     }
-    if (c2StopTraversal)
-      return true;
+    if (c2StopTraversal) return true;
     return false;
   }
 }
@@ -23383,18 +22945,12 @@ class BVH {
     for (let i = offset, end = offset + count; i < end; i++) {
       this.writePrimitiveBounds(i, _tempBuffer, 0);
       const [lx, ly, lz, rx, ry, rz] = _tempBuffer;
-      if (lx < minX)
-        minX = lx;
-      if (rx > maxX)
-        maxX = rx;
-      if (ly < minY)
-        minY = ly;
-      if (ry > maxY)
-        maxY = ry;
-      if (lz < minZ)
-        minZ = lz;
-      if (rz > maxZ)
-        maxZ = rz;
+      if (lx < minX) minX = lx;
+      if (rx > maxX) maxX = rx;
+      if (ly < minY) minY = ly;
+      if (ry > maxY) maxY = ry;
+      if (lz < minZ) minZ = lz;
+      if (rz > maxZ) maxZ = rz;
     }
     targetBuffer[baseIndex + 0] = minX;
     targetBuffer[baseIndex + 1] = minY;
@@ -23766,7 +23322,7 @@ class SeparatingAxisBounds {
     return this.min > other.max || other.min > this.max;
   }
 }
-SeparatingAxisBounds.prototype.setFromBox = /* @__PURE__ */ function() {
+SeparatingAxisBounds.prototype.setFromBox = /* @__PURE__ */ (function() {
   const p = /* @__PURE__ */ new THREE.Vector3();
   return function setFromBox(axis, box) {
     const boxMin = box.min;
@@ -23788,8 +23344,8 @@ SeparatingAxisBounds.prototype.setFromBox = /* @__PURE__ */ function() {
     this.min = min;
     this.max = max;
   };
-}();
-const closestPointLineToLine = /* @__PURE__ */ function() {
+})();
+const closestPointLineToLine = /* @__PURE__ */ (function() {
   const dir1 = /* @__PURE__ */ new THREE.Vector3();
   const dir2 = /* @__PURE__ */ new THREE.Vector3();
   const v02 = /* @__PURE__ */ new THREE.Vector3();
@@ -23817,8 +23373,8 @@ const closestPointLineToLine = /* @__PURE__ */ function() {
     result.x = d;
     result.y = d2;
   };
-}();
-const closestPointsSegmentToSegment = /* @__PURE__ */ function() {
+})();
+const closestPointsSegmentToSegment = /* @__PURE__ */ (function() {
   const paramResult = /* @__PURE__ */ new THREE.Vector2();
   const temp12 = /* @__PURE__ */ new THREE.Vector3();
   const temp22 = /* @__PURE__ */ new THREE.Vector3();
@@ -23874,8 +23430,8 @@ const closestPointsSegmentToSegment = /* @__PURE__ */ function() {
       }
     }
   };
-}();
-const sphereIntersectTriangle = /* @__PURE__ */ function() {
+})();
+const sphereIntersectTriangle = /* @__PURE__ */ (function() {
   const closestPointTemp = /* @__PURE__ */ new THREE.Vector3();
   const projectedPointTemp = /* @__PURE__ */ new THREE.Vector3();
   const planeTemp = /* @__PURE__ */ new THREE.Plane();
@@ -23886,29 +23442,25 @@ const sphereIntersectTriangle = /* @__PURE__ */ function() {
     lineTemp.start = a;
     lineTemp.end = b;
     const closestPoint1 = lineTemp.closestPointToPoint(center, true, closestPointTemp);
-    if (closestPoint1.distanceTo(center) <= radius)
-      return true;
+    if (closestPoint1.distanceTo(center) <= radius) return true;
     lineTemp.start = a;
     lineTemp.end = c;
     const closestPoint2 = lineTemp.closestPointToPoint(center, true, closestPointTemp);
-    if (closestPoint2.distanceTo(center) <= radius)
-      return true;
+    if (closestPoint2.distanceTo(center) <= radius) return true;
     lineTemp.start = b;
     lineTemp.end = c;
     const closestPoint3 = lineTemp.closestPointToPoint(center, true, closestPointTemp);
-    if (closestPoint3.distanceTo(center) <= radius)
-      return true;
+    if (closestPoint3.distanceTo(center) <= radius) return true;
     const plane = triangle3.getPlane(planeTemp);
     const dp = Math.abs(plane.distanceToPoint(center));
     if (dp <= radius) {
       const pp = plane.projectPoint(center, projectedPointTemp);
       const cp = triangle3.containsPoint(pp);
-      if (cp)
-        return true;
+      if (cp) return true;
     }
     return false;
   };
-}();
+})();
 const componentKeys = ["x", "y", "z"];
 const ZERO_EPSILON = 1e-15;
 const ZERO_EPSILON_SQR = ZERO_EPSILON * ZERO_EPSILON;
@@ -23984,7 +23536,7 @@ class ExtendedTriangle extends THREE.Triangle {
     this.needsUpdate = false;
   }
 }
-ExtendedTriangle.prototype.closestPointToSegment = /* @__PURE__ */ function() {
+ExtendedTriangle.prototype.closestPointToSegment = /* @__PURE__ */ (function() {
   const point1 = /* @__PURE__ */ new THREE.Vector3();
   const point2 = /* @__PURE__ */ new THREE.Vector3();
   const edge = /* @__PURE__ */ new THREE.Line3();
@@ -24001,34 +23553,28 @@ ExtendedTriangle.prototype.closestPointToSegment = /* @__PURE__ */ function() {
       distSq = point1.distanceToSquared(point2);
       if (distSq < closestDistanceSq) {
         closestDistanceSq = distSq;
-        if (target1)
-          target1.copy(point1);
-        if (target2)
-          target2.copy(point2);
+        if (target1) target1.copy(point1);
+        if (target2) target2.copy(point2);
       }
     }
     this.closestPointToPoint(start, point1);
     distSq = start.distanceToSquared(point1);
     if (distSq < closestDistanceSq) {
       closestDistanceSq = distSq;
-      if (target1)
-        target1.copy(point1);
-      if (target2)
-        target2.copy(start);
+      if (target1) target1.copy(point1);
+      if (target2) target2.copy(start);
     }
     this.closestPointToPoint(end, point1);
     distSq = end.distanceToSquared(point1);
     if (distSq < closestDistanceSq) {
       closestDistanceSq = distSq;
-      if (target1)
-        target1.copy(point1);
-      if (target2)
-        target2.copy(end);
+      if (target1) target1.copy(point1);
+      if (target2) target2.copy(end);
     }
     return Math.sqrt(closestDistanceSq);
   };
-}();
-ExtendedTriangle.prototype.intersectsTriangle = /* @__PURE__ */ function() {
+})();
+ExtendedTriangle.prototype.intersectsTriangle = /* @__PURE__ */ (function() {
   const saTri2 = /* @__PURE__ */ new ExtendedTriangle();
   const cachedSatBounds = /* @__PURE__ */ new SeparatingAxisBounds();
   const cachedSatBounds2 = /* @__PURE__ */ new SeparatingAxisBounds();
@@ -24054,13 +23600,11 @@ ExtendedTriangle.prototype.intersectsTriangle = /* @__PURE__ */ function() {
       const sb = satBounds1[i];
       const sa = satAxes1[i];
       cachedSatBounds.setFromPoints(sa, other.points);
-      if (sb.isSeparated(cachedSatBounds))
-        return false;
+      if (sb.isSeparated(cachedSatBounds)) return false;
       tempDir.copy(planeNormal).cross(sa);
       cachedSatBounds.setFromPoints(tempDir, self.points);
       cachedSatBounds2.setFromPoints(tempDir, other.points);
-      if (cachedSatBounds.isSeparated(cachedSatBounds2))
-        return false;
+      if (cachedSatBounds.isSeparated(cachedSatBounds2)) return false;
     }
     const satBounds2 = other.satBounds;
     const satAxes2 = other.satAxes;
@@ -24068,13 +23612,11 @@ ExtendedTriangle.prototype.intersectsTriangle = /* @__PURE__ */ function() {
       const sb = satBounds2[i];
       const sa = satAxes2[i];
       cachedSatBounds.setFromPoints(sa, self.points);
-      if (sb.isSeparated(cachedSatBounds))
-        return false;
+      if (sb.isSeparated(cachedSatBounds)) return false;
       tempDir.crossVectors(planeNormal, sa);
       cachedSatBounds.setFromPoints(tempDir, self.points);
       cachedSatBounds2.setFromPoints(tempDir, other.points);
-      if (cachedSatBounds.isSeparated(cachedSatBounds2))
-        return false;
+      if (cachedSatBounds.isSeparated(cachedSatBounds2)) return false;
     }
     if (target) {
       if (!suppressLog) {
@@ -24331,15 +23873,15 @@ ExtendedTriangle.prototype.intersectsTriangle = /* @__PURE__ */ function() {
     }
     return true;
   };
-}();
-ExtendedTriangle.prototype.distanceToPoint = /* @__PURE__ */ function() {
+})();
+ExtendedTriangle.prototype.distanceToPoint = /* @__PURE__ */ (function() {
   const target = /* @__PURE__ */ new THREE.Vector3();
   return function distanceToPoint(point) {
     this.closestPointToPoint(point, target);
     return point.distanceTo(target);
   };
-}();
-ExtendedTriangle.prototype.distanceToTriangle = /* @__PURE__ */ function() {
+})();
+ExtendedTriangle.prototype.distanceToTriangle = /* @__PURE__ */ (function() {
   const point = /* @__PURE__ */ new THREE.Vector3();
   const point2 = /* @__PURE__ */ new THREE.Vector3();
   const cornerFields = ["a", "b", "c"];
@@ -24349,10 +23891,8 @@ ExtendedTriangle.prototype.distanceToTriangle = /* @__PURE__ */ function() {
     const lineTarget = target1 || target2 ? line1 : null;
     if (this.intersectsTriangle(other, lineTarget)) {
       if (target1 || target2) {
-        if (target1)
-          lineTarget.getCenter(target1);
-        if (target2)
-          lineTarget.getCenter(target2);
+        if (target1) lineTarget.getCenter(target1);
+        if (target2) lineTarget.getCenter(target2);
       }
       return 0;
     }
@@ -24365,20 +23905,16 @@ ExtendedTriangle.prototype.distanceToTriangle = /* @__PURE__ */ function() {
       dist = otherVec.distanceToSquared(point);
       if (dist < closestDistanceSq) {
         closestDistanceSq = dist;
-        if (target1)
-          target1.copy(point);
-        if (target2)
-          target2.copy(otherVec);
+        if (target1) target1.copy(point);
+        if (target2) target2.copy(otherVec);
       }
       const thisVec = this[field];
       other.closestPointToPoint(thisVec, point);
       dist = thisVec.distanceToSquared(point);
       if (dist < closestDistanceSq) {
         closestDistanceSq = dist;
-        if (target1)
-          target1.copy(thisVec);
-        if (target2)
-          target2.copy(point);
+        if (target1) target1.copy(thisVec);
+        if (target2) target2.copy(point);
       }
     }
     for (let i = 0; i < 3; i++) {
@@ -24393,16 +23929,14 @@ ExtendedTriangle.prototype.distanceToTriangle = /* @__PURE__ */ function() {
         const dist = point.distanceToSquared(point2);
         if (dist < closestDistanceSq) {
           closestDistanceSq = dist;
-          if (target1)
-            target1.copy(point);
-          if (target2)
-            target2.copy(point2);
+          if (target1) target1.copy(point);
+          if (target2) target2.copy(point2);
         }
       }
     }
     return Math.sqrt(closestDistanceSq);
   };
-}();
+})();
 class OrientedBox {
   constructor(min, max, matrix) {
     this.isOrientedBox = true;
@@ -24415,12 +23949,9 @@ class OrientedBox {
     this.satBounds = new Array(3).fill().map(() => new SeparatingAxisBounds());
     this.alignedSatBounds = new Array(3).fill().map(() => new SeparatingAxisBounds());
     this.needsUpdate = false;
-    if (min)
-      this.min.copy(min);
-    if (max)
-      this.max.copy(max);
-    if (matrix)
-      this.matrix.copy(matrix);
+    if (min) this.min.copy(min);
+    if (max) this.max.copy(max);
+    if (matrix) this.matrix.copy(matrix);
   }
   set(min, max, matrix) {
     this.min.copy(min);
@@ -24435,7 +23966,7 @@ class OrientedBox {
     this.needsUpdate = true;
   }
 }
-OrientedBox.prototype.update = /* @__PURE__ */ function() {
+OrientedBox.prototype.update = /* @__PURE__ */ (function() {
   return function update() {
     const matrix = this.matrix;
     const min = this.min;
@@ -24471,8 +24002,8 @@ OrientedBox.prototype.update = /* @__PURE__ */ function() {
     this.invMatrix.copy(this.matrix).invert();
     this.needsUpdate = false;
   };
-}();
-OrientedBox.prototype.intersectsBox = /* @__PURE__ */ function() {
+})();
+OrientedBox.prototype.intersectsBox = /* @__PURE__ */ (function() {
   const aabbBounds = /* @__PURE__ */ new SeparatingAxisBounds();
   return function intersectsBox(box) {
     if (this.needsUpdate) {
@@ -24485,27 +24016,23 @@ OrientedBox.prototype.intersectsBox = /* @__PURE__ */ function() {
     const alignedSatBounds = this.alignedSatBounds;
     aabbBounds.min = min.x;
     aabbBounds.max = max.x;
-    if (alignedSatBounds[0].isSeparated(aabbBounds))
-      return false;
+    if (alignedSatBounds[0].isSeparated(aabbBounds)) return false;
     aabbBounds.min = min.y;
     aabbBounds.max = max.y;
-    if (alignedSatBounds[1].isSeparated(aabbBounds))
-      return false;
+    if (alignedSatBounds[1].isSeparated(aabbBounds)) return false;
     aabbBounds.min = min.z;
     aabbBounds.max = max.z;
-    if (alignedSatBounds[2].isSeparated(aabbBounds))
-      return false;
+    if (alignedSatBounds[2].isSeparated(aabbBounds)) return false;
     for (let i = 0; i < 3; i++) {
       const axis = satAxes[i];
       const sb = satBounds[i];
       aabbBounds.setFromBox(axis, box);
-      if (sb.isSeparated(aabbBounds))
-        return false;
+      if (sb.isSeparated(aabbBounds)) return false;
     }
     return true;
   };
-}();
-OrientedBox.prototype.intersectsTriangle = /* @__PURE__ */ function() {
+})();
+OrientedBox.prototype.intersectsTriangle = /* @__PURE__ */ (function() {
   const saTri = /* @__PURE__ */ new ExtendedTriangle();
   const pointsArr = /* @__PURE__ */ new Array(3);
   const cachedSatBounds = /* @__PURE__ */ new SeparatingAxisBounds();
@@ -24531,8 +24058,7 @@ OrientedBox.prototype.intersectsTriangle = /* @__PURE__ */ function() {
       const sb = satBounds[i];
       const sa = satAxes[i];
       cachedSatBounds.setFromPoints(sa, pointsArr);
-      if (sb.isSeparated(cachedSatBounds))
-        return false;
+      if (sb.isSeparated(cachedSatBounds)) return false;
     }
     const triSatBounds = triangle3.satBounds;
     const triSatAxes = triangle3.satAxes;
@@ -24541,8 +24067,7 @@ OrientedBox.prototype.intersectsTriangle = /* @__PURE__ */ function() {
       const sb = triSatBounds[i];
       const sa = triSatAxes[i];
       cachedSatBounds.setFromPoints(sa, points);
-      if (sb.isSeparated(cachedSatBounds))
-        return false;
+      if (sb.isSeparated(cachedSatBounds)) return false;
     }
     for (let i = 0; i < 3; i++) {
       const sa1 = satAxes[i];
@@ -24551,14 +24076,13 @@ OrientedBox.prototype.intersectsTriangle = /* @__PURE__ */ function() {
         cachedAxis.crossVectors(sa1, sa2);
         cachedSatBounds.setFromPoints(cachedAxis, pointsArr);
         cachedSatBounds2.setFromPoints(cachedAxis, points);
-        if (cachedSatBounds.isSeparated(cachedSatBounds2))
-          return false;
+        if (cachedSatBounds.isSeparated(cachedSatBounds2)) return false;
       }
     }
     return true;
   };
-}();
-OrientedBox.prototype.closestPointToPoint = /* @__PURE__ */ function() {
+})();
+OrientedBox.prototype.closestPointToPoint = /* @__PURE__ */ (function() {
   return function closestPointToPoint2(point, target1) {
     if (this.needsUpdate) {
       this.update();
@@ -24566,15 +24090,15 @@ OrientedBox.prototype.closestPointToPoint = /* @__PURE__ */ function() {
     target1.copy(point).applyMatrix4(this.invMatrix).clamp(this.min, this.max).applyMatrix4(this.matrix);
     return target1;
   };
-}();
-OrientedBox.prototype.distanceToPoint = function() {
+})();
+OrientedBox.prototype.distanceToPoint = (function() {
   const target = new THREE.Vector3();
   return function distanceToPoint(point) {
     this.closestPointToPoint(point, target);
     return point.distanceTo(target);
   };
-}();
-OrientedBox.prototype.distanceToBox = /* @__PURE__ */ function() {
+})();
+OrientedBox.prototype.distanceToBox = /* @__PURE__ */ (function() {
   const xyzFields = ["x", "y", "z"];
   const segments1 = /* @__PURE__ */ new Array(12).fill().map(() => new THREE.Line3());
   const segments2 = /* @__PURE__ */ new Array(12).fill().map(() => new THREE.Line3());
@@ -24589,10 +24113,8 @@ OrientedBox.prototype.distanceToBox = /* @__PURE__ */ function() {
         box.getCenter(point2);
         this.closestPointToPoint(point2, point1);
         box.closestPointToPoint(point1, point2);
-        if (target1)
-          target1.copy(point1);
-        if (target2)
-          target2.copy(point2);
+        if (target1) target1.copy(point1);
+        if (target2) target2.copy(point2);
       }
       return 0;
     }
@@ -24607,12 +24129,9 @@ OrientedBox.prototype.distanceToBox = /* @__PURE__ */ function() {
       const dist = p.distanceToSquared(point2);
       if (dist < closestDistanceSq) {
         closestDistanceSq = dist;
-        if (target1)
-          target1.copy(p);
-        if (target2)
-          target2.copy(point2);
-        if (dist < threshold2)
-          return Math.sqrt(dist);
+        if (target1) target1.copy(p);
+        if (target2) target2.copy(point2);
+        if (dist < threshold2) return Math.sqrt(dist);
       }
     }
     let count = 0;
@@ -24653,12 +24172,9 @@ OrientedBox.prototype.distanceToBox = /* @__PURE__ */ function() {
           const dist = point2.distanceToSquared(point1);
           if (dist < closestDistanceSq) {
             closestDistanceSq = dist;
-            if (target1)
-              target1.copy(point1);
-            if (target2)
-              target2.copy(point2);
-            if (dist < threshold2)
-              return Math.sqrt(dist);
+            if (target1) target1.copy(point1);
+            if (target2) target2.copy(point2);
+            if (dist < threshold2) return Math.sqrt(dist);
           }
         }
       }
@@ -24671,18 +24187,15 @@ OrientedBox.prototype.distanceToBox = /* @__PURE__ */ function() {
         const dist = point1.distanceToSquared(point2);
         if (dist < closestDistanceSq) {
           closestDistanceSq = dist;
-          if (target1)
-            target1.copy(point1);
-          if (target2)
-            target2.copy(point2);
-          if (dist < threshold2)
-            return Math.sqrt(dist);
+          if (target1) target1.copy(point1);
+          if (target2) target2.copy(point2);
+          if (dist < threshold2) return Math.sqrt(dist);
         }
       }
     }
     return Math.sqrt(closestDistanceSq);
   };
-}();
+})();
 class ExtendedTrianglePoolBase extends PrimitivePool {
   constructor() {
     super(() => new ExtendedTriangle());
@@ -24721,13 +24234,10 @@ function closestPointToPoint(bvh, point, target = {}, minThreshold = 0, maxThres
       }
     }
   );
-  if (closestDistanceSq === Infinity)
-    return null;
+  if (closestDistanceSq === Infinity) return null;
   const closestDistance = Math.sqrt(closestDistanceSq);
-  if (!target.point)
-    target.point = temp1$2.clone();
-  else
-    target.point.copy(temp1$2);
+  if (!target.point) target.point = temp1$2.clone();
+  else target.point.copy(temp1$2);
   target.distance = closestDistance, target.faceIndex = closestDistanceTriIndex;
   return target;
 }
@@ -24750,11 +24260,9 @@ function checkIntersection(ray, pA, pB, pC, point, side, near, far) {
   } else {
     intersect = ray.intersectTriangle(pA, pB, pC, side !== THREE.DoubleSide, point);
   }
-  if (intersect === null)
-    return null;
+  if (intersect === null) return null;
   const distance = ray.origin.distanceTo(point);
-  if (distance < near || distance > far)
-    return null;
+  if (distance < near || distance > far) return null;
   return {
     distance,
     point: point.clone()
@@ -24959,18 +24467,12 @@ function refit(bvh, nodeIndices = null) {
         const x = posAttr.getX(index);
         const y = posAttr.getY(index);
         const z = posAttr.getZ(index);
-        if (x < minx)
-          minx = x;
-        if (x > maxx)
-          maxx = x;
-        if (y < miny)
-          miny = y;
-        if (y > maxy)
-          maxy = y;
-        if (z < minz)
-          minz = z;
-        if (z > maxz)
-          maxz = z;
+        if (x < minx) minx = x;
+        if (x > maxx) maxx = x;
+        if (y < miny) miny = y;
+        if (y > maxy) maxy = y;
+        if (z < minz) minz = z;
+        if (z > maxz) maxz = z;
       }
       if (float32Array2[nodeIndex32 + 0] !== minx || float32Array2[nodeIndex32 + 1] !== miny || float32Array2[nodeIndex32 + 2] !== minz || float32Array2[nodeIndex32 + 3] !== maxx || float32Array2[nodeIndex32 + 4] !== maxy || float32Array2[nodeIndex32 + 5] !== maxz) {
         float32Array2[nodeIndex32 + 0] = minx;
@@ -25054,12 +24556,9 @@ function intersectRay(nodeIndex32, array, ray, near, far) {
     tymin = (maxy - oy) * invdiry;
     tymax = (miny - oy) * invdiry;
   }
-  if (tmin > tymax || tymin > tmax)
-    return false;
-  if (tymin > tmin || isNaN(tmin))
-    tmin = tymin;
-  if (tymax < tmax || isNaN(tmax))
-    tmax = tymax;
+  if (tmin > tymax || tymin > tmax) return false;
+  if (tymin > tmin || isNaN(tmin)) tmin = tymin;
+  if (tymax < tmax || isNaN(tmax)) tmax = tymax;
   if (invdirz >= 0) {
     tzmin = (minz - oz) * invdirz;
     tzmax = (maxz - oz) * invdirz;
@@ -25067,12 +24566,9 @@ function intersectRay(nodeIndex32, array, ray, near, far) {
     tzmin = (maxz - oz) * invdirz;
     tzmax = (minz - oz) * invdirz;
   }
-  if (tmin > tzmax || tzmin > tmax)
-    return false;
-  if (tzmin > tmin || tmin !== tmin)
-    tmin = tzmin;
-  if (tzmax < tmax || tmax !== tmax)
-    tmax = tzmax;
+  if (tmin > tzmax || tzmin > tmax) return false;
+  if (tzmin > tmin || tmin !== tmin) tmin = tzmin;
+  if (tzmax < tmax || tmax !== tmax) tmax = tzmax;
   return tmin <= far && tmax >= near;
 }
 function intersectTris_indirect(bvh, materialOrSide, ray, offset, count, intersections, near, far) {
@@ -25260,12 +24756,10 @@ function _intersectsGeometry$1(nodeIndex32, bvh, otherGeometry, geometryToBvh, c
     const right = RIGHT_NODE(nodeIndex32, uint32Array2);
     arrayToBox(BOUNDING_DATA_INDEX(left), float32Array2, boundingBox$1);
     const leftIntersection = cachedObb.intersectsBox(boundingBox$1) && _intersectsGeometry$1(left, bvh, otherGeometry, geometryToBvh, cachedObb);
-    if (leftIntersection)
-      return true;
+    if (leftIntersection) return true;
     arrayToBox(BOUNDING_DATA_INDEX(right), float32Array2, boundingBox$1);
     const rightIntersection = cachedObb.intersectsBox(boundingBox$1) && _intersectsGeometry$1(right, bvh, otherGeometry, geometryToBvh, cachedObb);
-    if (rightIntersection)
-      return true;
+    if (rightIntersection) return true;
     return false;
   }
 }
@@ -25397,10 +24891,8 @@ function closestPointToGeometry(bvh, otherGeometry, geometryToBvh, target1 = {},
   }
   target1.distance = closestDistance, target1.faceIndex = closestDistanceTriIndex;
   if (target2) {
-    if (!target2.point)
-      target2.point = tempTargetDest2.clone();
-    else
-      target2.point.copy(tempTargetDest2);
+    if (!target2.point) target2.point = tempTargetDest2.clone();
+    else target2.point.copy(tempTargetDest2);
     target2.point.applyMatrix4(tempMatrix$1);
     tempTargetDest1.applyMatrix4(tempMatrix$1);
     target2.distance = tempTargetDest1.sub(target2.point).length();
@@ -25445,18 +24937,12 @@ function refit_indirect(bvh, nodeIndices = null) {
           const x = posAttr.getX(index);
           const y = posAttr.getY(index);
           const z = posAttr.getZ(index);
-          if (x < minx)
-            minx = x;
-          if (x > maxx)
-            maxx = x;
-          if (y < miny)
-            miny = y;
-          if (y > maxy)
-            maxy = y;
-          if (z < minz)
-            minz = z;
-          if (z > maxz)
-            maxz = z;
+          if (x < minx) minx = x;
+          if (x > maxx) maxx = x;
+          if (y < miny) miny = y;
+          if (y > maxy) maxy = y;
+          if (z < minz) minz = z;
+          if (z > maxz) maxz = z;
         }
       }
       if (float32Array2[nodeIndex32 + 0] !== minx || float32Array2[nodeIndex32 + 1] !== miny || float32Array2[nodeIndex32 + 2] !== minz || float32Array2[nodeIndex32 + 3] !== maxx || float32Array2[nodeIndex32 + 4] !== maxy || float32Array2[nodeIndex32 + 5] !== maxz) {
@@ -25665,12 +25151,10 @@ function _intersectsGeometry(nodeIndex32, bvh, otherGeometry, geometryToBvh, cac
     const right = RIGHT_NODE(nodeIndex32, uint32Array2);
     arrayToBox(BOUNDING_DATA_INDEX(left), float32Array2, boundingBox);
     const leftIntersection = cachedObb.intersectsBox(boundingBox) && _intersectsGeometry(left, bvh, otherGeometry, geometryToBvh, cachedObb);
-    if (leftIntersection)
-      return true;
+    if (leftIntersection) return true;
     arrayToBox(BOUNDING_DATA_INDEX(right), float32Array2, boundingBox);
     const rightIntersection = cachedObb.intersectsBox(boundingBox) && _intersectsGeometry(right, bvh, otherGeometry, geometryToBvh, cachedObb);
-    if (rightIntersection)
-      return true;
+    if (rightIntersection) return true;
     return false;
   }
 }
@@ -25805,10 +25289,8 @@ function closestPointToGeometry_indirect(bvh, otherGeometry, geometryToBvh, targ
   }
   target1.distance = closestDistance, target1.faceIndex = closestDistanceTriIndex;
   if (target2) {
-    if (!target2.point)
-      target2.point = tempTargetDest2.clone();
-    else
-      target2.point.copy(tempTargetDest2);
+    if (!target2.point) target2.point = tempTargetDest2.clone();
+    else target2.point.copy(tempTargetDest2);
     target2.point.applyMatrix4(tempMatrix);
     tempTargetDest1.applyMatrix4(tempMatrix);
     target2.distance = tempTargetDest1.sub(target2.point).length();
@@ -25941,15 +25423,11 @@ class MeshBVH extends GeometryBVH {
       const b = posAttr[_getters[el]](bi);
       const c = posAttr[_getters[el]](ci);
       let min = a;
-      if (b < min)
-        min = b;
-      if (c < min)
-        min = c;
+      if (b < min) min = b;
+      if (c < min) min = c;
       let max = a;
-      if (b > max)
-        max = b;
-      if (c > max)
-        max = c;
+      if (b > max) max = b;
+      if (c > max) max = c;
       targetBuffer[baseIndex + el] = min;
       targetBuffer[baseIndex + el + 3] = max;
     }
@@ -26005,15 +25483,11 @@ class MeshBVH extends GeometryBVH {
           c = posArr[ci + el];
         }
         let min = a;
-        if (b < min)
-          min = b;
-        if (c < min)
-          min = c;
+        if (b < min) min = b;
+        if (c < min) min = c;
         let max = a;
-        if (b > max)
-          max = b;
-        if (c > max)
-          max = c;
+        if (b > max) max = b;
+        if (c > max) max = c;
         const halfExtents = (max - min) / 2;
         const el2 = el * 2;
         targetBuffer[boundsIndexOffset + el2 + 0] = min + halfExtents;
@@ -26291,12 +25765,12 @@ function disposeBoundsTree() {
   this.boundsTree = null;
 }
 class VirtualMeshManager {
+  meshes;
+  _templateController = new VirtualTemplateController();
+  _meshIds = /* @__PURE__ */ new Set();
+  _idGenerator = new CRC();
+  _modelCode;
   constructor(modelId, meshes) {
-    __publicField(this, "meshes");
-    __publicField(this, "_templateController", new VirtualTemplateController());
-    __publicField(this, "_meshIds", /* @__PURE__ */ new Set());
-    __publicField(this, "_idGenerator", new CRC());
-    __publicField(this, "_modelCode");
     this.meshes = meshes;
     this._modelCode = this.getModelCode(modelId);
   }
@@ -26336,7 +25810,20 @@ var LodClass = /* @__PURE__ */ ((LodClass2) => {
   LodClass2[LodClass2["CUSTOM"] = 2] = "CUSTOM";
   return LodClass2;
 })(LodClass || {});
-const _ShellUtils = class _ShellUtils {
+class ShellUtils {
+  static _faceThreshold = Math.cos(Math.PI / 8);
+  static _shell = new Shell();
+  static _normalBuffer = new Int16Array();
+  static _tempNormal = new THREE__namespace.Vector3();
+  static _tempPoint = new FloatVector();
+  static _shellProfile = new ShellProfile();
+  static _bigShellProfile = new BigShellProfile();
+  static _shellHole = new ShellHole();
+  static _bigShellHole = new BigShellHole();
+  static _pointsByProfile = /* @__PURE__ */ new Map();
+  static _v1 = new THREE__namespace.Vector3();
+  static _v2 = new THREE__namespace.Vector3();
+  static _v3 = new THREE__namespace.Vector3();
   static getProfile(shell, id, input) {
     const isBigShell = shell.type() === ShellType.BIG;
     if (isBigShell) {
@@ -26362,7 +25849,7 @@ const _ShellUtils = class _ShellUtils {
     };
     const length = isBigShell ? shell.bigHolesLength() : shell.holesLength();
     const holeId = isBigShell ? "bigHoles" : "holes";
-    const profile = _ShellUtils.getProfile(shell, profileId);
+    const profile = ShellUtils.getProfile(shell, profileId);
     indices.outer = Array.from(profile.indicesArray());
     for (let i = 0; i < length; i++) {
       const hole = shell[holeId](i);
@@ -26405,9 +25892,9 @@ const _ShellUtils = class _ShellUtils {
     result.set(x, y, z);
   }
   static getNormalsOfShellProfile(shell, result) {
-    const count = _ShellUtils.getProfilesLength(shell);
+    const count = ShellUtils.getProfilesLength(shell);
     for (let id = 0; id < count; id++) {
-      const profile = _ShellUtils.getProfile(shell, id);
+      const profile = ShellUtils.getProfile(shell, id);
       const normals = this.fetchNormalsOfProfile(shell, profile);
       result.push(normals);
     }
@@ -26437,7 +25924,7 @@ const _ShellUtils = class _ShellUtils {
   static getPointsShell(shell) {
     this._pointsByProfile.clear();
     this.fetchAllPointsByProfile(shell);
-    _ShellUtils.fetchAllPointsByHole(shell);
+    ShellUtils.fetchAllPointsByHole(shell);
     return this._pointsByProfile;
   }
   static addNormals(pointsByProfile, faceNormals, profileNormal) {
@@ -26445,8 +25932,7 @@ const _ShellUtils = class _ShellUtils {
       const normal = faceNormals[id];
       const dot = profileNormal.dot(normal);
       const isValid = dot > this._faceThreshold;
-      if (!isValid)
-        continue;
+      if (!isValid) continue;
       this._tempNormal.add(normal);
     }
   }
@@ -26467,15 +25953,15 @@ const _ShellUtils = class _ShellUtils {
     return this.computeProfileNormal(length, profile, shell);
   }
   static fetchAllPointsByHole(shell) {
-    const holesCount = _ShellUtils.getHolesLength(shell);
+    const holesCount = ShellUtils.getHolesLength(shell);
     const hole = this.getTempHole(shell);
     for (let holeId = 0; holeId < holesCount; holeId++) {
-      _ShellUtils.getHole(shell, holeId, hole);
+      ShellUtils.getHole(shell, holeId, hole);
       const id = hole.profileId();
       const indicesCount = hole.indicesLength();
       for (let i = 0; i < indicesCount; i++) {
         const index = hole.indices(i);
-        _ShellUtils.savePointByProfile(index, id);
+        ShellUtils.savePointByProfile(index, id);
       }
     }
   }
@@ -26513,7 +25999,7 @@ const _ShellUtils = class _ShellUtils {
       this._tempNormal = faceNormals[first].clone();
       return;
     }
-    _ShellUtils.addNormals(pointsByProfile, faceNormals, profileNormal);
+    ShellUtils.addNormals(pointsByProfile, faceNormals, profileNormal);
   }
   static fetchPointsForNormal(id, length, profile, shell) {
     const next = id + 1;
@@ -26538,11 +26024,11 @@ const _ShellUtils = class _ShellUtils {
     const count = this.getProfilesLength(shell);
     const profile = this.getTempProfile(shell);
     for (let id = 0; id < count; id++) {
-      _ShellUtils.getProfile(shell, id, profile);
+      ShellUtils.getProfile(shell, id, profile);
       const indicesCount = profile.indicesLength();
       for (let i = 0; i < indicesCount; i++) {
         const index = profile.indices(i);
-        _ShellUtils.savePointByProfile(index, id);
+        ShellUtils.savePointByProfile(index, id);
       }
     }
   }
@@ -26563,33 +26049,17 @@ const _ShellUtils = class _ShellUtils {
     }
     return this._shellHole;
   }
-};
-__publicField(_ShellUtils, "_faceThreshold", Math.cos(Math.PI / 8));
-__publicField(_ShellUtils, "_shell", new Shell());
-__publicField(_ShellUtils, "_normalBuffer", new Int16Array());
-__publicField(_ShellUtils, "_tempNormal", new THREE__namespace.Vector3());
-__publicField(_ShellUtils, "_tempPoint", new FloatVector());
-__publicField(_ShellUtils, "_shellProfile", new ShellProfile());
-__publicField(_ShellUtils, "_bigShellProfile", new BigShellProfile());
-__publicField(_ShellUtils, "_shellHole", new ShellHole());
-__publicField(_ShellUtils, "_bigShellHole", new BigShellHole());
-__publicField(_ShellUtils, "_pointsByProfile", /* @__PURE__ */ new Map());
-__publicField(_ShellUtils, "_v1", new THREE__namespace.Vector3());
-__publicField(_ShellUtils, "_v2", new THREE__namespace.Vector3());
-__publicField(_ShellUtils, "_v3", new THREE__namespace.Vector3());
-let ShellUtils = _ShellUtils;
+}
 class ShellTemplateConstructor {
-  constructor() {
-    __publicField(this, "_shellHole", new ShellHole());
-    __publicField(this, "_bigShellHole", new BigShellHole());
-    __publicField(this, "holePoints", 0);
-    __publicField(this, "profilePoints", 0);
-    __publicField(this, "triangleAmount", 0);
-    __publicField(this, "indexCount", 0);
-    __publicField(this, "meshes", []);
-    __publicField(this, "_shellProfile", new ShellProfile());
-    __publicField(this, "_bigShellProfile", new BigShellProfile());
-  }
+  _shellHole = new ShellHole();
+  _bigShellHole = new BigShellHole();
+  holePoints = 0;
+  profilePoints = 0;
+  triangleAmount = 0;
+  indexCount = 0;
+  meshes = [];
+  _shellProfile = new ShellProfile();
+  _bigShellProfile = new BigShellProfile();
   newMeshTemplate(shell) {
     const isEmpty = this.getIsEmpty(shell);
     if (isEmpty) {
@@ -26616,8 +26086,7 @@ class ShellTemplateConstructor {
     for (let i = 0; i < count; i++) {
       ShellUtils.getHole(shell, i, hole);
       const profileId = hole.profileId();
-      if (profileId !== id)
-        continue;
+      if (profileId !== id) continue;
       this.updateBuffers(shell, shellHolesExist);
       shellHolesExist = true;
     }
@@ -26721,8 +26190,7 @@ function earcut(data, holeIndices, dim, a, b, createGeometry) {
   const hasHoles = holeIndices && holeIndices.length;
   const outerLen = hasHoles ? holeIndices[0] * dim : data.length;
   let outerNode = linkedList(data, 0, outerLen, dim, true, a, b);
-  if (!outerNode || outerNode.next === outerNode.prev)
-    return;
+  if (!outerNode || outerNode.next === outerNode.prev) return;
   let minX;
   let minY;
   let invSize;
@@ -26736,14 +26204,10 @@ function earcut(data, holeIndices, dim, a, b, createGeometry) {
     for (let i = dim; i < outerLen; i += dim) {
       const x = data[i + a];
       const y = data[i + b];
-      if (x < minX)
-        minX = x;
-      if (y < minY)
-        minY = y;
-      if (x > maxX)
-        maxX = x;
-      if (y > maxY)
-        maxY = y;
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
     }
     invSize = Math.max(maxX - minX, maxY - minY);
     invSize = invSize !== 0 ? 1 / invSize : 0;
@@ -26779,10 +26243,8 @@ function linkedList(data, start, end, dim, clockwise, a, b) {
   return finish;
 }
 function filterPoints(start, end) {
-  if (!start)
-    return start;
-  if (!end)
-    end = start;
+  if (!start) return start;
+  if (!end) end = start;
   let p = start;
   let again;
   let past;
@@ -26792,8 +26254,7 @@ function filterPoints(start, end) {
       past = p.prev;
       removeNode(p);
       p = end = past;
-      if (p === p.next)
-        break;
+      if (p === p.next) break;
       again = true;
     } else {
       p = p.next;
@@ -26802,8 +26263,7 @@ function filterPoints(start, end) {
   return end;
 }
 function earcutLinked(ear, createGeometry, dim, minX, minY, invSize, pass) {
-  if (!pass && invSize)
-    indexCurve(ear, minX, minY, invSize);
+  if (!pass && invSize) indexCurve(ear, minX, minY, invSize);
   let stop = ear;
   while (ear.prev !== ear.next) {
     const prev = ear.prev;
@@ -26841,8 +26301,7 @@ function isEar(ear) {
   const a = ear.prev;
   const b = ear;
   const c = ear.next;
-  if (area(a, b, c) >= 0)
-    return false;
+  if (area(a, b, c) >= 0) return false;
   let p = ear.next.next;
   while (p !== ear.prev) {
     if (pointInTriangle(a.x, a.y, b.x, b.y, c.x, c.y, p.x, p.y) && area(p.prev, p, p.next) >= 0)
@@ -26855,8 +26314,7 @@ function isEarHashed(ear, minX, minY, invSize) {
   const a = ear.prev;
   const b = ear;
   const c = ear.next;
-  if (area(a, b, c) >= 0)
-    return false;
+  if (area(a, b, c) >= 0) return false;
   const x0 = Math.min(a.x, b.x, c.x);
   const y0 = Math.min(a.y, b.y, c.y);
   const x1 = Math.max(a.x, b.x, c.x);
@@ -26924,8 +26382,7 @@ function eliminateHoles(data, holeIndices, outerNode, dim, a, b) {
     const start = holeIndices[i] * dim;
     const end = i < len - 1 ? holeIndices[i + 1] * dim : data.length;
     const list = linkedList(data, start, end, dim, false, a, b);
-    if (list === list.next)
-      list.steiner = true;
+    if (list === list.next) list.steiner = true;
     queue.push(getLeftmost(list));
   }
   queue.sort(xDifference);
@@ -26963,20 +26420,16 @@ function findHoleBridge(hole, outerNode) {
       if (x <= hx && x > qx) {
         qx = x;
         if (x === hx) {
-          if (hy === p.y)
-            return p;
-          if (hy === p.next.y)
-            return p.next;
+          if (hy === p.y) return p;
+          if (hy === p.next.y) return p.next;
         }
         m = p.x < p.next.x ? p : p.next;
       }
     }
     p = p.next;
   } while (p !== outerNode);
-  if (!m)
-    return null;
-  if (hx === qx)
-    return m;
+  if (!m) return null;
+  if (hx === qx) return m;
   const stop = m;
   const mx = m.x;
   const my = m.y;
@@ -27009,8 +26462,7 @@ function sectorContainsSector(m, p) {
 function indexCurve(start, minX, minY, invSize) {
   let p = start;
   do {
-    if (p.z === null)
-      p.z = zOrder(p.x, p.y, minX, minY, invSize);
+    if (p.z === null) p.z = zOrder(p.x, p.y, minX, minY, invSize);
     p.prevZ = p.prev;
     p.nextZ = p.next;
     p = p.next;
@@ -27035,8 +26487,7 @@ function sortLinked(list) {
       for (let i = 0; i < inSize; i++) {
         pSize++;
         q = q.nextZ;
-        if (!q)
-          break;
+        if (!q) break;
       }
       let qSize = inSize;
       while (pSize > 0 || qSize > 0 && q) {
@@ -27049,10 +26500,8 @@ function sortLinked(list) {
           q = q.nextZ;
           qSize--;
         }
-        if (tail)
-          tail.nextZ = e2;
-        else
-          list = e2;
+        if (tail) tail.nextZ = e2;
+        else list = e2;
         e2.prevZ = tail;
         tail = e2;
       }
@@ -27106,16 +26555,11 @@ function intersects(p1, q1, p2, q2) {
   const o2 = sign(area(p1, q1, q2));
   const o3 = sign(area(p2, q2, p1));
   const o4 = sign(area(p2, q2, q1));
-  if (o1 !== o2 && o3 !== o4)
-    return true;
-  if (o1 === 0 && onSegment(p1, p2, q1))
-    return true;
-  if (o2 === 0 && onSegment(p1, q2, q1))
-    return true;
-  if (o3 === 0 && onSegment(p2, p1, q2))
-    return true;
-  if (o4 === 0 && onSegment(p2, q1, q2))
-    return true;
+  if (o1 !== o2 && o3 !== o4) return true;
+  if (o1 === 0 && onSegment(p1, p2, q1)) return true;
+  if (o2 === 0 && onSegment(p1, q2, q1)) return true;
+  if (o3 === 0 && onSegment(p2, p1, q2)) return true;
+  if (o4 === 0 && onSegment(p2, q1, q2)) return true;
   return false;
 }
 function onSegment(p, q, r) {
@@ -27179,10 +26623,8 @@ function insertNode(i, x, y, last) {
 function removeNode(p) {
   p.next.prev = p.prev;
   p.prev.next = p.next;
-  if (p.prevZ)
-    p.prevZ.nextZ = p.nextZ;
-  if (p.nextZ)
-    p.nextZ.prevZ = p.prevZ;
+  if (p.prevZ) p.prevZ.nextZ = p.nextZ;
+  if (p.nextZ) p.nextZ.prevZ = p.prevZ;
   p.next = p;
   p.prev = p;
 }
@@ -27213,11 +26655,12 @@ function signedArea(data, start, end, dim, a, b) {
   }
   return sum;
 }
-const _ShellFaceX = class _ShellFaceX {
+class ShellFaceX {
+  static _tempVec = new THREE__namespace.Vector3();
   static create(indices, data, normals, current, mesh, holes, sizes, faceId) {
     const size = indices.length;
     const amount = sizes.verticesAmount;
-    _ShellFaceX.processBuffers(size, indices, mesh, sizes, data, normals);
+    ShellFaceX.processBuffers(size, indices, mesh, sizes, data, normals);
     const position = mesh.positionBuffer;
     const pointsDiff = sizes.verticesAmount - amount;
     const normalDims = pointsDiff / 3;
@@ -27295,7 +26738,7 @@ const _ShellFaceX = class _ShellFaceX {
   static triangulate(holes, current, size, mesh, sizes, amount) {
     const tri = 3;
     const holesData = this.getHoles(holes, current, size, mesh, sizes);
-    const vertices = _ShellFaceX.getVertices(mesh, amount, sizes);
+    const vertices = ShellFaceX.getVertices(mesh, amount, sizes);
     const dims = FaceUtils.getEarcutDimensions(this._tempVec);
     const onCreateGeometry = this.getEvent(mesh, sizes, amount);
     const firstDim = dims[0];
@@ -27328,10 +26771,22 @@ const _ShellFaceX = class _ShellFaceX {
     const nz = normals[current + 2];
     normal.set([nx, ny, nz], sizes.normalsAmount);
   }
-};
-__publicField(_ShellFaceX, "_tempVec", new THREE__namespace.Vector3());
-let ShellFaceX = _ShellFaceX;
-const _ShellFace4 = class _ShellFace4 {
+}
+class ShellFace4 {
+  static a = new THREE__namespace.Vector3();
+  static b = new THREE__namespace.Vector3();
+  static c = new THREE__namespace.Vector3();
+  static d = new THREE__namespace.Vector3();
+  static e = new THREE__namespace.Vector3();
+  static f = new THREE__namespace.Vector3();
+  static g = new THREE__namespace.Vector3();
+  static h = new THREE__namespace.Vector3();
+  static i = new THREE__namespace.Vector3();
+  static _vecs = [this.a, this.b, this.c, this.d];
+  static _convexIndices = [0, 1, 3, 3, 1, 2];
+  static totalIncrease = 12;
+  static indexIncrease = 6;
+  static vertexIncrease = 4;
   static create(indices, data, normals, id, mesh, sizes, faceId) {
     this.setAllVectors(indices, data);
     const isConvex = this.getIsConvex();
@@ -27421,23 +26876,10 @@ const _ShellFace4 = class _ShellFace4 {
     }
     sizes.indices += this.indexIncrease;
   }
-};
-__publicField(_ShellFace4, "a", new THREE__namespace.Vector3());
-__publicField(_ShellFace4, "b", new THREE__namespace.Vector3());
-__publicField(_ShellFace4, "c", new THREE__namespace.Vector3());
-__publicField(_ShellFace4, "d", new THREE__namespace.Vector3());
-__publicField(_ShellFace4, "e", new THREE__namespace.Vector3());
-__publicField(_ShellFace4, "f", new THREE__namespace.Vector3());
-__publicField(_ShellFace4, "g", new THREE__namespace.Vector3());
-__publicField(_ShellFace4, "h", new THREE__namespace.Vector3());
-__publicField(_ShellFace4, "i", new THREE__namespace.Vector3());
-__publicField(_ShellFace4, "_vecs", [_ShellFace4.a, _ShellFace4.b, _ShellFace4.c, _ShellFace4.d]);
-__publicField(_ShellFace4, "_convexIndices", [0, 1, 3, 3, 1, 2]);
-__publicField(_ShellFace4, "totalIncrease", 12);
-__publicField(_ShellFace4, "indexIncrease", 6);
-__publicField(_ShellFace4, "vertexIncrease", 4);
-let ShellFace4 = _ShellFace4;
-const _ShellFace3 = class _ShellFace3 {
+}
+class ShellFace3 {
+  static vertexIncrease = 3;
+  static totalIncrease = 9;
   static create(indices, data, normals, mesh, sizes, faceId) {
     this.setFaceIds(sizes, mesh, faceId);
     this.setIndices(mesh, sizes);
@@ -27478,46 +26920,32 @@ const _ShellFace3 = class _ShellFace3 {
     sizes.indices += this.vertexIncrease;
   }
   static updateData(sizes) {
-    sizes.normalsAmount += _ShellFace3.totalIncrease;
-    sizes.vertices += _ShellFace3.vertexIncrease;
-    sizes.verticesAmount += _ShellFace3.totalIncrease;
+    sizes.normalsAmount += ShellFace3.totalIncrease;
+    sizes.vertices += ShellFace3.vertexIncrease;
+    sizes.verticesAmount += ShellFace3.totalIncrease;
   }
-};
-__publicField(_ShellFace3, "vertexIncrease", 3);
-__publicField(_ShellFace3, "totalIncrease", 9);
-let ShellFace3 = _ShellFace3;
+}
 class ShellConstructor {
-  constructor() {
-    __publicField(this, "point", new FloatVector());
-    __publicField(this, "_shellHole", new ShellHole());
-    __publicField(this, "_bigShellHole", new BigShellHole());
-    __publicField(this, "interiorProfiles", /* @__PURE__ */ new Map());
-    __publicField(this, "normalsAvgInterior", new Int16Array());
-    __publicField(this, "_pointsPerProfile", /* @__PURE__ */ new Map());
-    __publicField(this, "_shellProfile", new ShellProfile());
-    __publicField(this, "_bigShellProfile", new BigShellProfile());
-    __publicField(this, "_normalsAvg", new Int16Array());
-    __publicField(this, "_normals", []);
-    __publicField(this, "_indices", 0);
-    __publicField(this, "_sizes", {
-      vertices: 0,
-      indices: 0,
-      verticesAmount: 0,
-      normalsAmount: 0,
-      normals: 0
-    });
-    __publicField(this, "_tileData");
-    __publicField(this, "_faceIdPerProfile", /* @__PURE__ */ new Map());
-    __publicField(this, "nextBuffer", (bufferGeometries) => {
-      this.setTileData(bufferGeometries);
-      this.initializeIndices();
-      this.initializePositions();
-      this.initializeNormals();
-      this.initializeFaceIds();
-      this.initializeSizes();
-      this._indices++;
-    });
-  }
+  point = new FloatVector();
+  _shellHole = new ShellHole();
+  _bigShellHole = new BigShellHole();
+  interiorProfiles = /* @__PURE__ */ new Map();
+  normalsAvgInterior = new Int16Array();
+  _pointsPerProfile = /* @__PURE__ */ new Map();
+  _shellProfile = new ShellProfile();
+  _bigShellProfile = new BigShellProfile();
+  _normalsAvg = new Int16Array();
+  _normals = [];
+  _indices = 0;
+  _sizes = {
+    vertices: 0,
+    indices: 0,
+    verticesAmount: 0,
+    normalsAmount: 0,
+    normals: 0
+  };
+  _tileData;
+  _faceIdPerProfile = /* @__PURE__ */ new Map();
   construct(shell, meshData) {
     this.resetConstructData(meshData);
     this.getPointsPerWire(shell);
@@ -27549,8 +26977,7 @@ class ShellConstructor {
   }
   computeNormalsAvg(shell, indices, id) {
     const isShell = this.isShell(shell);
-    if (!isShell)
-      return;
+    if (!isShell) return;
     const n = this._normals;
     const ppp = this._pointsPerProfile;
     this._normalsAvg = ShellUtils.computeNormalsAvg(indices, id, n, ppp);
@@ -27560,8 +26987,7 @@ class ShellConstructor {
   }
   getPointsPerWire(shell) {
     const isShell = this.isShell(shell);
-    if (!isShell)
-      return;
+    if (!isShell) return;
     ShellUtils.getNormalsOfShellProfile(shell, this._normals);
     this._pointsPerProfile = ShellUtils.getPointsShell(shell);
   }
@@ -27603,8 +27029,7 @@ class ShellConstructor {
     const hole = this.getTempHole(shell);
     const count = hole.indicesLength();
     const isShell = this.isShell(shell);
-    if (!isShell)
-      return;
+    if (!isShell) return;
     for (let id = 0; id < count; id++) {
       this.getIntProfilePoints(id, shell, intProfile);
       this.getIntProfileNormals(intProfile, id);
@@ -27676,6 +27101,15 @@ class ShellConstructor {
       this.nextBuffer(meshData);
     }
   }
+  nextBuffer = (bufferGeometries) => {
+    this.setTileData(bufferGeometries);
+    this.initializeIndices();
+    this.initializePositions();
+    this.initializeNormals();
+    this.initializeFaceIds();
+    this.initializeSizes();
+    this._indices++;
+  };
   initializeFaceIds() {
     const size = this._tileData.positionCount;
     this._tileData.faceIdBuffer = new Uint32Array(size / 3);
@@ -27768,23 +27202,23 @@ class ShellConstructor {
   }
 }
 class ShellFaceRaycaster {
+  a = new THREE__namespace.Vector3();
+  b = new THREE__namespace.Vector3();
+  c = new THREE__namespace.Vector3();
+  d = new THREE__namespace.Vector3();
+  e = new THREE__namespace.Vector3();
+  f = new THREE__namespace.Vector3();
+  g = new THREE__namespace.Vector3();
+  h = new THREE__namespace.Vector3();
+  i = new THREE__namespace.Vector3();
+  j = new THREE__namespace.Vector3();
+  k = new THREE__namespace.Vector3();
+  tempTriangle = new THREE__namespace.Triangle();
+  tempPlane = new THREE__namespace.Plane();
+  includedVertices = [];
+  interiorProfiles = /* @__PURE__ */ new Map();
+  _meshes;
   constructor(meshes) {
-    __publicField(this, "a", new THREE__namespace.Vector3());
-    __publicField(this, "b", new THREE__namespace.Vector3());
-    __publicField(this, "c", new THREE__namespace.Vector3());
-    __publicField(this, "d", new THREE__namespace.Vector3());
-    __publicField(this, "e", new THREE__namespace.Vector3());
-    __publicField(this, "f", new THREE__namespace.Vector3());
-    __publicField(this, "g", new THREE__namespace.Vector3());
-    __publicField(this, "h", new THREE__namespace.Vector3());
-    __publicField(this, "i", new THREE__namespace.Vector3());
-    __publicField(this, "j", new THREE__namespace.Vector3());
-    __publicField(this, "k", new THREE__namespace.Vector3());
-    __publicField(this, "tempTriangle", new THREE__namespace.Triangle());
-    __publicField(this, "tempPlane", new THREE__namespace.Plane());
-    __publicField(this, "includedVertices", []);
-    __publicField(this, "interiorProfiles", /* @__PURE__ */ new Map());
-    __publicField(this, "_meshes");
     this._meshes = meshes;
   }
   faceRaycast(id, ray) {
@@ -27925,8 +27359,7 @@ class ShellFaceRaycaster {
   }
   processCollision(shell, profileId, buffer, indices) {
     const contains = this.polygonContains(buffer, indices);
-    if (!contains)
-      return;
+    if (!contains) return;
     const point = this.b.clone();
     const normal = this.tempPlane.normal.clone();
     const faceBuffer = this.getFaceBuffer(shell, profileId, buffer);
@@ -28076,18 +27509,18 @@ class ShellFaceRaycaster {
   }
 }
 class ShellLineRaycaster {
+  _meshes;
+  _minAngle = Math.PI / 32;
+  _shellProfile = new ShellProfile();
+  _bigShellProfile = new BigShellProfile();
+  _tempV1 = new THREE__namespace.Vector3();
+  _tempV2 = new THREE__namespace.Vector3();
+  _tempPoint = new THREE__namespace.Vector3();
+  _normals = [];
+  _pointsByProfile = /* @__PURE__ */ new Map();
+  _shell = new Shell();
+  _result = [];
   constructor(meshes) {
-    __publicField(this, "_meshes");
-    __publicField(this, "_minAngle", Math.PI / 32);
-    __publicField(this, "_shellProfile", new ShellProfile());
-    __publicField(this, "_bigShellProfile", new BigShellProfile());
-    __publicField(this, "_tempV1", new THREE__namespace.Vector3());
-    __publicField(this, "_tempV2", new THREE__namespace.Vector3());
-    __publicField(this, "_tempPoint", new THREE__namespace.Vector3());
-    __publicField(this, "_normals", []);
-    __publicField(this, "_pointsByProfile", /* @__PURE__ */ new Map());
-    __publicField(this, "_shell", new Shell());
-    __publicField(this, "_result", []);
     this._meshes = meshes;
   }
   lineRaycast(id, ray, frustum) {
@@ -28137,10 +27570,8 @@ class ShellLineRaycaster {
     const profile2 = this._pointsByProfile.get(secondIndex);
     const result = [];
     for (const index of profile1) {
-      if (profile2.indexOf(index) === -1)
-        continue;
-      if (index === id)
-        continue;
+      if (profile2.indexOf(index) === -1) continue;
+      if (index === id) continue;
       result.push(index);
     }
     return result;
@@ -28190,9 +27621,9 @@ class ShellLineRaycaster {
   }
 }
 class ShellPointRaycaster {
+  _meshes;
+  _tempVec = new THREE__namespace.Vector3();
   constructor(_meshes) {
-    __publicField(this, "_meshes");
-    __publicField(this, "_tempVec", new THREE__namespace.Vector3());
     this._meshes = _meshes;
   }
   pointRaycast(id, frustum) {
@@ -28206,25 +27637,21 @@ class ShellPointRaycaster {
     for (let id = 0; id < count; id++) {
       ShellUtils.point(shell, id, this._tempVec);
       const pointFound = frustum.containsPoint(this._tempVec);
-      if (!pointFound)
-        continue;
+      if (!pointFound) continue;
       const point = this._tempVec.clone();
       points.push({ point });
     }
   }
 }
 class VirtualShellManager extends VirtualMeshManager {
-  constructor() {
-    super(...arguments);
-    __publicField(this, "_lodClass", LodClass.AABB);
-    __publicField(this, "_objectClass", ObjectClass.SHELL);
-    __publicField(this, "_representationClass", RepresentationClass.SHELL);
-    __publicField(this, "_templates", new ShellTemplateConstructor());
-    __publicField(this, "_constructor", new ShellConstructor());
-    __publicField(this, "_faceRaycaster", new ShellFaceRaycaster(this.meshes));
-    __publicField(this, "_lineRaycaster", new ShellLineRaycaster(this.meshes));
-    __publicField(this, "_pointRaycaster", new ShellPointRaycaster(this.meshes));
-  }
+  _lodClass = LodClass.AABB;
+  _objectClass = ObjectClass.SHELL;
+  _representationClass = RepresentationClass.SHELL;
+  _templates = new ShellTemplateConstructor();
+  _constructor = new ShellConstructor();
+  _faceRaycaster = new ShellFaceRaycaster(this.meshes);
+  _lineRaycaster = new ShellLineRaycaster(this.meshes);
+  _pointRaycaster = new ShellPointRaycaster(this.meshes);
   fetchMeshes(meshId, evenVoid) {
     const mesh = this.getMesh(meshId, CurrentLod.GEOMETRY);
     this.constructMesh(mesh, evenVoid, meshId);
@@ -28268,14 +27695,38 @@ class VirtualShellManager extends VirtualMeshManager {
   }
   constructMesh(mesh, evenVoid, meshId) {
     const isVoid = this.isVoidMesh(mesh);
-    if (!isVoid || !evenVoid)
-      return;
+    if (!isVoid || !evenVoid) return;
     const shell = ShellUtils.getShell(this.meshes, meshId);
     this._constructor.construct(shell, mesh);
     this.saveMesh(meshId, mesh, CurrentLod.GEOMETRY);
   }
 }
 class VceCasterUtils {
+  static _floats = new FloatVector();
+  static _wire = new Wire();
+  static _wireSet = new WireSet();
+  static _circleCurve = new CircleCurve();
+  static _wireP1 = new THREE__namespace.Vector3();
+  static _wireP2 = new THREE__namespace.Vector3();
+  static _circleP1 = new THREE__namespace.Vector3();
+  static _circleP2 = new THREE__namespace.Vector3();
+  static _circleOrigin = new THREE__namespace.Vector3();
+  static _circleOrientation = new THREE__namespace.Vector3();
+  static _currentWireSetPoint = new THREE__namespace.Vector3();
+  static _nextWireSetPoint = new THREE__namespace.Vector3();
+  // ce: circle extrusion
+  static _ceAxisZ = new THREE__namespace.Vector3();
+  static _ceAxisY = new THREE__namespace.Vector3();
+  static _ceAxisX = new THREE__namespace.Vector3();
+  static _ceRaycastPoint = new THREE__namespace.Vector3();
+  static _ceSize = new THREE__namespace.Vector3();
+  static _ceAbsoluteX = new THREE__namespace.Vector3(0, 0, 1);
+  static _ceAbsoluteZ = new THREE__namespace.Vector3(1, 0, 0);
+  static _circlePoints = [];
+  static _ceTransform = new THREE__namespace.Matrix4();
+  static _ceInverseTransform = new THREE__namespace.Matrix4();
+  static _ceRay = new THREE__namespace.Ray();
+  static _ceRaycastPoints = [];
   static circleCurve3Divisions(input) {
     const factor = 4;
     const min = 4;
@@ -28440,8 +27891,7 @@ class VceCasterUtils {
   }
   static computeCircleExtrusionRaycastPoints(factor, size, radius) {
     const clashes = this.checkIfCircleExtrusionClashes(factor, size, radius);
-    if (!clashes)
-      return;
+    if (!clashes) return;
     this._ceRaycastPoint.applyMatrix4(this._ceTransform);
     const point = this._ceRaycastPoint.clone();
     this._ceRaycastPoints.push({ point });
@@ -28476,34 +27926,27 @@ class VceCasterUtils {
     return clashes;
   }
 }
-__publicField(VceCasterUtils, "_floats", new FloatVector());
-__publicField(VceCasterUtils, "_wire", new Wire());
-__publicField(VceCasterUtils, "_wireSet", new WireSet());
-__publicField(VceCasterUtils, "_circleCurve", new CircleCurve());
-__publicField(VceCasterUtils, "_wireP1", new THREE__namespace.Vector3());
-__publicField(VceCasterUtils, "_wireP2", new THREE__namespace.Vector3());
-__publicField(VceCasterUtils, "_circleP1", new THREE__namespace.Vector3());
-__publicField(VceCasterUtils, "_circleP2", new THREE__namespace.Vector3());
-__publicField(VceCasterUtils, "_circleOrigin", new THREE__namespace.Vector3());
-__publicField(VceCasterUtils, "_circleOrientation", new THREE__namespace.Vector3());
-__publicField(VceCasterUtils, "_currentWireSetPoint", new THREE__namespace.Vector3());
-__publicField(VceCasterUtils, "_nextWireSetPoint", new THREE__namespace.Vector3());
-// ce: circle extrusion
-__publicField(VceCasterUtils, "_ceAxisZ", new THREE__namespace.Vector3());
-__publicField(VceCasterUtils, "_ceAxisY", new THREE__namespace.Vector3());
-__publicField(VceCasterUtils, "_ceAxisX", new THREE__namespace.Vector3());
-__publicField(VceCasterUtils, "_ceRaycastPoint", new THREE__namespace.Vector3());
-__publicField(VceCasterUtils, "_ceSize", new THREE__namespace.Vector3());
-__publicField(VceCasterUtils, "_ceAbsoluteX", new THREE__namespace.Vector3(0, 0, 1));
-__publicField(VceCasterUtils, "_ceAbsoluteZ", new THREE__namespace.Vector3(1, 0, 0));
-__publicField(VceCasterUtils, "_circlePoints", []);
-__publicField(VceCasterUtils, "_ceTransform", new THREE__namespace.Matrix4());
-__publicField(VceCasterUtils, "_ceInverseTransform", new THREE__namespace.Matrix4());
-__publicField(VceCasterUtils, "_ceRay", new THREE__namespace.Ray());
-__publicField(VceCasterUtils, "_ceRaycastPoints", []);
-const _VceUtils = class _VceUtils {
+class VceUtils {
+  static up = new THREE__namespace.Vector3(0, 0, 1);
+  static circleCurves = [];
+  static circleCurvePoints;
+  static temp = {
+    circleExtrusion: new CircleExtrusion(),
+    circleCurve: new CircleCurve(),
+    wireSet: new WireSet(),
+    axis: new Axis(),
+    rotation: new THREE__namespace.Quaternion(),
+    vector: new THREE__namespace.Vector3()
+  };
+  static _wireSize = 6;
+  static _minSize = 6;
+  static _maxSize = 30;
+  static _axisPartSize = {
+    verticesLength: 0,
+    indicesLength: 0
+  };
   static newPaths(circleCurve, size) {
-    const data = _VceUtils.newPathData();
+    const data = VceUtils.newPathData();
     this.fetchCircleCurveData(circleCurve, data);
     this.fetchCircleCurveMids(size, data, circleCurve);
     this.fetchCircleCurveEnds(data, circleCurve);
@@ -28513,14 +27956,14 @@ const _VceUtils = class _VceUtils {
   static getAxisPartSize(axis, id, vertexSize) {
     const part = axis.parts(id);
     const order = axis.order(id);
-    const data = _VceUtils.getAxisPartData(part, vertexSize, axis, order);
-    _VceUtils.fetchAxisPartSize(vertexSize, data);
+    const data = VceUtils.getAxisPartData(part, vertexSize, axis, order);
+    VceUtils.fetchAxisPartSize(vertexSize, data);
     return this._axisPartSize;
   }
   static vertexLength(radius, factor = 200) {
     const count = Math.round(radius * factor);
-    const clamped = Math.max(count, _VceUtils._minSize);
-    return Math.min(clamped, _VceUtils._maxSize);
+    const clamped = Math.max(count, VceUtils._minSize);
+    return Math.min(clamped, VceUtils._maxSize);
   }
   static setPathVertices(vertexSize) {
     const points = this.circleCurvePoints;
@@ -28563,6 +28006,16 @@ const _VceUtils = class _VceUtils {
       links: 0
     };
   }
+  static getAxisPartWireSetData = (axis, order, size) => {
+    const defValue = 2;
+    const data = this.newEmptyAxisPartData();
+    axis.wireSets(order, this.temp.wireSet);
+    const wires = this.temp.wireSet.psLength() - 1;
+    data.points = wires * defValue * size;
+    data.indices = this._wireSize * wires * size;
+    data.faces = wires * defValue;
+    return data;
+  };
   static fetchCircleCurveMids(size, data, circleCurve) {
     const count = size - 2;
     for (let i = 0; i < count; i++) {
@@ -28578,6 +28031,13 @@ const _VceUtils = class _VceUtils {
       data.mids[i] = newMid;
     }
   }
+  static getAxisPartWireData = (_axis, _order, size) => {
+    const data = this.newEmptyAxisPartData();
+    data.points = 2 * size;
+    data.indices = this._wireSize * size;
+    data.faces = 2;
+    return data;
+  };
   static validSize(pointsSize, extraPoints, vertexSize) {
     const totalSize = pointsSize + extraPoints + vertexSize;
     return limitOf2Bytes >= totalSize;
@@ -28613,73 +28073,35 @@ const _VceUtils = class _VceUtils {
     this._axisPartSize.verticesLength = data.points;
     this._axisPartSize.indicesLength = data.indices + indices + links;
   }
-};
-__publicField(_VceUtils, "up", new THREE__namespace.Vector3(0, 0, 1));
-__publicField(_VceUtils, "circleCurves", []);
-__publicField(_VceUtils, "circleCurvePoints");
-__publicField(_VceUtils, "temp", {
-  circleExtrusion: new CircleExtrusion(),
-  circleCurve: new CircleCurve(),
-  wireSet: new WireSet(),
-  axis: new Axis(),
-  rotation: new THREE__namespace.Quaternion(),
-  vector: new THREE__namespace.Vector3()
-});
-__publicField(_VceUtils, "_wireSize", 6);
-__publicField(_VceUtils, "_minSize", 6);
-__publicField(_VceUtils, "_maxSize", 30);
-__publicField(_VceUtils, "_axisPartSize", {
-  verticesLength: 0,
-  indicesLength: 0
-});
-__publicField(_VceUtils, "getAxisPartWireSetData", (axis, order, size) => {
-  const defValue = 2;
-  const data = _VceUtils.newEmptyAxisPartData();
-  axis.wireSets(order, _VceUtils.temp.wireSet);
-  const wires = _VceUtils.temp.wireSet.psLength() - 1;
-  data.points = wires * defValue * size;
-  data.indices = _VceUtils._wireSize * wires * size;
-  data.faces = wires * defValue;
-  return data;
-});
-__publicField(_VceUtils, "getAxisPartWireData", (_axis, _order, size) => {
-  const data = _VceUtils.newEmptyAxisPartData();
-  data.points = 2 * size;
-  data.indices = _VceUtils._wireSize * size;
-  data.faces = 2;
-  return data;
-});
-__publicField(_VceUtils, "getAxisPartCircleCurveData", (axis, order, size) => {
-  const data = _VceUtils.newEmptyAxisPartData();
-  axis.circleCurves(order, _VceUtils.temp.circleCurve);
-  const bends = VceCasterUtils.circleCurve3Divisions(_VceUtils.temp.circleCurve);
-  const pointCount = size * bends;
-  data.points = pointCount;
-  const indexFactor = size * (bends - 1);
-  const indexCount = _VceUtils._wireSize * indexFactor;
-  data.indices = indexCount;
-  const defValue = 2;
-  data.faces = defValue;
-  data.links = defValue;
-  return data;
-});
-let VceUtils = _VceUtils;
+  static getAxisPartCircleCurveData = (axis, order, size) => {
+    const data = this.newEmptyAxisPartData();
+    axis.circleCurves(order, this.temp.circleCurve);
+    const bends = VceCasterUtils.circleCurve3Divisions(this.temp.circleCurve);
+    const pointCount = size * bends;
+    data.points = pointCount;
+    const indexFactor = size * (bends - 1);
+    const indexCount = this._wireSize * indexFactor;
+    data.indices = indexCount;
+    const defValue = 2;
+    data.faces = defValue;
+    data.links = defValue;
+    return data;
+  };
+}
 class VceConstructor {
-  constructor() {
-    __publicField(this, "_minLinkDistance", 1 / 1e8);
-    __publicField(this, "_first", new THREE__namespace.Vector3());
-    __publicField(this, "_last", new THREE__namespace.Vector3());
-    __publicField(this, "_currentPoint");
-    __publicField(this, "_currentIndex");
-    __publicField(this, "_v1", new THREE__namespace.Vector3());
-    __publicField(this, "_v2", new THREE__namespace.Vector3());
-    __publicField(this, "_v3", new THREE__namespace.Vector3());
-    __publicField(this, "_v4", new THREE__namespace.Vector3());
-    __publicField(this, "_tempLine", new THREE__namespace.Line3());
-    __publicField(this, "_total", 0);
-    __publicField(this, "_closest", 0);
-    __publicField(this, "_result", 0);
-  }
+  _minLinkDistance = 1 / 1e8;
+  _first = new THREE__namespace.Vector3();
+  _last = new THREE__namespace.Vector3();
+  _currentPoint;
+  _currentIndex;
+  _v1 = new THREE__namespace.Vector3();
+  _v2 = new THREE__namespace.Vector3();
+  _v3 = new THREE__namespace.Vector3();
+  _v4 = new THREE__namespace.Vector3();
+  _tempLine = new THREE__namespace.Line3();
+  _total = 0;
+  _closest = 0;
+  _result = 0;
   newTemplate(ce, id, templates) {
     const width = ce.radius(id);
     const axis = ce.axes(id, VceUtils.temp.axis);
@@ -29140,8 +28562,7 @@ class VceConstructor {
       const limit = selected + size;
       this.findLinkedVertex(selected, limit, mesh, size, i);
       const closerFound = this._total < this._closest;
-      if (!closerFound)
-        continue;
+      if (!closerFound) continue;
       this._closest = this._total;
       this._result = selected - size + i + 1;
     }
@@ -29173,11 +28594,11 @@ class VceConstructor {
   }
 }
 class VceRaycaster {
+  _meshes;
+  _results = [];
+  _circleExtrusion = new CircleExtrusion();
+  _axis = new Axis();
   constructor(meshes) {
-    __publicField(this, "_meshes");
-    __publicField(this, "_results", []);
-    __publicField(this, "_circleExtrusion", new CircleExtrusion());
-    __publicField(this, "_axis", new Axis());
     this._meshes = meshes;
   }
   raycast(id, ray) {
@@ -29207,8 +28628,7 @@ class VceRaycaster {
       const second = mids[0];
       this.castCurveExtrusion(first, second, ray, radius);
       for (let i = 0; i < mids.length; i++) {
-        if (i === 0)
-          continue;
+        if (i === 0) continue;
         const first2 = mids[i - 1];
         const second2 = mids[i];
         this.castCurveExtrusion(first2, second2, ray, radius);
@@ -29228,12 +28648,12 @@ class VceRaycaster {
   }
 }
 class VceLineRaycaster {
+  _meshes;
+  _found = [];
+  _circleExtrusion = new CircleExtrusion();
+  _axis = new Axis();
+  _wirePoint = new THREE__namespace.Vector3();
   constructor(meshes) {
-    __publicField(this, "_meshes");
-    __publicField(this, "_found", []);
-    __publicField(this, "_circleExtrusion", new CircleExtrusion());
-    __publicField(this, "_axis", new Axis());
-    __publicField(this, "_wirePoint", new THREE__namespace.Vector3());
     this._meshes = meshes;
   }
   lineRaycast(id, ray) {
@@ -29273,8 +28693,7 @@ class VceLineRaycaster {
   }
   processCircleCurveBody(body, ray, radius) {
     for (let i = 0; i < body.length; i++) {
-      if (i === 0)
-        continue;
+      if (i === 0) continue;
       const mid = body[i];
       const past = body[i - 1];
       this.cylinderRaycast(past, mid, ray, radius);
@@ -29310,21 +28729,20 @@ class VceLineRaycaster {
     const u = VceCasterUtils;
     const results = u.raycastCircleExtr(first, last, ray, radius);
     for (const result of results) {
-      if (!result.point)
-        continue;
+      if (!result.point) continue;
       this.fetchCylinderRaycastResult(ray, first, last);
     }
   }
 }
 class VcePointRaycaster {
+  _meshes;
+  _results = [];
+  _circleExtrusion = new CircleExtrusion();
+  _axis = new Axis();
+  _normal = new THREE__namespace.Vector3();
+  _point = new THREE__namespace.Vector3();
+  _plane = new THREE__namespace.Plane();
   constructor(meshes) {
-    __publicField(this, "_meshes");
-    __publicField(this, "_results", []);
-    __publicField(this, "_circleExtrusion", new CircleExtrusion());
-    __publicField(this, "_axis", new Axis());
-    __publicField(this, "_normal", new THREE__namespace.Vector3());
-    __publicField(this, "_point", new THREE__namespace.Vector3());
-    __publicField(this, "_plane", new THREE__namespace.Plane());
     this._meshes = meshes;
   }
   pointRaycast(id, ray) {
@@ -29410,51 +28828,8 @@ class VcePointRaycaster {
   }
 }
 class VceLodConstructor {
-  constructor() {
-    __publicField(this, "_currentElement", 0);
-    __publicField(this, "_wireSize", 6);
-    __publicField(this, "newCircleCurveLod", (axis, index, mesh) => {
-      const count = this.newCircleCurveLodPath(axis, index);
-      const points = mesh.positionBuffer;
-      for (let i = 1; i < count; i++) {
-        const first = VceUtils.circleCurves[i - 1];
-        const last = VceUtils.circleCurves[i];
-        this.newWire(points, first, last);
-      }
-    });
-    __publicField(this, "newWireSetLod", (axis, index, mesh) => {
-      const wireSetSegment = axis.wireSets(index);
-      const count = wireSetSegment.psLength();
-      const points = mesh.positionBuffer;
-      for (let i = 1; i < count; i++) {
-        const first = wireSetSegment.ps(i - 1);
-        const last = wireSetSegment.ps(i);
-        this.newWire(points, first, last);
-      }
-    });
-    __publicField(this, "newWireTemplate", (_index, template) => {
-      template.positionCount += this._wireSize;
-    });
-    __publicField(this, "newWireSetTemplate", (index, template) => {
-      const axis = VceUtils.temp.axis;
-      const wireSet = axis.wireSets(index, VceUtils.temp.wireSet);
-      const wires = wireSet.psLength() - 1;
-      template.positionCount += this._wireSize * wires;
-    });
-    __publicField(this, "newWireLod", (axis, index, mesh) => {
-      const wire = axis.wires(index);
-      const first = wire.p1();
-      const last = wire.p2();
-      const points = mesh.positionBuffer;
-      this.newWire(points, first, last);
-    });
-    __publicField(this, "newCircleCurveTemplate", (index, template) => {
-      const axis = VceUtils.temp.axis;
-      const circleCurve = axis.circleCurves(index, VceUtils.temp.circleCurve);
-      const count = VceCasterUtils.circleCurve3Divisions(circleCurve);
-      template.positionCount += this._wireSize * (count - 1);
-    });
-  }
+  _currentElement = 0;
+  _wireSize = 6;
   construct(circleExtrusion, mesh) {
     this._currentElement = 0;
     mesh.positionBuffer = new Float32Array(mesh.positionCount);
@@ -29471,6 +28846,28 @@ class VceLodConstructor {
     const lodConstructor = this.getLodConstructor(type);
     lodConstructor(axis, index, mesh);
   }
+  newCircleCurveLod = (axis, index, mesh) => {
+    const count = this.newCircleCurveLodPath(axis, index);
+    const points = mesh.positionBuffer;
+    for (let i = 1; i < count; i++) {
+      const first = VceUtils.circleCurves[i - 1];
+      const last = VceUtils.circleCurves[i];
+      this.newWire(points, first, last);
+    }
+  };
+  newWireSetLod = (axis, index, mesh) => {
+    const wireSetSegment = axis.wireSets(index);
+    const count = wireSetSegment.psLength();
+    const points = mesh.positionBuffer;
+    for (let i = 1; i < count; i++) {
+      const first = wireSetSegment.ps(i - 1);
+      const last = wireSetSegment.ps(i);
+      this.newWire(points, first, last);
+    }
+  };
+  newWireTemplate = (_index, template) => {
+    template.positionCount += this._wireSize;
+  };
   newCircleCurveLodPath(axis, index) {
     const curve = axis.circleCurves(index);
     const count = VceCasterUtils.circleCurve3Divisions(curve);
@@ -29518,6 +28915,12 @@ class VceLodConstructor {
     };
     return constructors[type];
   }
+  newWireSetTemplate = (index, template) => {
+    const axis = VceUtils.temp.axis;
+    const wireSet = axis.wireSets(index, VceUtils.temp.wireSet);
+    const wires = wireSet.psLength() - 1;
+    template.positionCount += this._wireSize * wires;
+  };
   newTemplate() {
     const circularExtrusion = VceUtils.temp.circleExtrusion;
     const template = this.newTemplateData();
@@ -29540,6 +28943,13 @@ class VceLodConstructor {
       positionCount: 0
     };
   }
+  newWireLod = (axis, index, mesh) => {
+    const wire = axis.wires(index);
+    const first = wire.p1();
+    const last = wire.p2();
+    const points = mesh.positionBuffer;
+    this.newWire(points, first, last);
+  };
   getTemplateConstructor(type) {
     const constructors = {
       [AxisPartClass.WIRE]: this.newWireTemplate,
@@ -29564,19 +28974,22 @@ class VceLodConstructor {
     points[i6] = z2;
     this.selectNextWire();
   }
+  newCircleCurveTemplate = (index, template) => {
+    const axis = VceUtils.temp.axis;
+    const circleCurve = axis.circleCurves(index, VceUtils.temp.circleCurve);
+    const count = VceCasterUtils.circleCurve3Divisions(circleCurve);
+    template.positionCount += this._wireSize * (count - 1);
+  };
 }
 class VirtualCircleExtrusionManager extends VirtualMeshManager {
-  constructor() {
-    super(...arguments);
-    __publicField(this, "_vceConstructor", new VceConstructor());
-    __publicField(this, "_lodConstructor", new VceLodConstructor());
-    __publicField(this, "_vceRaycaster", new VceRaycaster(this.meshes));
-    __publicField(this, "_vceLineRaycaster", new VceLineRaycaster(this.meshes));
-    __publicField(this, "_vcePointRaycaster", new VcePointRaycaster(this.meshes));
-    __publicField(this, "_representationClass", RepresentationClass.CIRCLE_EXTRUSION);
-    __publicField(this, "_objectClass", ObjectClass.LINE);
-    __publicField(this, "lodClass", LodClass.CUSTOM);
-  }
+  _vceConstructor = new VceConstructor();
+  _lodConstructor = new VceLodConstructor();
+  _vceRaycaster = new VceRaycaster(this.meshes);
+  _vceLineRaycaster = new VceLineRaycaster(this.meshes);
+  _vcePointRaycaster = new VcePointRaycaster(this.meshes);
+  _representationClass = RepresentationClass.CIRCLE_EXTRUSION;
+  _objectClass = ObjectClass.LINE;
+  lodClass = LodClass.CUSTOM;
   setupTemplates() {
     const count = this.meshes.circleExtrusionsLength();
     for (let id = 0; id < count; id++) {
@@ -29645,18 +29058,17 @@ class VirtualCircleExtrusionManager extends VirtualMeshManager {
   }
   generateLodIfNeeded(meshId, evenVoid, mesh) {
     const isVoid = !mesh.positionBuffer;
-    if (!isVoid || !evenVoid)
-      return;
+    if (!isVoid || !evenVoid) return;
     this.meshes.circleExtrusions(meshId, VceUtils.temp.circleExtrusion);
     this._lodConstructor.construct(VceUtils.temp.circleExtrusion, mesh);
     this.saveMesh(meshId, mesh, CurrentLod.WIRES);
   }
 }
 class ItemConfigController {
+  size;
+  _data;
+  _highlightData;
   constructor(size) {
-    __publicField(this, "size");
-    __publicField(this, "_data");
-    __publicField(this, "_highlightData");
     this.size = size;
     this._data = new Uint8Array(size);
     this._highlightData = new Uint16Array(size);
@@ -29683,39 +29095,29 @@ class ItemConfigController {
   }
 }
 class MeshConnection {
+  _rate = 64;
+  _updater;
+  _modelId;
+  _threshold = 16;
+  _connection;
+  _list = [];
+  get needsRefresh() {
+    return this._list.length > this._threshold;
+  }
   constructor(modelId, connection, multithreading) {
-    __publicField(this, "_rate", 64);
-    __publicField(this, "_updater");
-    __publicField(this, "_modelId");
-    __publicField(this, "_threshold", 16);
-    __publicField(this, "_connection");
-    __publicField(this, "_list", []);
-    __publicField(this, "refresh", () => {
-      if (!this._connection) {
-        return;
-      }
-      if (this._list.length) {
-        const current = this._list;
-        this._connection.fetchMeshCompute(this._modelId, current);
-        this._list = [];
-      }
-    });
     this._modelId = modelId;
     this._connection = connection;
-    const configuredRate = multithreading == null ? void 0 : multithreading.meshConnectionRate;
+    const configuredRate = multithreading?.meshConnectionRate;
     if (typeof configuredRate === "number" && Number.isFinite(configuredRate) && configuredRate >= 0) {
       this._rate = configuredRate;
     }
-    const configuredThreshold = multithreading == null ? void 0 : multithreading.meshConnectionThreshold;
+    const configuredThreshold = multithreading?.meshConnectionThreshold;
     if (typeof configuredThreshold === "number" && Number.isFinite(configuredThreshold) && configuredThreshold >= 0) {
       this._threshold = configuredThreshold;
     }
     if (this._connection) {
       this._updater = MultithreadingHelper.newUpdater(this.refresh, this._rate);
     }
-  }
-  get needsRefresh() {
-    return this._list.length > this._threshold;
   }
   dispose() {
     if (this._updater !== void 0) {
@@ -29735,12 +29137,20 @@ class MeshConnection {
       this.refresh();
     }
   }
+  refresh = () => {
+    if (!this._connection) {
+      return;
+    }
+    if (this._list.length) {
+      const current = this._list;
+      this._connection.fetchMeshCompute(this._modelId, current);
+      this._list = [];
+    }
+  };
 }
 class ConnectionHandlers {
-  constructor() {
-    __publicField(this, "_list", /* @__PURE__ */ new Map());
-    __publicField(this, "_communicationKey", 0);
-  }
+  _list = /* @__PURE__ */ new Map();
+  _communicationKey = 0;
   setupInput(input) {
     input.requestId = this._communicationKey++;
   }
@@ -29765,17 +29175,10 @@ class ConnectionHandlers {
   }
 }
 class Connection {
+  _handlers = new ConnectionHandlers();
+  _handleInput;
+  _port;
   constructor(handleInput) {
-    __publicField(this, "_handlers", new ConnectionHandlers());
-    __publicField(this, "_handleInput");
-    __publicField(this, "_port");
-    __publicField(this, "onInput", (input) => {
-      if (input.data.toMainThread) {
-        this._handlers.run(input.data);
-        return;
-      }
-      this.manageInput(input.data);
-    });
     this._handleInput = handleInput;
   }
   fetchMeshCompute(modelId, list) {
@@ -29813,12 +29216,19 @@ class Connection {
     input.toMainThread = true;
     connection.postMessage(input);
   }
+  onInput = (input) => {
+    if (input.data.toMainThread) {
+      this._handlers.run(input.data);
+      return;
+    }
+    this.manageInput(input.data);
+  };
   async manageConnection(input) {
     try {
       await this._handleInput(input);
     } catch (error) {
       input.errorInfo = error.toString();
-      if ((error == null ? void 0 : error.name) !== "LoadAbortedError") {
+      if (error?.name !== "LoadAbortedError") {
         console.error(error);
       }
     }
@@ -29829,9 +29239,9 @@ class Connection {
   }
 }
 class ThreadController {
+  id;
+  thread;
   constructor(thread2) {
-    __publicField(this, "id");
-    __publicField(this, "thread");
     this.id = this.getId();
     this.thread = thread2;
     this.thread.actions[this.id] = (input) => this.execute(input);
@@ -29842,7 +29252,6 @@ class ThreadModelCreator extends ThreadController {
     return MultiThreadingRequestClass.CREATE_MODEL;
   }
   async execute(input) {
-    var _a2, _b2;
     const { modelId } = input;
     const notify = this.createProgressNotifier(modelId);
     const throwIfAborted = () => {
@@ -29856,7 +29265,7 @@ class ThreadModelCreator extends ThreadController {
       notify("decompressing", 1);
       throwIfAborted();
       this.thread.controllerManager.updater.setUpdateDelay(
-        (_b2 = (_a2 = input.config) == null ? void 0 : _a2.multithreading) == null ? void 0 : _b2.threadUpdaterDelay
+        input.config?.multithreading?.threadUpdaterDelay
       );
       const model = await this.createModel(input, notify, throwIfAborted);
       this.finalize(input, model);
@@ -29977,8 +29386,7 @@ class ThreadModelDeleter extends ThreadController {
   async execute(input) {
     const { modelId } = input;
     const model = this.thread.list.get(modelId);
-    if (!model)
-      return;
+    if (!model) return;
     model.dispose();
     this.thread.list.delete(modelId);
   }
@@ -29989,8 +29397,7 @@ class ThreadModelAborter extends ThreadController {
   }
   async execute(input) {
     const { modelId } = input;
-    if (!this.thread.loading.has(modelId))
-      return;
+    if (!this.thread.loading.has(modelId)) return;
     this.thread.aborting.add(modelId);
   }
 }
@@ -30064,36 +29471,18 @@ class ThreadExecutor extends ThreadController {
   safeCopyData(input) {
     for (let i = 0; i < input.parameters.length; i++) {
       const data = input.parameters[i];
-      if (!data)
-        continue;
+      if (!data) continue;
       input.parameters[i] = MultithreadingHelper.data(data);
     }
   }
 }
 class ThreadUpdater {
+  _thread;
+  _updateThreshold = 16;
+  _updateDelay = 128;
+  _running = false;
+  _timeout = null;
   constructor(thread2) {
-    __publicField(this, "_thread");
-    __publicField(this, "_updateThreshold", 16);
-    __publicField(this, "_updateDelay", 128);
-    __publicField(this, "_running", false);
-    __publicField(this, "_timeout", null);
-    __publicField(this, "_tick", () => {
-      this._timeout = null;
-      if (!this._running)
-        return;
-      if (this._thread.list.size === 0) {
-        this._running = false;
-        return;
-      }
-      const updated = this.updateAllModels();
-      const delay = updated ? this._updateDelay : 0;
-      this.schedule(delay);
-    });
-    // Offset into the model list where the next tick starts. Rotating the
-    // start point keeps one model with a long-running cull pass from
-    // eating the whole per-tick time budget every tick and starving the
-    // other models on this worker.
-    __publicField(this, "_nextModelOffset", 0);
     this._thread = thread2;
   }
   // Starts the update loop if it is not already running. Idempotent. Called
@@ -30102,8 +29491,7 @@ class ThreadUpdater {
   // importing the library (e.g. for an IFC conversion task) does not spin a
   // perpetual timer. See #234.
   start() {
-    if (this._running)
-      return;
+    if (this._running) return;
     this._running = true;
     this.schedule(0);
   }
@@ -30124,6 +29512,22 @@ class ThreadUpdater {
   schedule(delay) {
     this._timeout = setTimeout(this._tick, delay);
   }
+  _tick = () => {
+    this._timeout = null;
+    if (!this._running) return;
+    if (this._thread.list.size === 0) {
+      this._running = false;
+      return;
+    }
+    const updated = this.updateAllModels();
+    const delay = updated ? this._updateDelay : 0;
+    this.schedule(delay);
+  };
+  // Offset into the model list where the next tick starts. Rotating the
+  // start point keeps one model with a long-running cull pass from
+  // eating the whole per-tick time budget every tick and starving the
+  // other models on this worker.
+  _nextModelOffset = 0;
   updateAllModels() {
     const start = performance.now();
     let isUpdated = true;
@@ -30149,16 +29553,16 @@ class ThreadUpdater {
   }
 }
 class ThreadControllerManager {
+  thread;
+  modelCreator;
+  raycaster;
+  modelDeleter;
+  modelAborter;
+  viewRefresher;
+  boxFetcher;
+  executor;
+  updater;
   constructor(thread2) {
-    __publicField(this, "thread");
-    __publicField(this, "modelCreator");
-    __publicField(this, "raycaster");
-    __publicField(this, "modelDeleter");
-    __publicField(this, "modelAborter");
-    __publicField(this, "viewRefresher");
-    __publicField(this, "boxFetcher");
-    __publicField(this, "executor");
-    __publicField(this, "updater");
     this.thread = thread2;
     this.modelCreator = new ThreadModelCreator(thread2);
     this.raycaster = new ThreadRaycaster(thread2);
@@ -30171,30 +29575,28 @@ class ThreadControllerManager {
   }
 }
 class FragmentsThread {
-  constructor() {
-    __publicField(this, "actions", {});
-    __publicField(this, "list", /* @__PURE__ */ new Map());
-    /** Set of model IDs currently being loaded (CREATE_MODEL in flight). */
-    __publicField(this, "loading", /* @__PURE__ */ new Set());
-    /** Set of model IDs whose in-flight load should abort at the next yield. */
-    __publicField(this, "aborting", /* @__PURE__ */ new Set());
-    /**
-     * Highest `seq` this worker has seen on any incoming RPC. Each
-     * main → worker message carries a monotonic `seq` set by the
-     * sender (FragmentsConnection.fetch). When the worker emits a
-     * FINISH tile request, it stamps it with this value so the main
-     * thread can resolve `forceUpdateFinish` waiters without polling.
-     *
-     * Lives on the thread (not the model) because seq is global to
-     * the worker — a single FINISH from any model carries the highest
-     * seq the worker has acknowledged, which is what main needs for
-     * the fence semantics ("everything I've sent up to N is done").
-     */
-    __publicField(this, "lastSeenSeq", 0);
-    // It registers all actions from multithreadingRequestClass
-    __publicField(this, "controllerManager", new ThreadControllerManager(this));
-    __publicField(this, "_connection");
-  }
+  actions = {};
+  list = /* @__PURE__ */ new Map();
+  /** Set of model IDs currently being loaded (CREATE_MODEL in flight). */
+  loading = /* @__PURE__ */ new Set();
+  /** Set of model IDs whose in-flight load should abort at the next yield. */
+  aborting = /* @__PURE__ */ new Set();
+  /**
+   * Highest `seq` this worker has seen on any incoming RPC. Each
+   * main → worker message carries a monotonic `seq` set by the
+   * sender (FragmentsConnection.fetch). When the worker emits a
+   * FINISH tile request, it stamps it with this value so the main
+   * thread can resolve `forceUpdateFinish` waiters without polling.
+   *
+   * Lives on the thread (not the model) because seq is global to
+   * the worker — a single FINISH from any model carries the highest
+   * seq the worker has acknowledged, which is what main needs for
+   * the fence semantics ("everything I've sent up to N is done").
+   */
+  lastSeenSeq = 0;
+  // It registers all actions from multithreadingRequestClass
+  controllerManager = new ThreadControllerManager(this);
+  _connection;
   get connection() {
     if (!this._connection) {
       throw new Error("Fragments: Connection not set");
@@ -30229,28 +29631,28 @@ if (typeof window === "undefined") {
   };
 }
 class RaycastController {
+  _meshes;
+  _model;
+  _boxes;
+  _tiles;
+  _items;
+  _edgeThreshold = 8;
+  _raycastMultiplier = 32;
+  _maxDuration = 512;
+  _precission = 1e-3;
+  _temp = {
+    sample: new Sample(),
+    representation: new Representation(),
+    tempPlane: new THREE__namespace.Plane(),
+    ray: new THREE__namespace.Ray(),
+    frustum: new THREE__namespace.Frustum(),
+    m1: new THREE__namespace.Matrix4(),
+    m2: new THREE__namespace.Matrix4(),
+    m3: new THREE__namespace.Matrix4(),
+    v1: new THREE__namespace.Vector3(),
+    planes: []
+  };
   constructor(model, boxes, tiles, items) {
-    __publicField(this, "_meshes");
-    __publicField(this, "_model");
-    __publicField(this, "_boxes");
-    __publicField(this, "_tiles");
-    __publicField(this, "_items");
-    __publicField(this, "_edgeThreshold", 8);
-    __publicField(this, "_raycastMultiplier", 32);
-    __publicField(this, "_maxDuration", 512);
-    __publicField(this, "_precission", 1e-3);
-    __publicField(this, "_temp", {
-      sample: new Sample(),
-      representation: new Representation(),
-      tempPlane: new THREE__namespace.Plane(),
-      ray: new THREE__namespace.Ray(),
-      frustum: new THREE__namespace.Frustum(),
-      m1: new THREE__namespace.Matrix4(),
-      m2: new THREE__namespace.Matrix4(),
-      m3: new THREE__namespace.Matrix4(),
-      v1: new THREE__namespace.Vector3(),
-      planes: []
-    });
     this._model = model;
     this._boxes = boxes;
     this._tiles = tiles;
@@ -30319,7 +29721,6 @@ class RaycastController {
   // fullyInside === true keeps only items whose geometry is entirely inside;
   // false keeps items whose geometry touches the selection.
   narrowPhaseFrustum(sampleIds, frustum, clipPlanes, fullyInside) {
-    var _a2;
     const worldPlanes = clipPlanes && clipPlanes.length ? [...frustum.planes, ...clipPlanes] : frustum.planes;
     const geomCache = /* @__PURE__ */ new Map();
     const result = [];
@@ -30348,7 +29749,7 @@ class RaycastController {
     }
     for (const [, geometries] of geomCache) {
       for (const geometry of geometries) {
-        (_a2 = geometry.disposeBoundsTree) == null ? void 0 : _a2.call(geometry);
+        geometry.disposeBoundsTree?.();
         geometry.dispose();
       }
     }
@@ -30356,8 +29757,7 @@ class RaycastController {
   }
   sampleMatchesFrustum(sampleId, frustum, clipPlanes, fullyInside, geomCache) {
     const sample = this._meshes.samples(sampleId, this._temp.sample);
-    if (!sample)
-      return !fullyInside;
+    if (!sample) return !fullyInside;
     const reprId = sample.representation();
     TransformHelper.get(this._temp.sample, this._meshes, this._temp.m1);
     this._temp.m2.copy(this._temp.m1).invert();
@@ -30366,8 +29766,7 @@ class RaycastController {
       geometries = this.buildSampleGeometries(sampleId);
       geomCache.set(reprId, geometries);
     }
-    if (geometries.length === 0)
-      return !fullyInside;
+    if (geometries.length === 0) return !fullyInside;
     const localPlanes = this.toLocalPlanes(frustum, clipPlanes, this._temp.m2);
     if (fullyInside) {
       for (const geometry of geometries) {
@@ -30586,11 +29985,9 @@ class RaycastController {
       this._meshes.samples(id, this._temp.sample);
       const itemId = this._temp.sample.item();
       const localIdIndex = this._meshes.meshesItems(itemId);
-      if (localIdIndex === null)
-        continue;
+      if (localIdIndex === null) continue;
       const localId = this._model.localIds(localIdIndex);
-      if (localId === null)
-        continue;
+      if (localId === null) continue;
       localIds.add(localId);
     }
     return Array.from(localIds);
@@ -30843,23 +30240,20 @@ let AC = globalThis.AbortController;
 let AS = globalThis.AbortSignal;
 if (typeof AC === "undefined") {
   AS = class AbortSignal {
-    constructor() {
-      __publicField(this, "onabort");
-      __publicField(this, "_onabort", []);
-      __publicField(this, "reason");
-      __publicField(this, "aborted", false);
-    }
+    onabort;
+    _onabort = [];
+    reason;
+    aborted = false;
     addEventListener(_, fn) {
       this._onabort.push(fn);
     }
   };
   AC = class AbortController {
     constructor() {
-      __publicField(this, "signal", new AS());
       warnACPolyfill();
     }
+    signal = new AS();
     abort(reason) {
-      var _a2, _b2;
       if (this.signal.aborted)
         return;
       this.signal.reason = reason;
@@ -30867,10 +30261,10 @@ if (typeof AC === "undefined") {
       for (const fn of this.signal._onabort) {
         fn(reason);
       }
-      (_b2 = (_a2 = this.signal).onabort) == null ? void 0 : _b2.call(_a2, reason);
+      this.signal.onabort?.(reason);
     }
   };
-  let printACPolyfillWarning = ((_a = PROCESS.env) == null ? void 0 : _a.LRU_CACHE_IGNORE_AC_WARNING) !== "1";
+  let printACPolyfillWarning = PROCESS.env?.LRU_CACHE_IGNORE_AC_WARNING !== "1";
   const warnACPolyfill = () => {
     if (!printACPolyfillWarning)
       return;
@@ -30887,24 +30281,26 @@ class ZeroArray extends Array {
     this.fill(0);
   }
 }
-const _Stack = class _Stack {
-  constructor(max, HeapCls) {
-    __publicField(this, "heap");
-    __publicField(this, "length");
-    if (!__privateGet(_Stack, _constructing)) {
-      throw new TypeError("instantiate Stack using Stack.create(n)");
-    }
-    this.heap = new HeapCls(max);
-    this.length = 0;
-  }
+class Stack {
+  heap;
+  length;
+  // private constructor
+  static #constructing = false;
   static create(max) {
     const HeapCls = getUintArray(max);
     if (!HeapCls)
       return [];
-    __privateSet(_Stack, _constructing, true);
-    const s = new _Stack(max, HeapCls);
-    __privateSet(_Stack, _constructing, false);
+    Stack.#constructing = true;
+    const s = new Stack(max, HeapCls);
+    Stack.#constructing = false;
     return s;
+  }
+  constructor(max, HeapCls) {
+    if (!Stack.#constructing) {
+      throw new TypeError("instantiate Stack using Stack.create(n)");
+    }
+    this.heap = new HeapCls(max);
+    this.length = 0;
   }
   push(n) {
     this.heap[this.length++] = n;
@@ -30912,234 +30308,95 @@ const _Stack = class _Stack {
   pop() {
     return this.heap[--this.length];
   }
-};
-_constructing = new WeakMap();
-// private constructor
-__privateAdd(_Stack, _constructing, false);
-let Stack = _Stack;
-const _LRUCache = class _LRUCache {
-  constructor(options) {
-    __privateAdd(this, _initializeTTLTracking);
-    __privateAdd(this, _initializeSizeTracking);
-    __privateAdd(this, _indexes);
-    __privateAdd(this, _rindexes);
-    __privateAdd(this, _isValidIndex);
-    __privateAdd(this, _evict);
-    __privateAdd(this, _backgroundFetch);
-    __privateAdd(this, _isBackgroundFetch);
-    __privateAdd(this, _connect);
-    __privateAdd(this, _moveToTail);
-    __privateAdd(this, _delete);
-    __privateAdd(this, _clear);
-    // options that cannot be changed without disaster
-    __privateAdd(this, _max, void 0);
-    __privateAdd(this, _maxSize, void 0);
-    __privateAdd(this, _dispose, void 0);
-    __privateAdd(this, _onInsert, void 0);
-    __privateAdd(this, _disposeAfter, void 0);
-    __privateAdd(this, _fetchMethod, void 0);
-    __privateAdd(this, _memoMethod, void 0);
-    /**
-     * {@link LRUCache.OptionsBase.ttl}
-     */
-    __publicField(this, "ttl");
-    /**
-     * {@link LRUCache.OptionsBase.ttlResolution}
-     */
-    __publicField(this, "ttlResolution");
-    /**
-     * {@link LRUCache.OptionsBase.ttlAutopurge}
-     */
-    __publicField(this, "ttlAutopurge");
-    /**
-     * {@link LRUCache.OptionsBase.updateAgeOnGet}
-     */
-    __publicField(this, "updateAgeOnGet");
-    /**
-     * {@link LRUCache.OptionsBase.updateAgeOnHas}
-     */
-    __publicField(this, "updateAgeOnHas");
-    /**
-     * {@link LRUCache.OptionsBase.allowStale}
-     */
-    __publicField(this, "allowStale");
-    /**
-     * {@link LRUCache.OptionsBase.noDisposeOnSet}
-     */
-    __publicField(this, "noDisposeOnSet");
-    /**
-     * {@link LRUCache.OptionsBase.noUpdateTTL}
-     */
-    __publicField(this, "noUpdateTTL");
-    /**
-     * {@link LRUCache.OptionsBase.maxEntrySize}
-     */
-    __publicField(this, "maxEntrySize");
-    /**
-     * {@link LRUCache.OptionsBase.sizeCalculation}
-     */
-    __publicField(this, "sizeCalculation");
-    /**
-     * {@link LRUCache.OptionsBase.noDeleteOnFetchRejection}
-     */
-    __publicField(this, "noDeleteOnFetchRejection");
-    /**
-     * {@link LRUCache.OptionsBase.noDeleteOnStaleGet}
-     */
-    __publicField(this, "noDeleteOnStaleGet");
-    /**
-     * {@link LRUCache.OptionsBase.allowStaleOnFetchAbort}
-     */
-    __publicField(this, "allowStaleOnFetchAbort");
-    /**
-     * {@link LRUCache.OptionsBase.allowStaleOnFetchRejection}
-     */
-    __publicField(this, "allowStaleOnFetchRejection");
-    /**
-     * {@link LRUCache.OptionsBase.ignoreFetchAbort}
-     */
-    __publicField(this, "ignoreFetchAbort");
-    // computed properties
-    __privateAdd(this, _size, void 0);
-    __privateAdd(this, _calculatedSize, void 0);
-    __privateAdd(this, _keyMap, void 0);
-    __privateAdd(this, _keyList, void 0);
-    __privateAdd(this, _valList, void 0);
-    __privateAdd(this, _next, void 0);
-    __privateAdd(this, _prev, void 0);
-    __privateAdd(this, _head, void 0);
-    __privateAdd(this, _tail, void 0);
-    __privateAdd(this, _free, void 0);
-    __privateAdd(this, _disposed, void 0);
-    __privateAdd(this, _sizes, void 0);
-    __privateAdd(this, _starts, void 0);
-    __privateAdd(this, _ttls, void 0);
-    __privateAdd(this, _hasDispose, void 0);
-    __privateAdd(this, _hasFetchMethod, void 0);
-    __privateAdd(this, _hasDisposeAfter, void 0);
-    __privateAdd(this, _hasOnInsert, void 0);
-    // conditionally set private methods related to TTL
-    __privateAdd(this, _updateItemAge, () => {
-    });
-    __privateAdd(this, _statusTTL, () => {
-    });
-    __privateAdd(this, _setItemTTL, () => {
-    });
-    /* c8 ignore stop */
-    __privateAdd(this, _isStale, () => false);
-    __privateAdd(this, _removeItemSize, (_i) => {
-    });
-    __privateAdd(this, _addItemSize, (_i, _s, _st) => {
-    });
-    __privateAdd(this, _requireSize, (_k, _v, size, sizeCalculation) => {
-      if (size || sizeCalculation) {
-        throw new TypeError("cannot set size without setting maxSize or maxEntrySize on cache");
-      }
-      return 0;
-    });
-    /**
-     * A String value that is used in the creation of the default string
-     * description of an object. Called by the built-in method
-     * `Object.prototype.toString`.
-     */
-    __publicField(this, _b, "LRUCache");
-    const { max = 0, ttl, ttlResolution = 1, ttlAutopurge, updateAgeOnGet, updateAgeOnHas, allowStale, dispose, onInsert, disposeAfter, noDisposeOnSet, noUpdateTTL, maxSize = 0, maxEntrySize = 0, sizeCalculation, fetchMethod, memoMethod, noDeleteOnFetchRejection, noDeleteOnStaleGet, allowStaleOnFetchRejection, allowStaleOnFetchAbort, ignoreFetchAbort } = options;
-    if (max !== 0 && !isPosInt(max)) {
-      throw new TypeError("max option must be a nonnegative integer");
-    }
-    const UintArray = max ? getUintArray(max) : Array;
-    if (!UintArray) {
-      throw new Error("invalid max value: " + max);
-    }
-    __privateSet(this, _max, max);
-    __privateSet(this, _maxSize, maxSize);
-    this.maxEntrySize = maxEntrySize || __privateGet(this, _maxSize);
-    this.sizeCalculation = sizeCalculation;
-    if (this.sizeCalculation) {
-      if (!__privateGet(this, _maxSize) && !this.maxEntrySize) {
-        throw new TypeError("cannot set sizeCalculation without setting maxSize or maxEntrySize");
-      }
-      if (typeof this.sizeCalculation !== "function") {
-        throw new TypeError("sizeCalculation set to non-function");
-      }
-    }
-    if (memoMethod !== void 0 && typeof memoMethod !== "function") {
-      throw new TypeError("memoMethod must be a function if defined");
-    }
-    __privateSet(this, _memoMethod, memoMethod);
-    if (fetchMethod !== void 0 && typeof fetchMethod !== "function") {
-      throw new TypeError("fetchMethod must be a function if specified");
-    }
-    __privateSet(this, _fetchMethod, fetchMethod);
-    __privateSet(this, _hasFetchMethod, !!fetchMethod);
-    __privateSet(this, _keyMap, /* @__PURE__ */ new Map());
-    __privateSet(this, _keyList, new Array(max).fill(void 0));
-    __privateSet(this, _valList, new Array(max).fill(void 0));
-    __privateSet(this, _next, new UintArray(max));
-    __privateSet(this, _prev, new UintArray(max));
-    __privateSet(this, _head, 0);
-    __privateSet(this, _tail, 0);
-    __privateSet(this, _free, Stack.create(max));
-    __privateSet(this, _size, 0);
-    __privateSet(this, _calculatedSize, 0);
-    if (typeof dispose === "function") {
-      __privateSet(this, _dispose, dispose);
-    }
-    if (typeof onInsert === "function") {
-      __privateSet(this, _onInsert, onInsert);
-    }
-    if (typeof disposeAfter === "function") {
-      __privateSet(this, _disposeAfter, disposeAfter);
-      __privateSet(this, _disposed, []);
-    } else {
-      __privateSet(this, _disposeAfter, void 0);
-      __privateSet(this, _disposed, void 0);
-    }
-    __privateSet(this, _hasDispose, !!__privateGet(this, _dispose));
-    __privateSet(this, _hasOnInsert, !!__privateGet(this, _onInsert));
-    __privateSet(this, _hasDisposeAfter, !!__privateGet(this, _disposeAfter));
-    this.noDisposeOnSet = !!noDisposeOnSet;
-    this.noUpdateTTL = !!noUpdateTTL;
-    this.noDeleteOnFetchRejection = !!noDeleteOnFetchRejection;
-    this.allowStaleOnFetchRejection = !!allowStaleOnFetchRejection;
-    this.allowStaleOnFetchAbort = !!allowStaleOnFetchAbort;
-    this.ignoreFetchAbort = !!ignoreFetchAbort;
-    if (this.maxEntrySize !== 0) {
-      if (__privateGet(this, _maxSize) !== 0) {
-        if (!isPosInt(__privateGet(this, _maxSize))) {
-          throw new TypeError("maxSize must be a positive integer if specified");
-        }
-      }
-      if (!isPosInt(this.maxEntrySize)) {
-        throw new TypeError("maxEntrySize must be a positive integer if specified");
-      }
-      __privateMethod(this, _initializeSizeTracking, initializeSizeTracking_fn).call(this);
-    }
-    this.allowStale = !!allowStale;
-    this.noDeleteOnStaleGet = !!noDeleteOnStaleGet;
-    this.updateAgeOnGet = !!updateAgeOnGet;
-    this.updateAgeOnHas = !!updateAgeOnHas;
-    this.ttlResolution = isPosInt(ttlResolution) || ttlResolution === 0 ? ttlResolution : 1;
-    this.ttlAutopurge = !!ttlAutopurge;
-    this.ttl = ttl || 0;
-    if (this.ttl) {
-      if (!isPosInt(this.ttl)) {
-        throw new TypeError("ttl must be a positive integer if specified");
-      }
-      __privateMethod(this, _initializeTTLTracking, initializeTTLTracking_fn).call(this);
-    }
-    if (__privateGet(this, _max) === 0 && this.ttl === 0 && __privateGet(this, _maxSize) === 0) {
-      throw new TypeError("At least one of max, maxSize, or ttl is required");
-    }
-    if (!this.ttlAutopurge && !__privateGet(this, _max) && !__privateGet(this, _maxSize)) {
-      const code = "LRU_CACHE_UNBOUNDED";
-      if (shouldWarn(code)) {
-        warned.add(code);
-        const msg = "TTL caching without ttlAutopurge, max, or maxSize can result in unbounded memory consumption.";
-        emitWarning(msg, "UnboundedCacheWarning", code, _LRUCache);
-      }
-    }
-  }
+}
+class LRUCache {
+  // options that cannot be changed without disaster
+  #max;
+  #maxSize;
+  #dispose;
+  #onInsert;
+  #disposeAfter;
+  #fetchMethod;
+  #memoMethod;
+  /**
+   * {@link LRUCache.OptionsBase.ttl}
+   */
+  ttl;
+  /**
+   * {@link LRUCache.OptionsBase.ttlResolution}
+   */
+  ttlResolution;
+  /**
+   * {@link LRUCache.OptionsBase.ttlAutopurge}
+   */
+  ttlAutopurge;
+  /**
+   * {@link LRUCache.OptionsBase.updateAgeOnGet}
+   */
+  updateAgeOnGet;
+  /**
+   * {@link LRUCache.OptionsBase.updateAgeOnHas}
+   */
+  updateAgeOnHas;
+  /**
+   * {@link LRUCache.OptionsBase.allowStale}
+   */
+  allowStale;
+  /**
+   * {@link LRUCache.OptionsBase.noDisposeOnSet}
+   */
+  noDisposeOnSet;
+  /**
+   * {@link LRUCache.OptionsBase.noUpdateTTL}
+   */
+  noUpdateTTL;
+  /**
+   * {@link LRUCache.OptionsBase.maxEntrySize}
+   */
+  maxEntrySize;
+  /**
+   * {@link LRUCache.OptionsBase.sizeCalculation}
+   */
+  sizeCalculation;
+  /**
+   * {@link LRUCache.OptionsBase.noDeleteOnFetchRejection}
+   */
+  noDeleteOnFetchRejection;
+  /**
+   * {@link LRUCache.OptionsBase.noDeleteOnStaleGet}
+   */
+  noDeleteOnStaleGet;
+  /**
+   * {@link LRUCache.OptionsBase.allowStaleOnFetchAbort}
+   */
+  allowStaleOnFetchAbort;
+  /**
+   * {@link LRUCache.OptionsBase.allowStaleOnFetchRejection}
+   */
+  allowStaleOnFetchRejection;
+  /**
+   * {@link LRUCache.OptionsBase.ignoreFetchAbort}
+   */
+  ignoreFetchAbort;
+  // computed properties
+  #size;
+  #calculatedSize;
+  #keyMap;
+  #keyList;
+  #valList;
+  #next;
+  #prev;
+  #head;
+  #tail;
+  #free;
+  #disposed;
+  #sizes;
+  #starts;
+  #ttls;
+  #hasDispose;
+  #hasFetchMethod;
+  #hasDisposeAfter;
+  #hasOnInsert;
   /**
    * Do not call this method unless you need to inspect the
    * inner workings of the cache.  If anything returned by this
@@ -31152,46 +30409,28 @@ const _LRUCache = class _LRUCache {
   static unsafeExposeInternals(c) {
     return {
       // properties
-      starts: __privateGet(c, _starts),
-      ttls: __privateGet(c, _ttls),
-      sizes: __privateGet(c, _sizes),
-      keyMap: __privateGet(c, _keyMap),
-      keyList: __privateGet(c, _keyList),
-      valList: __privateGet(c, _valList),
-      next: __privateGet(c, _next),
-      prev: __privateGet(c, _prev),
+      starts: c.#starts,
+      ttls: c.#ttls,
+      sizes: c.#sizes,
+      keyMap: c.#keyMap,
+      keyList: c.#keyList,
+      valList: c.#valList,
+      next: c.#next,
+      prev: c.#prev,
       get head() {
-        return __privateGet(c, _head);
+        return c.#head;
       },
       get tail() {
-        return __privateGet(c, _tail);
+        return c.#tail;
       },
-      free: __privateGet(c, _free),
+      free: c.#free,
       // methods
-      isBackgroundFetch: (p) => {
-        var _a2;
-        return __privateMethod(_a2 = c, _isBackgroundFetch, isBackgroundFetch_fn).call(_a2, p);
-      },
-      backgroundFetch: (k, index, options, context) => {
-        var _a2;
-        return __privateMethod(_a2 = c, _backgroundFetch, backgroundFetch_fn).call(_a2, k, index, options, context);
-      },
-      moveToTail: (index) => {
-        var _a2;
-        return __privateMethod(_a2 = c, _moveToTail, moveToTail_fn).call(_a2, index);
-      },
-      indexes: (options) => {
-        var _a2;
-        return __privateMethod(_a2 = c, _indexes, indexes_fn).call(_a2, options);
-      },
-      rindexes: (options) => {
-        var _a2;
-        return __privateMethod(_a2 = c, _rindexes, rindexes_fn).call(_a2, options);
-      },
-      isStale: (index) => {
-        var _a2;
-        return __privateGet(_a2 = c, _isStale).call(_a2, index);
-      }
+      isBackgroundFetch: (p) => c.#isBackgroundFetch(p),
+      backgroundFetch: (k, index, options, context) => c.#backgroundFetch(k, index, options, context),
+      moveToTail: (index) => c.#moveToTail(index),
+      indexes: (options) => c.#indexes(options),
+      rindexes: (options) => c.#rindexes(options),
+      isStale: (index) => c.#isStale(index)
     };
   }
   // Protected read-only members
@@ -31199,68 +30438,330 @@ const _LRUCache = class _LRUCache {
    * {@link LRUCache.OptionsBase.max} (read-only)
    */
   get max() {
-    return __privateGet(this, _max);
+    return this.#max;
   }
   /**
    * {@link LRUCache.OptionsBase.maxSize} (read-only)
    */
   get maxSize() {
-    return __privateGet(this, _maxSize);
+    return this.#maxSize;
   }
   /**
    * The total computed size of items in the cache (read-only)
    */
   get calculatedSize() {
-    return __privateGet(this, _calculatedSize);
+    return this.#calculatedSize;
   }
   /**
    * The number of items stored in the cache (read-only)
    */
   get size() {
-    return __privateGet(this, _size);
+    return this.#size;
   }
   /**
    * {@link LRUCache.OptionsBase.fetchMethod} (read-only)
    */
   get fetchMethod() {
-    return __privateGet(this, _fetchMethod);
+    return this.#fetchMethod;
   }
   get memoMethod() {
-    return __privateGet(this, _memoMethod);
+    return this.#memoMethod;
   }
   /**
    * {@link LRUCache.OptionsBase.dispose} (read-only)
    */
   get dispose() {
-    return __privateGet(this, _dispose);
+    return this.#dispose;
   }
   /**
    * {@link LRUCache.OptionsBase.onInsert} (read-only)
    */
   get onInsert() {
-    return __privateGet(this, _onInsert);
+    return this.#onInsert;
   }
   /**
    * {@link LRUCache.OptionsBase.disposeAfter} (read-only)
    */
   get disposeAfter() {
-    return __privateGet(this, _disposeAfter);
+    return this.#disposeAfter;
+  }
+  constructor(options) {
+    const { max = 0, ttl, ttlResolution = 1, ttlAutopurge, updateAgeOnGet, updateAgeOnHas, allowStale, dispose, onInsert, disposeAfter, noDisposeOnSet, noUpdateTTL, maxSize = 0, maxEntrySize = 0, sizeCalculation, fetchMethod, memoMethod, noDeleteOnFetchRejection, noDeleteOnStaleGet, allowStaleOnFetchRejection, allowStaleOnFetchAbort, ignoreFetchAbort } = options;
+    if (max !== 0 && !isPosInt(max)) {
+      throw new TypeError("max option must be a nonnegative integer");
+    }
+    const UintArray = max ? getUintArray(max) : Array;
+    if (!UintArray) {
+      throw new Error("invalid max value: " + max);
+    }
+    this.#max = max;
+    this.#maxSize = maxSize;
+    this.maxEntrySize = maxEntrySize || this.#maxSize;
+    this.sizeCalculation = sizeCalculation;
+    if (this.sizeCalculation) {
+      if (!this.#maxSize && !this.maxEntrySize) {
+        throw new TypeError("cannot set sizeCalculation without setting maxSize or maxEntrySize");
+      }
+      if (typeof this.sizeCalculation !== "function") {
+        throw new TypeError("sizeCalculation set to non-function");
+      }
+    }
+    if (memoMethod !== void 0 && typeof memoMethod !== "function") {
+      throw new TypeError("memoMethod must be a function if defined");
+    }
+    this.#memoMethod = memoMethod;
+    if (fetchMethod !== void 0 && typeof fetchMethod !== "function") {
+      throw new TypeError("fetchMethod must be a function if specified");
+    }
+    this.#fetchMethod = fetchMethod;
+    this.#hasFetchMethod = !!fetchMethod;
+    this.#keyMap = /* @__PURE__ */ new Map();
+    this.#keyList = new Array(max).fill(void 0);
+    this.#valList = new Array(max).fill(void 0);
+    this.#next = new UintArray(max);
+    this.#prev = new UintArray(max);
+    this.#head = 0;
+    this.#tail = 0;
+    this.#free = Stack.create(max);
+    this.#size = 0;
+    this.#calculatedSize = 0;
+    if (typeof dispose === "function") {
+      this.#dispose = dispose;
+    }
+    if (typeof onInsert === "function") {
+      this.#onInsert = onInsert;
+    }
+    if (typeof disposeAfter === "function") {
+      this.#disposeAfter = disposeAfter;
+      this.#disposed = [];
+    } else {
+      this.#disposeAfter = void 0;
+      this.#disposed = void 0;
+    }
+    this.#hasDispose = !!this.#dispose;
+    this.#hasOnInsert = !!this.#onInsert;
+    this.#hasDisposeAfter = !!this.#disposeAfter;
+    this.noDisposeOnSet = !!noDisposeOnSet;
+    this.noUpdateTTL = !!noUpdateTTL;
+    this.noDeleteOnFetchRejection = !!noDeleteOnFetchRejection;
+    this.allowStaleOnFetchRejection = !!allowStaleOnFetchRejection;
+    this.allowStaleOnFetchAbort = !!allowStaleOnFetchAbort;
+    this.ignoreFetchAbort = !!ignoreFetchAbort;
+    if (this.maxEntrySize !== 0) {
+      if (this.#maxSize !== 0) {
+        if (!isPosInt(this.#maxSize)) {
+          throw new TypeError("maxSize must be a positive integer if specified");
+        }
+      }
+      if (!isPosInt(this.maxEntrySize)) {
+        throw new TypeError("maxEntrySize must be a positive integer if specified");
+      }
+      this.#initializeSizeTracking();
+    }
+    this.allowStale = !!allowStale;
+    this.noDeleteOnStaleGet = !!noDeleteOnStaleGet;
+    this.updateAgeOnGet = !!updateAgeOnGet;
+    this.updateAgeOnHas = !!updateAgeOnHas;
+    this.ttlResolution = isPosInt(ttlResolution) || ttlResolution === 0 ? ttlResolution : 1;
+    this.ttlAutopurge = !!ttlAutopurge;
+    this.ttl = ttl || 0;
+    if (this.ttl) {
+      if (!isPosInt(this.ttl)) {
+        throw new TypeError("ttl must be a positive integer if specified");
+      }
+      this.#initializeTTLTracking();
+    }
+    if (this.#max === 0 && this.ttl === 0 && this.#maxSize === 0) {
+      throw new TypeError("At least one of max, maxSize, or ttl is required");
+    }
+    if (!this.ttlAutopurge && !this.#max && !this.#maxSize) {
+      const code = "LRU_CACHE_UNBOUNDED";
+      if (shouldWarn(code)) {
+        warned.add(code);
+        const msg = "TTL caching without ttlAutopurge, max, or maxSize can result in unbounded memory consumption.";
+        emitWarning(msg, "UnboundedCacheWarning", code, LRUCache);
+      }
+    }
   }
   /**
    * Return the number of ms left in the item's TTL. If item is not in cache,
    * returns `0`. Returns `Infinity` if item is in cache without a defined TTL.
    */
   getRemainingTTL(key) {
-    return __privateGet(this, _keyMap).has(key) ? Infinity : 0;
+    return this.#keyMap.has(key) ? Infinity : 0;
+  }
+  #initializeTTLTracking() {
+    const ttls = new ZeroArray(this.#max);
+    const starts = new ZeroArray(this.#max);
+    this.#ttls = ttls;
+    this.#starts = starts;
+    this.#setItemTTL = (index, ttl, start = perf.now()) => {
+      starts[index] = ttl !== 0 ? start : 0;
+      ttls[index] = ttl;
+      if (ttl !== 0 && this.ttlAutopurge) {
+        const t2 = setTimeout(() => {
+          if (this.#isStale(index)) {
+            this.#delete(this.#keyList[index], "expire");
+          }
+        }, ttl + 1);
+        if (t2.unref) {
+          t2.unref();
+        }
+      }
+    };
+    this.#updateItemAge = (index) => {
+      starts[index] = ttls[index] !== 0 ? perf.now() : 0;
+    };
+    this.#statusTTL = (status, index) => {
+      if (ttls[index]) {
+        const ttl = ttls[index];
+        const start = starts[index];
+        if (!ttl || !start)
+          return;
+        status.ttl = ttl;
+        status.start = start;
+        status.now = cachedNow || getNow();
+        const age = status.now - start;
+        status.remainingTTL = ttl - age;
+      }
+    };
+    let cachedNow = 0;
+    const getNow = () => {
+      const n = perf.now();
+      if (this.ttlResolution > 0) {
+        cachedNow = n;
+        const t2 = setTimeout(() => cachedNow = 0, this.ttlResolution);
+        if (t2.unref) {
+          t2.unref();
+        }
+      }
+      return n;
+    };
+    this.getRemainingTTL = (key) => {
+      const index = this.#keyMap.get(key);
+      if (index === void 0) {
+        return 0;
+      }
+      const ttl = ttls[index];
+      const start = starts[index];
+      if (!ttl || !start) {
+        return Infinity;
+      }
+      const age = (cachedNow || getNow()) - start;
+      return ttl - age;
+    };
+    this.#isStale = (index) => {
+      const s = starts[index];
+      const t2 = ttls[index];
+      return !!t2 && !!s && (cachedNow || getNow()) - s > t2;
+    };
+  }
+  // conditionally set private methods related to TTL
+  #updateItemAge = () => {
+  };
+  #statusTTL = () => {
+  };
+  #setItemTTL = () => {
+  };
+  /* c8 ignore stop */
+  #isStale = () => false;
+  #initializeSizeTracking() {
+    const sizes = new ZeroArray(this.#max);
+    this.#calculatedSize = 0;
+    this.#sizes = sizes;
+    this.#removeItemSize = (index) => {
+      this.#calculatedSize -= sizes[index];
+      sizes[index] = 0;
+    };
+    this.#requireSize = (k, v, size, sizeCalculation) => {
+      if (this.#isBackgroundFetch(v)) {
+        return 0;
+      }
+      if (!isPosInt(size)) {
+        if (sizeCalculation) {
+          if (typeof sizeCalculation !== "function") {
+            throw new TypeError("sizeCalculation must be a function");
+          }
+          size = sizeCalculation(v, k);
+          if (!isPosInt(size)) {
+            throw new TypeError("sizeCalculation return invalid (expect positive integer)");
+          }
+        } else {
+          throw new TypeError("invalid size value (must be positive integer). When maxSize or maxEntrySize is used, sizeCalculation or size must be set.");
+        }
+      }
+      return size;
+    };
+    this.#addItemSize = (index, size, status) => {
+      sizes[index] = size;
+      if (this.#maxSize) {
+        const maxSize = this.#maxSize - sizes[index];
+        while (this.#calculatedSize > maxSize) {
+          this.#evict(true);
+        }
+      }
+      this.#calculatedSize += sizes[index];
+      if (status) {
+        status.entrySize = size;
+        status.totalCalculatedSize = this.#calculatedSize;
+      }
+    };
+  }
+  #removeItemSize = (_i) => {
+  };
+  #addItemSize = (_i, _s, _st) => {
+  };
+  #requireSize = (_k, _v, size, sizeCalculation) => {
+    if (size || sizeCalculation) {
+      throw new TypeError("cannot set size without setting maxSize or maxEntrySize on cache");
+    }
+    return 0;
+  };
+  *#indexes({ allowStale = this.allowStale } = {}) {
+    if (this.#size) {
+      for (let i = this.#tail; true; ) {
+        if (!this.#isValidIndex(i)) {
+          break;
+        }
+        if (allowStale || !this.#isStale(i)) {
+          yield i;
+        }
+        if (i === this.#head) {
+          break;
+        } else {
+          i = this.#prev[i];
+        }
+      }
+    }
+  }
+  *#rindexes({ allowStale = this.allowStale } = {}) {
+    if (this.#size) {
+      for (let i = this.#head; true; ) {
+        if (!this.#isValidIndex(i)) {
+          break;
+        }
+        if (allowStale || !this.#isStale(i)) {
+          yield i;
+        }
+        if (i === this.#tail) {
+          break;
+        } else {
+          i = this.#next[i];
+        }
+      }
+    }
+  }
+  #isValidIndex(index) {
+    return index !== void 0 && this.#keyMap.get(this.#keyList[index]) === index;
   }
   /**
    * Return a generator yielding `[key, value]` pairs,
    * in order from most recently used to least recently used.
    */
   *entries() {
-    for (const i of __privateMethod(this, _indexes, indexes_fn).call(this)) {
-      if (__privateGet(this, _valList)[i] !== void 0 && __privateGet(this, _keyList)[i] !== void 0 && !__privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, __privateGet(this, _valList)[i])) {
-        yield [__privateGet(this, _keyList)[i], __privateGet(this, _valList)[i]];
+    for (const i of this.#indexes()) {
+      if (this.#valList[i] !== void 0 && this.#keyList[i] !== void 0 && !this.#isBackgroundFetch(this.#valList[i])) {
+        yield [this.#keyList[i], this.#valList[i]];
       }
     }
   }
@@ -31271,9 +30772,9 @@ const _LRUCache = class _LRUCache {
    * in order from least recently used to most recently used.
    */
   *rentries() {
-    for (const i of __privateMethod(this, _rindexes, rindexes_fn).call(this)) {
-      if (__privateGet(this, _valList)[i] !== void 0 && __privateGet(this, _keyList)[i] !== void 0 && !__privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, __privateGet(this, _valList)[i])) {
-        yield [__privateGet(this, _keyList)[i], __privateGet(this, _valList)[i]];
+    for (const i of this.#rindexes()) {
+      if (this.#valList[i] !== void 0 && this.#keyList[i] !== void 0 && !this.#isBackgroundFetch(this.#valList[i])) {
+        yield [this.#keyList[i], this.#valList[i]];
       }
     }
   }
@@ -31282,9 +30783,9 @@ const _LRUCache = class _LRUCache {
    * in order from most recently used to least recently used.
    */
   *keys() {
-    for (const i of __privateMethod(this, _indexes, indexes_fn).call(this)) {
-      const k = __privateGet(this, _keyList)[i];
-      if (k !== void 0 && !__privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, __privateGet(this, _valList)[i])) {
+    for (const i of this.#indexes()) {
+      const k = this.#keyList[i];
+      if (k !== void 0 && !this.#isBackgroundFetch(this.#valList[i])) {
         yield k;
       }
     }
@@ -31296,9 +30797,9 @@ const _LRUCache = class _LRUCache {
    * in order from least recently used to most recently used.
    */
   *rkeys() {
-    for (const i of __privateMethod(this, _rindexes, rindexes_fn).call(this)) {
-      const k = __privateGet(this, _keyList)[i];
-      if (k !== void 0 && !__privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, __privateGet(this, _valList)[i])) {
+    for (const i of this.#rindexes()) {
+      const k = this.#keyList[i];
+      if (k !== void 0 && !this.#isBackgroundFetch(this.#valList[i])) {
         yield k;
       }
     }
@@ -31308,10 +30809,10 @@ const _LRUCache = class _LRUCache {
    * in order from most recently used to least recently used.
    */
   *values() {
-    for (const i of __privateMethod(this, _indexes, indexes_fn).call(this)) {
-      const v = __privateGet(this, _valList)[i];
-      if (v !== void 0 && !__privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, __privateGet(this, _valList)[i])) {
-        yield __privateGet(this, _valList)[i];
+    for (const i of this.#indexes()) {
+      const v = this.#valList[i];
+      if (v !== void 0 && !this.#isBackgroundFetch(this.#valList[i])) {
+        yield this.#valList[i];
       }
     }
   }
@@ -31322,10 +30823,10 @@ const _LRUCache = class _LRUCache {
    * in order from least recently used to most recently used.
    */
   *rvalues() {
-    for (const i of __privateMethod(this, _rindexes, rindexes_fn).call(this)) {
-      const v = __privateGet(this, _valList)[i];
-      if (v !== void 0 && !__privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, __privateGet(this, _valList)[i])) {
-        yield __privateGet(this, _valList)[i];
+    for (const i of this.#rindexes()) {
+      const v = this.#valList[i];
+      if (v !== void 0 && !this.#isBackgroundFetch(this.#valList[i])) {
+        yield this.#valList[i];
       }
     }
   }
@@ -31337,17 +30838,23 @@ const _LRUCache = class _LRUCache {
     return this.entries();
   }
   /**
+   * A String value that is used in the creation of the default string
+   * description of an object. Called by the built-in method
+   * `Object.prototype.toString`.
+   */
+  [Symbol.toStringTag] = "LRUCache";
+  /**
    * Find a value for which the supplied fn method returns a truthy value,
    * similar to `Array.find()`. fn is called as `fn(value, key, cache)`.
    */
   find(fn, getOptions = {}) {
-    for (const i of __privateMethod(this, _indexes, indexes_fn).call(this)) {
-      const v = __privateGet(this, _valList)[i];
-      const value = __privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, v) ? v.__staleWhileFetching : v;
+    for (const i of this.#indexes()) {
+      const v = this.#valList[i];
+      const value = this.#isBackgroundFetch(v) ? v.__staleWhileFetching : v;
       if (value === void 0)
         continue;
-      if (fn(value, __privateGet(this, _keyList)[i], this)) {
-        return this.get(__privateGet(this, _keyList)[i], getOptions);
+      if (fn(value, this.#keyList[i], this)) {
+        return this.get(this.#keyList[i], getOptions);
       }
     }
   }
@@ -31363,12 +30870,12 @@ const _LRUCache = class _LRUCache {
    * Does not update age or recenty of use, or iterate over stale values.
    */
   forEach(fn, thisp = this) {
-    for (const i of __privateMethod(this, _indexes, indexes_fn).call(this)) {
-      const v = __privateGet(this, _valList)[i];
-      const value = __privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, v) ? v.__staleWhileFetching : v;
+    for (const i of this.#indexes()) {
+      const v = this.#valList[i];
+      const value = this.#isBackgroundFetch(v) ? v.__staleWhileFetching : v;
       if (value === void 0)
         continue;
-      fn.call(thisp, value, __privateGet(this, _keyList)[i], this);
+      fn.call(thisp, value, this.#keyList[i], this);
     }
   }
   /**
@@ -31376,12 +30883,12 @@ const _LRUCache = class _LRUCache {
    * reverse order.  (ie, less recently used items are iterated over first.)
    */
   rforEach(fn, thisp = this) {
-    for (const i of __privateMethod(this, _rindexes, rindexes_fn).call(this)) {
-      const v = __privateGet(this, _valList)[i];
-      const value = __privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, v) ? v.__staleWhileFetching : v;
+    for (const i of this.#rindexes()) {
+      const v = this.#valList[i];
+      const value = this.#isBackgroundFetch(v) ? v.__staleWhileFetching : v;
       if (value === void 0)
         continue;
-      fn.call(thisp, value, __privateGet(this, _keyList)[i], this);
+      fn.call(thisp, value, this.#keyList[i], this);
     }
   }
   /**
@@ -31390,9 +30897,9 @@ const _LRUCache = class _LRUCache {
    */
   purgeStale() {
     let deleted = false;
-    for (const i of __privateMethod(this, _rindexes, rindexes_fn).call(this, { allowStale: true })) {
-      if (__privateGet(this, _isStale).call(this, i)) {
-        __privateMethod(this, _delete, delete_fn).call(this, __privateGet(this, _keyList)[i], "expire");
+    for (const i of this.#rindexes({ allowStale: true })) {
+      if (this.#isStale(i)) {
+        this.#delete(this.#keyList[i], "expire");
         deleted = true;
       }
     }
@@ -31411,25 +30918,25 @@ const _LRUCache = class _LRUCache {
    * if relevant.
    */
   info(key) {
-    const i = __privateGet(this, _keyMap).get(key);
+    const i = this.#keyMap.get(key);
     if (i === void 0)
       return void 0;
-    const v = __privateGet(this, _valList)[i];
-    const value = __privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, v) ? v.__staleWhileFetching : v;
+    const v = this.#valList[i];
+    const value = this.#isBackgroundFetch(v) ? v.__staleWhileFetching : v;
     if (value === void 0)
       return void 0;
     const entry = { value };
-    if (__privateGet(this, _ttls) && __privateGet(this, _starts)) {
-      const ttl = __privateGet(this, _ttls)[i];
-      const start = __privateGet(this, _starts)[i];
+    if (this.#ttls && this.#starts) {
+      const ttl = this.#ttls[i];
+      const start = this.#starts[i];
       if (ttl && start) {
         const remain = ttl - (perf.now() - start);
         entry.ttl = remain;
         entry.start = Date.now();
       }
     }
-    if (__privateGet(this, _sizes)) {
-      entry.size = __privateGet(this, _sizes)[i];
+    if (this.#sizes) {
+      entry.size = this.#sizes[i];
     }
     return entry;
   }
@@ -31448,20 +30955,20 @@ const _LRUCache = class _LRUCache {
    */
   dump() {
     const arr = [];
-    for (const i of __privateMethod(this, _indexes, indexes_fn).call(this, { allowStale: true })) {
-      const key = __privateGet(this, _keyList)[i];
-      const v = __privateGet(this, _valList)[i];
-      const value = __privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, v) ? v.__staleWhileFetching : v;
+    for (const i of this.#indexes({ allowStale: true })) {
+      const key = this.#keyList[i];
+      const v = this.#valList[i];
+      const value = this.#isBackgroundFetch(v) ? v.__staleWhileFetching : v;
       if (value === void 0 || key === void 0)
         continue;
       const entry = { value };
-      if (__privateGet(this, _ttls) && __privateGet(this, _starts)) {
-        entry.ttl = __privateGet(this, _ttls)[i];
-        const age = perf.now() - __privateGet(this, _starts)[i];
+      if (this.#ttls && this.#starts) {
+        entry.ttl = this.#ttls[i];
+        const age = perf.now() - this.#starts[i];
         entry.start = Math.floor(Date.now() - age);
       }
-      if (__privateGet(this, _sizes)) {
-        entry.size = __privateGet(this, _sizes)[i];
+      if (this.#sizes) {
+        entry.size = this.#sizes[i];
       }
       arr.unshift([key, entry]);
     }
@@ -31517,93 +31024,92 @@ const _LRUCache = class _LRUCache {
    * `cache.delete(key)`. `undefined` is never stored in the cache.
    */
   set(k, v, setOptions = {}) {
-    var _a2, _b2, _c, _d, _e, _f, _g;
     if (v === void 0) {
       this.delete(k);
       return this;
     }
     const { ttl = this.ttl, start, noDisposeOnSet = this.noDisposeOnSet, sizeCalculation = this.sizeCalculation, status } = setOptions;
     let { noUpdateTTL = this.noUpdateTTL } = setOptions;
-    const size = __privateGet(this, _requireSize).call(this, k, v, setOptions.size || 0, sizeCalculation);
+    const size = this.#requireSize(k, v, setOptions.size || 0, sizeCalculation);
     if (this.maxEntrySize && size > this.maxEntrySize) {
       if (status) {
         status.set = "miss";
         status.maxEntrySizeExceeded = true;
       }
-      __privateMethod(this, _delete, delete_fn).call(this, k, "set");
+      this.#delete(k, "set");
       return this;
     }
-    let index = __privateGet(this, _size) === 0 ? void 0 : __privateGet(this, _keyMap).get(k);
+    let index = this.#size === 0 ? void 0 : this.#keyMap.get(k);
     if (index === void 0) {
-      index = __privateGet(this, _size) === 0 ? __privateGet(this, _tail) : __privateGet(this, _free).length !== 0 ? __privateGet(this, _free).pop() : __privateGet(this, _size) === __privateGet(this, _max) ? __privateMethod(this, _evict, evict_fn).call(this, false) : __privateGet(this, _size);
-      __privateGet(this, _keyList)[index] = k;
-      __privateGet(this, _valList)[index] = v;
-      __privateGet(this, _keyMap).set(k, index);
-      __privateGet(this, _next)[__privateGet(this, _tail)] = index;
-      __privateGet(this, _prev)[index] = __privateGet(this, _tail);
-      __privateSet(this, _tail, index);
-      __privateWrapper(this, _size)._++;
-      __privateGet(this, _addItemSize).call(this, index, size, status);
+      index = this.#size === 0 ? this.#tail : this.#free.length !== 0 ? this.#free.pop() : this.#size === this.#max ? this.#evict(false) : this.#size;
+      this.#keyList[index] = k;
+      this.#valList[index] = v;
+      this.#keyMap.set(k, index);
+      this.#next[this.#tail] = index;
+      this.#prev[index] = this.#tail;
+      this.#tail = index;
+      this.#size++;
+      this.#addItemSize(index, size, status);
       if (status)
         status.set = "add";
       noUpdateTTL = false;
-      if (__privateGet(this, _hasOnInsert)) {
-        (_a2 = __privateGet(this, _onInsert)) == null ? void 0 : _a2.call(this, v, k, "add");
+      if (this.#hasOnInsert) {
+        this.#onInsert?.(v, k, "add");
       }
     } else {
-      __privateMethod(this, _moveToTail, moveToTail_fn).call(this, index);
-      const oldVal = __privateGet(this, _valList)[index];
+      this.#moveToTail(index);
+      const oldVal = this.#valList[index];
       if (v !== oldVal) {
-        if (__privateGet(this, _hasFetchMethod) && __privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, oldVal)) {
+        if (this.#hasFetchMethod && this.#isBackgroundFetch(oldVal)) {
           oldVal.__abortController.abort(new Error("replaced"));
           const { __staleWhileFetching: s } = oldVal;
           if (s !== void 0 && !noDisposeOnSet) {
-            if (__privateGet(this, _hasDispose)) {
-              (_b2 = __privateGet(this, _dispose)) == null ? void 0 : _b2.call(this, s, k, "set");
+            if (this.#hasDispose) {
+              this.#dispose?.(s, k, "set");
             }
-            if (__privateGet(this, _hasDisposeAfter)) {
-              (_c = __privateGet(this, _disposed)) == null ? void 0 : _c.push([s, k, "set"]);
+            if (this.#hasDisposeAfter) {
+              this.#disposed?.push([s, k, "set"]);
             }
           }
         } else if (!noDisposeOnSet) {
-          if (__privateGet(this, _hasDispose)) {
-            (_d = __privateGet(this, _dispose)) == null ? void 0 : _d.call(this, oldVal, k, "set");
+          if (this.#hasDispose) {
+            this.#dispose?.(oldVal, k, "set");
           }
-          if (__privateGet(this, _hasDisposeAfter)) {
-            (_e = __privateGet(this, _disposed)) == null ? void 0 : _e.push([oldVal, k, "set"]);
+          if (this.#hasDisposeAfter) {
+            this.#disposed?.push([oldVal, k, "set"]);
           }
         }
-        __privateGet(this, _removeItemSize).call(this, index);
-        __privateGet(this, _addItemSize).call(this, index, size, status);
-        __privateGet(this, _valList)[index] = v;
+        this.#removeItemSize(index);
+        this.#addItemSize(index, size, status);
+        this.#valList[index] = v;
         if (status) {
           status.set = "replace";
-          const oldValue = oldVal && __privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, oldVal) ? oldVal.__staleWhileFetching : oldVal;
+          const oldValue = oldVal && this.#isBackgroundFetch(oldVal) ? oldVal.__staleWhileFetching : oldVal;
           if (oldValue !== void 0)
             status.oldValue = oldValue;
         }
       } else if (status) {
         status.set = "update";
       }
-      if (__privateGet(this, _hasOnInsert)) {
-        (_f = this.onInsert) == null ? void 0 : _f.call(this, v, k, v === oldVal ? "update" : "replace");
+      if (this.#hasOnInsert) {
+        this.onInsert?.(v, k, v === oldVal ? "update" : "replace");
       }
     }
-    if (ttl !== 0 && !__privateGet(this, _ttls)) {
-      __privateMethod(this, _initializeTTLTracking, initializeTTLTracking_fn).call(this);
+    if (ttl !== 0 && !this.#ttls) {
+      this.#initializeTTLTracking();
     }
-    if (__privateGet(this, _ttls)) {
+    if (this.#ttls) {
       if (!noUpdateTTL) {
-        __privateGet(this, _setItemTTL).call(this, index, ttl, start);
+        this.#setItemTTL(index, ttl, start);
       }
       if (status)
-        __privateGet(this, _statusTTL).call(this, status, index);
+        this.#statusTTL(status, index);
     }
-    if (!noDisposeOnSet && __privateGet(this, _hasDisposeAfter) && __privateGet(this, _disposed)) {
-      const dt = __privateGet(this, _disposed);
+    if (!noDisposeOnSet && this.#hasDisposeAfter && this.#disposed) {
+      const dt = this.#disposed;
       let task;
-      while (task = dt == null ? void 0 : dt.shift()) {
-        (_g = __privateGet(this, _disposeAfter)) == null ? void 0 : _g.call(this, ...task);
+      while (task = dt?.shift()) {
+        this.#disposeAfter?.(...task);
       }
     }
     return this;
@@ -31613,12 +31119,11 @@ const _LRUCache = class _LRUCache {
    * `undefined` if cache is empty.
    */
   pop() {
-    var _a2;
     try {
-      while (__privateGet(this, _size)) {
-        const val = __privateGet(this, _valList)[__privateGet(this, _head)];
-        __privateMethod(this, _evict, evict_fn).call(this, true);
-        if (__privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, val)) {
+      while (this.#size) {
+        const val = this.#valList[this.#head];
+        this.#evict(true);
+        if (this.#isBackgroundFetch(val)) {
           if (val.__staleWhileFetching) {
             return val.__staleWhileFetching;
           }
@@ -31627,14 +31132,44 @@ const _LRUCache = class _LRUCache {
         }
       }
     } finally {
-      if (__privateGet(this, _hasDisposeAfter) && __privateGet(this, _disposed)) {
-        const dt = __privateGet(this, _disposed);
+      if (this.#hasDisposeAfter && this.#disposed) {
+        const dt = this.#disposed;
         let task;
-        while (task = dt == null ? void 0 : dt.shift()) {
-          (_a2 = __privateGet(this, _disposeAfter)) == null ? void 0 : _a2.call(this, ...task);
+        while (task = dt?.shift()) {
+          this.#disposeAfter?.(...task);
         }
       }
     }
+  }
+  #evict(free) {
+    const head = this.#head;
+    const k = this.#keyList[head];
+    const v = this.#valList[head];
+    if (this.#hasFetchMethod && this.#isBackgroundFetch(v)) {
+      v.__abortController.abort(new Error("evicted"));
+    } else if (this.#hasDispose || this.#hasDisposeAfter) {
+      if (this.#hasDispose) {
+        this.#dispose?.(v, k, "evict");
+      }
+      if (this.#hasDisposeAfter) {
+        this.#disposed?.push([v, k, "evict"]);
+      }
+    }
+    this.#removeItemSize(head);
+    if (free) {
+      this.#keyList[head] = void 0;
+      this.#valList[head] = void 0;
+      this.#free.push(head);
+    }
+    if (this.#size === 1) {
+      this.#head = this.#tail = 0;
+      this.#free.length = 0;
+    } else {
+      this.#head = this.#next[head];
+    }
+    this.#keyMap.delete(k);
+    this.#size--;
+    return head;
   }
   /**
    * Check if a key is in the cache, without updating the recency of use.
@@ -31654,24 +31189,24 @@ const _LRUCache = class _LRUCache {
    */
   has(k, hasOptions = {}) {
     const { updateAgeOnHas = this.updateAgeOnHas, status } = hasOptions;
-    const index = __privateGet(this, _keyMap).get(k);
+    const index = this.#keyMap.get(k);
     if (index !== void 0) {
-      const v = __privateGet(this, _valList)[index];
-      if (__privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, v) && v.__staleWhileFetching === void 0) {
+      const v = this.#valList[index];
+      if (this.#isBackgroundFetch(v) && v.__staleWhileFetching === void 0) {
         return false;
       }
-      if (!__privateGet(this, _isStale).call(this, index)) {
+      if (!this.#isStale(index)) {
         if (updateAgeOnHas) {
-          __privateGet(this, _updateItemAge).call(this, index);
+          this.#updateItemAge(index);
         }
         if (status) {
           status.has = "hit";
-          __privateGet(this, _statusTTL).call(this, status, index);
+          this.#statusTTL(status, index);
         }
         return true;
       } else if (status) {
         status.has = "stale";
-        __privateGet(this, _statusTTL).call(this, status, index);
+        this.#statusTTL(status, index);
       }
     } else if (status) {
       status.has = "miss";
@@ -31687,12 +31222,125 @@ const _LRUCache = class _LRUCache {
    */
   peek(k, peekOptions = {}) {
     const { allowStale = this.allowStale } = peekOptions;
-    const index = __privateGet(this, _keyMap).get(k);
-    if (index === void 0 || !allowStale && __privateGet(this, _isStale).call(this, index)) {
+    const index = this.#keyMap.get(k);
+    if (index === void 0 || !allowStale && this.#isStale(index)) {
       return;
     }
-    const v = __privateGet(this, _valList)[index];
-    return __privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, v) ? v.__staleWhileFetching : v;
+    const v = this.#valList[index];
+    return this.#isBackgroundFetch(v) ? v.__staleWhileFetching : v;
+  }
+  #backgroundFetch(k, index, options, context) {
+    const v = index === void 0 ? void 0 : this.#valList[index];
+    if (this.#isBackgroundFetch(v)) {
+      return v;
+    }
+    const ac = new AC();
+    const { signal } = options;
+    signal?.addEventListener("abort", () => ac.abort(signal.reason), {
+      signal: ac.signal
+    });
+    const fetchOpts = {
+      signal: ac.signal,
+      options,
+      context
+    };
+    const cb = (v2, updateCache = false) => {
+      const { aborted } = ac.signal;
+      const ignoreAbort = options.ignoreFetchAbort && v2 !== void 0;
+      if (options.status) {
+        if (aborted && !updateCache) {
+          options.status.fetchAborted = true;
+          options.status.fetchError = ac.signal.reason;
+          if (ignoreAbort)
+            options.status.fetchAbortIgnored = true;
+        } else {
+          options.status.fetchResolved = true;
+        }
+      }
+      if (aborted && !ignoreAbort && !updateCache) {
+        return fetchFail(ac.signal.reason);
+      }
+      const bf2 = p;
+      if (this.#valList[index] === p) {
+        if (v2 === void 0) {
+          if (bf2.__staleWhileFetching) {
+            this.#valList[index] = bf2.__staleWhileFetching;
+          } else {
+            this.#delete(k, "fetch");
+          }
+        } else {
+          if (options.status)
+            options.status.fetchUpdated = true;
+          this.set(k, v2, fetchOpts.options);
+        }
+      }
+      return v2;
+    };
+    const eb = (er) => {
+      if (options.status) {
+        options.status.fetchRejected = true;
+        options.status.fetchError = er;
+      }
+      return fetchFail(er);
+    };
+    const fetchFail = (er) => {
+      const { aborted } = ac.signal;
+      const allowStaleAborted = aborted && options.allowStaleOnFetchAbort;
+      const allowStale = allowStaleAborted || options.allowStaleOnFetchRejection;
+      const noDelete = allowStale || options.noDeleteOnFetchRejection;
+      const bf2 = p;
+      if (this.#valList[index] === p) {
+        const del = !noDelete || bf2.__staleWhileFetching === void 0;
+        if (del) {
+          this.#delete(k, "fetch");
+        } else if (!allowStaleAborted) {
+          this.#valList[index] = bf2.__staleWhileFetching;
+        }
+      }
+      if (allowStale) {
+        if (options.status && bf2.__staleWhileFetching !== void 0) {
+          options.status.returnedStale = true;
+        }
+        return bf2.__staleWhileFetching;
+      } else if (bf2.__returned === bf2) {
+        throw er;
+      }
+    };
+    const pcall = (res, rej) => {
+      const fmp = this.#fetchMethod?.(k, v, fetchOpts);
+      if (fmp && fmp instanceof Promise) {
+        fmp.then((v2) => res(v2 === void 0 ? void 0 : v2), rej);
+      }
+      ac.signal.addEventListener("abort", () => {
+        if (!options.ignoreFetchAbort || options.allowStaleOnFetchAbort) {
+          res(void 0);
+          if (options.allowStaleOnFetchAbort) {
+            res = (v2) => cb(v2, true);
+          }
+        }
+      });
+    };
+    if (options.status)
+      options.status.fetchDispatched = true;
+    const p = new Promise(pcall).then(cb, eb);
+    const bf = Object.assign(p, {
+      __abortController: ac,
+      __staleWhileFetching: v,
+      __returned: void 0
+    });
+    if (index === void 0) {
+      this.set(k, bf, { ...fetchOpts.options, status: void 0 });
+      index = this.#keyMap.get(k);
+    } else {
+      this.#valList[index] = bf;
+    }
+    return bf;
+  }
+  #isBackgroundFetch(p) {
+    if (!this.#hasFetchMethod)
+      return false;
+    const b = p;
+    return !!b && b instanceof Promise && b.hasOwnProperty("__staleWhileFetching") && b.__abortController instanceof AC;
   }
   async fetch(k, fetchOptions = {}) {
     const {
@@ -31716,7 +31364,7 @@ const _LRUCache = class _LRUCache {
       status,
       signal
     } = fetchOptions;
-    if (!__privateGet(this, _hasFetchMethod)) {
+    if (!this.#hasFetchMethod) {
       if (status)
         status.fetch = "get";
       return this.get(k, {
@@ -31742,15 +31390,15 @@ const _LRUCache = class _LRUCache {
       status,
       signal
     };
-    let index = __privateGet(this, _keyMap).get(k);
+    let index = this.#keyMap.get(k);
     if (index === void 0) {
       if (status)
         status.fetch = "miss";
-      const p = __privateMethod(this, _backgroundFetch, backgroundFetch_fn).call(this, k, index, options, context);
+      const p = this.#backgroundFetch(k, index, options, context);
       return p.__returned = p;
     } else {
-      const v = __privateGet(this, _valList)[index];
-      if (__privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, v)) {
+      const v = this.#valList[index];
+      if (this.#isBackgroundFetch(v)) {
         const stale = allowStale && v.__staleWhileFetching !== void 0;
         if (status) {
           status.fetch = "inflight";
@@ -31759,19 +31407,19 @@ const _LRUCache = class _LRUCache {
         }
         return stale ? v.__staleWhileFetching : v.__returned = v;
       }
-      const isStale = __privateGet(this, _isStale).call(this, index);
+      const isStale = this.#isStale(index);
       if (!forceRefresh && !isStale) {
         if (status)
           status.fetch = "hit";
-        __privateMethod(this, _moveToTail, moveToTail_fn).call(this, index);
+        this.#moveToTail(index);
         if (updateAgeOnGet) {
-          __privateGet(this, _updateItemAge).call(this, index);
+          this.#updateItemAge(index);
         }
         if (status)
-          __privateGet(this, _statusTTL).call(this, status, index);
+          this.#statusTTL(status, index);
         return v;
       }
-      const p = __privateMethod(this, _backgroundFetch, backgroundFetch_fn).call(this, k, index, options, context);
+      const p = this.#backgroundFetch(k, index, options, context);
       const hasStale = p.__staleWhileFetching !== void 0;
       const staleVal = hasStale && allowStale;
       if (status) {
@@ -31789,7 +31437,7 @@ const _LRUCache = class _LRUCache {
     return v;
   }
   memo(k, memoOptions = {}) {
-    const memoMethod = __privateGet(this, _memoMethod);
+    const memoMethod = this.#memoMethod;
     if (!memoMethod) {
       throw new Error("no memoMethod provided to constructor");
     }
@@ -31812,18 +31460,18 @@ const _LRUCache = class _LRUCache {
    */
   get(k, getOptions = {}) {
     const { allowStale = this.allowStale, updateAgeOnGet = this.updateAgeOnGet, noDeleteOnStaleGet = this.noDeleteOnStaleGet, status } = getOptions;
-    const index = __privateGet(this, _keyMap).get(k);
+    const index = this.#keyMap.get(k);
     if (index !== void 0) {
-      const value = __privateGet(this, _valList)[index];
-      const fetching = __privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, value);
+      const value = this.#valList[index];
+      const fetching = this.#isBackgroundFetch(value);
       if (status)
-        __privateGet(this, _statusTTL).call(this, status, index);
-      if (__privateGet(this, _isStale).call(this, index)) {
+        this.#statusTTL(status, index);
+      if (this.#isStale(index)) {
         if (status)
           status.get = "stale";
         if (!fetching) {
           if (!noDeleteOnStaleGet) {
-            __privateMethod(this, _delete, delete_fn).call(this, k, "expire");
+            this.#delete(k, "expire");
           }
           if (status && allowStale)
             status.returnedStale = true;
@@ -31840,14 +31488,29 @@ const _LRUCache = class _LRUCache {
         if (fetching) {
           return value.__staleWhileFetching;
         }
-        __privateMethod(this, _moveToTail, moveToTail_fn).call(this, index);
+        this.#moveToTail(index);
         if (updateAgeOnGet) {
-          __privateGet(this, _updateItemAge).call(this, index);
+          this.#updateItemAge(index);
         }
         return value;
       }
     } else if (status) {
       status.get = "miss";
+    }
+  }
+  #connect(p, n) {
+    this.#prev[n] = p;
+    this.#next[p] = n;
+  }
+  #moveToTail(index) {
+    if (index !== this.#tail) {
+      if (index === this.#head) {
+        this.#head = this.#next[index];
+      } else {
+        this.#connect(this.#prev[index], this.#next[index]);
+      }
+      this.#connect(this.#tail, index);
+      this.#tail = index;
     }
   }
   /**
@@ -31856,455 +31519,110 @@ const _LRUCache = class _LRUCache {
    * Returns true if the key was deleted, false otherwise.
    */
   delete(k) {
-    return __privateMethod(this, _delete, delete_fn).call(this, k, "delete");
+    return this.#delete(k, "delete");
+  }
+  #delete(k, reason) {
+    let deleted = false;
+    if (this.#size !== 0) {
+      const index = this.#keyMap.get(k);
+      if (index !== void 0) {
+        deleted = true;
+        if (this.#size === 1) {
+          this.#clear(reason);
+        } else {
+          this.#removeItemSize(index);
+          const v = this.#valList[index];
+          if (this.#isBackgroundFetch(v)) {
+            v.__abortController.abort(new Error("deleted"));
+          } else if (this.#hasDispose || this.#hasDisposeAfter) {
+            if (this.#hasDispose) {
+              this.#dispose?.(v, k, reason);
+            }
+            if (this.#hasDisposeAfter) {
+              this.#disposed?.push([v, k, reason]);
+            }
+          }
+          this.#keyMap.delete(k);
+          this.#keyList[index] = void 0;
+          this.#valList[index] = void 0;
+          if (index === this.#tail) {
+            this.#tail = this.#prev[index];
+          } else if (index === this.#head) {
+            this.#head = this.#next[index];
+          } else {
+            const pi = this.#prev[index];
+            this.#next[pi] = this.#next[index];
+            const ni = this.#next[index];
+            this.#prev[ni] = this.#prev[index];
+          }
+          this.#size--;
+          this.#free.push(index);
+        }
+      }
+    }
+    if (this.#hasDisposeAfter && this.#disposed?.length) {
+      const dt = this.#disposed;
+      let task;
+      while (task = dt?.shift()) {
+        this.#disposeAfter?.(...task);
+      }
+    }
+    return deleted;
   }
   /**
    * Clear the cache entirely, throwing away all values.
    */
   clear() {
-    return __privateMethod(this, _clear, clear_fn).call(this, "delete");
+    return this.#clear("delete");
   }
-};
-_b = Symbol.toStringTag;
-_max = new WeakMap();
-_maxSize = new WeakMap();
-_dispose = new WeakMap();
-_onInsert = new WeakMap();
-_disposeAfter = new WeakMap();
-_fetchMethod = new WeakMap();
-_memoMethod = new WeakMap();
-_size = new WeakMap();
-_calculatedSize = new WeakMap();
-_keyMap = new WeakMap();
-_keyList = new WeakMap();
-_valList = new WeakMap();
-_next = new WeakMap();
-_prev = new WeakMap();
-_head = new WeakMap();
-_tail = new WeakMap();
-_free = new WeakMap();
-_disposed = new WeakMap();
-_sizes = new WeakMap();
-_starts = new WeakMap();
-_ttls = new WeakMap();
-_hasDispose = new WeakMap();
-_hasFetchMethod = new WeakMap();
-_hasDisposeAfter = new WeakMap();
-_hasOnInsert = new WeakMap();
-_initializeTTLTracking = new WeakSet();
-initializeTTLTracking_fn = function() {
-  const ttls = new ZeroArray(__privateGet(this, _max));
-  const starts = new ZeroArray(__privateGet(this, _max));
-  __privateSet(this, _ttls, ttls);
-  __privateSet(this, _starts, starts);
-  __privateSet(this, _setItemTTL, (index, ttl, start = perf.now()) => {
-    starts[index] = ttl !== 0 ? start : 0;
-    ttls[index] = ttl;
-    if (ttl !== 0 && this.ttlAutopurge) {
-      const t2 = setTimeout(() => {
-        if (__privateGet(this, _isStale).call(this, index)) {
-          __privateMethod(this, _delete, delete_fn).call(this, __privateGet(this, _keyList)[index], "expire");
-        }
-      }, ttl + 1);
-      if (t2.unref) {
-        t2.unref();
-      }
-    }
-  });
-  __privateSet(this, _updateItemAge, (index) => {
-    starts[index] = ttls[index] !== 0 ? perf.now() : 0;
-  });
-  __privateSet(this, _statusTTL, (status, index) => {
-    if (ttls[index]) {
-      const ttl = ttls[index];
-      const start = starts[index];
-      if (!ttl || !start)
-        return;
-      status.ttl = ttl;
-      status.start = start;
-      status.now = cachedNow || getNow();
-      const age = status.now - start;
-      status.remainingTTL = ttl - age;
-    }
-  });
-  let cachedNow = 0;
-  const getNow = () => {
-    const n = perf.now();
-    if (this.ttlResolution > 0) {
-      cachedNow = n;
-      const t2 = setTimeout(() => cachedNow = 0, this.ttlResolution);
-      if (t2.unref) {
-        t2.unref();
-      }
-    }
-    return n;
-  };
-  this.getRemainingTTL = (key) => {
-    const index = __privateGet(this, _keyMap).get(key);
-    if (index === void 0) {
-      return 0;
-    }
-    const ttl = ttls[index];
-    const start = starts[index];
-    if (!ttl || !start) {
-      return Infinity;
-    }
-    const age = (cachedNow || getNow()) - start;
-    return ttl - age;
-  };
-  __privateSet(this, _isStale, (index) => {
-    const s = starts[index];
-    const t2 = ttls[index];
-    return !!t2 && !!s && (cachedNow || getNow()) - s > t2;
-  });
-};
-_updateItemAge = new WeakMap();
-_statusTTL = new WeakMap();
-_setItemTTL = new WeakMap();
-_isStale = new WeakMap();
-_initializeSizeTracking = new WeakSet();
-initializeSizeTracking_fn = function() {
-  const sizes = new ZeroArray(__privateGet(this, _max));
-  __privateSet(this, _calculatedSize, 0);
-  __privateSet(this, _sizes, sizes);
-  __privateSet(this, _removeItemSize, (index) => {
-    __privateSet(this, _calculatedSize, __privateGet(this, _calculatedSize) - sizes[index]);
-    sizes[index] = 0;
-  });
-  __privateSet(this, _requireSize, (k, v, size, sizeCalculation) => {
-    if (__privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, v)) {
-      return 0;
-    }
-    if (!isPosInt(size)) {
-      if (sizeCalculation) {
-        if (typeof sizeCalculation !== "function") {
-          throw new TypeError("sizeCalculation must be a function");
-        }
-        size = sizeCalculation(v, k);
-        if (!isPosInt(size)) {
-          throw new TypeError("sizeCalculation return invalid (expect positive integer)");
-        }
+  #clear(reason) {
+    for (const index of this.#rindexes({ allowStale: true })) {
+      const v = this.#valList[index];
+      if (this.#isBackgroundFetch(v)) {
+        v.__abortController.abort(new Error("deleted"));
       } else {
-        throw new TypeError("invalid size value (must be positive integer). When maxSize or maxEntrySize is used, sizeCalculation or size must be set.");
-      }
-    }
-    return size;
-  });
-  __privateSet(this, _addItemSize, (index, size, status) => {
-    sizes[index] = size;
-    if (__privateGet(this, _maxSize)) {
-      const maxSize = __privateGet(this, _maxSize) - sizes[index];
-      while (__privateGet(this, _calculatedSize) > maxSize) {
-        __privateMethod(this, _evict, evict_fn).call(this, true);
-      }
-    }
-    __privateSet(this, _calculatedSize, __privateGet(this, _calculatedSize) + sizes[index]);
-    if (status) {
-      status.entrySize = size;
-      status.totalCalculatedSize = __privateGet(this, _calculatedSize);
-    }
-  });
-};
-_removeItemSize = new WeakMap();
-_addItemSize = new WeakMap();
-_requireSize = new WeakMap();
-_indexes = new WeakSet();
-indexes_fn = function* ({ allowStale = this.allowStale } = {}) {
-  if (__privateGet(this, _size)) {
-    for (let i = __privateGet(this, _tail); true; ) {
-      if (!__privateMethod(this, _isValidIndex, isValidIndex_fn).call(this, i)) {
-        break;
-      }
-      if (allowStale || !__privateGet(this, _isStale).call(this, i)) {
-        yield i;
-      }
-      if (i === __privateGet(this, _head)) {
-        break;
-      } else {
-        i = __privateGet(this, _prev)[i];
-      }
-    }
-  }
-};
-_rindexes = new WeakSet();
-rindexes_fn = function* ({ allowStale = this.allowStale } = {}) {
-  if (__privateGet(this, _size)) {
-    for (let i = __privateGet(this, _head); true; ) {
-      if (!__privateMethod(this, _isValidIndex, isValidIndex_fn).call(this, i)) {
-        break;
-      }
-      if (allowStale || !__privateGet(this, _isStale).call(this, i)) {
-        yield i;
-      }
-      if (i === __privateGet(this, _tail)) {
-        break;
-      } else {
-        i = __privateGet(this, _next)[i];
-      }
-    }
-  }
-};
-_isValidIndex = new WeakSet();
-isValidIndex_fn = function(index) {
-  return index !== void 0 && __privateGet(this, _keyMap).get(__privateGet(this, _keyList)[index]) === index;
-};
-_evict = new WeakSet();
-evict_fn = function(free) {
-  var _a2, _b2;
-  const head = __privateGet(this, _head);
-  const k = __privateGet(this, _keyList)[head];
-  const v = __privateGet(this, _valList)[head];
-  if (__privateGet(this, _hasFetchMethod) && __privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, v)) {
-    v.__abortController.abort(new Error("evicted"));
-  } else if (__privateGet(this, _hasDispose) || __privateGet(this, _hasDisposeAfter)) {
-    if (__privateGet(this, _hasDispose)) {
-      (_a2 = __privateGet(this, _dispose)) == null ? void 0 : _a2.call(this, v, k, "evict");
-    }
-    if (__privateGet(this, _hasDisposeAfter)) {
-      (_b2 = __privateGet(this, _disposed)) == null ? void 0 : _b2.push([v, k, "evict"]);
-    }
-  }
-  __privateGet(this, _removeItemSize).call(this, head);
-  if (free) {
-    __privateGet(this, _keyList)[head] = void 0;
-    __privateGet(this, _valList)[head] = void 0;
-    __privateGet(this, _free).push(head);
-  }
-  if (__privateGet(this, _size) === 1) {
-    __privateSet(this, _head, __privateSet(this, _tail, 0));
-    __privateGet(this, _free).length = 0;
-  } else {
-    __privateSet(this, _head, __privateGet(this, _next)[head]);
-  }
-  __privateGet(this, _keyMap).delete(k);
-  __privateWrapper(this, _size)._--;
-  return head;
-};
-_backgroundFetch = new WeakSet();
-backgroundFetch_fn = function(k, index, options, context) {
-  const v = index === void 0 ? void 0 : __privateGet(this, _valList)[index];
-  if (__privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, v)) {
-    return v;
-  }
-  const ac = new AC();
-  const { signal } = options;
-  signal == null ? void 0 : signal.addEventListener("abort", () => ac.abort(signal.reason), {
-    signal: ac.signal
-  });
-  const fetchOpts = {
-    signal: ac.signal,
-    options,
-    context
-  };
-  const cb = (v2, updateCache = false) => {
-    const { aborted } = ac.signal;
-    const ignoreAbort = options.ignoreFetchAbort && v2 !== void 0;
-    if (options.status) {
-      if (aborted && !updateCache) {
-        options.status.fetchAborted = true;
-        options.status.fetchError = ac.signal.reason;
-        if (ignoreAbort)
-          options.status.fetchAbortIgnored = true;
-      } else {
-        options.status.fetchResolved = true;
-      }
-    }
-    if (aborted && !ignoreAbort && !updateCache) {
-      return fetchFail(ac.signal.reason);
-    }
-    const bf2 = p;
-    if (__privateGet(this, _valList)[index] === p) {
-      if (v2 === void 0) {
-        if (bf2.__staleWhileFetching) {
-          __privateGet(this, _valList)[index] = bf2.__staleWhileFetching;
-        } else {
-          __privateMethod(this, _delete, delete_fn).call(this, k, "fetch");
+        const k = this.#keyList[index];
+        if (this.#hasDispose) {
+          this.#dispose?.(v, k, reason);
         }
-      } else {
-        if (options.status)
-          options.status.fetchUpdated = true;
-        this.set(k, v2, fetchOpts.options);
-      }
-    }
-    return v2;
-  };
-  const eb = (er) => {
-    if (options.status) {
-      options.status.fetchRejected = true;
-      options.status.fetchError = er;
-    }
-    return fetchFail(er);
-  };
-  const fetchFail = (er) => {
-    const { aborted } = ac.signal;
-    const allowStaleAborted = aborted && options.allowStaleOnFetchAbort;
-    const allowStale = allowStaleAborted || options.allowStaleOnFetchRejection;
-    const noDelete = allowStale || options.noDeleteOnFetchRejection;
-    const bf2 = p;
-    if (__privateGet(this, _valList)[index] === p) {
-      const del = !noDelete || bf2.__staleWhileFetching === void 0;
-      if (del) {
-        __privateMethod(this, _delete, delete_fn).call(this, k, "fetch");
-      } else if (!allowStaleAborted) {
-        __privateGet(this, _valList)[index] = bf2.__staleWhileFetching;
-      }
-    }
-    if (allowStale) {
-      if (options.status && bf2.__staleWhileFetching !== void 0) {
-        options.status.returnedStale = true;
-      }
-      return bf2.__staleWhileFetching;
-    } else if (bf2.__returned === bf2) {
-      throw er;
-    }
-  };
-  const pcall = (res, rej) => {
-    var _a2;
-    const fmp = (_a2 = __privateGet(this, _fetchMethod)) == null ? void 0 : _a2.call(this, k, v, fetchOpts);
-    if (fmp && fmp instanceof Promise) {
-      fmp.then((v2) => res(v2 === void 0 ? void 0 : v2), rej);
-    }
-    ac.signal.addEventListener("abort", () => {
-      if (!options.ignoreFetchAbort || options.allowStaleOnFetchAbort) {
-        res(void 0);
-        if (options.allowStaleOnFetchAbort) {
-          res = (v2) => cb(v2, true);
+        if (this.#hasDisposeAfter) {
+          this.#disposed?.push([v, k, reason]);
         }
       }
-    });
-  };
-  if (options.status)
-    options.status.fetchDispatched = true;
-  const p = new Promise(pcall).then(cb, eb);
-  const bf = Object.assign(p, {
-    __abortController: ac,
-    __staleWhileFetching: v,
-    __returned: void 0
-  });
-  if (index === void 0) {
-    this.set(k, bf, { ...fetchOpts.options, status: void 0 });
-    index = __privateGet(this, _keyMap).get(k);
-  } else {
-    __privateGet(this, _valList)[index] = bf;
-  }
-  return bf;
-};
-_isBackgroundFetch = new WeakSet();
-isBackgroundFetch_fn = function(p) {
-  if (!__privateGet(this, _hasFetchMethod))
-    return false;
-  const b = p;
-  return !!b && b instanceof Promise && b.hasOwnProperty("__staleWhileFetching") && b.__abortController instanceof AC;
-};
-_connect = new WeakSet();
-connect_fn = function(p, n) {
-  __privateGet(this, _prev)[n] = p;
-  __privateGet(this, _next)[p] = n;
-};
-_moveToTail = new WeakSet();
-moveToTail_fn = function(index) {
-  if (index !== __privateGet(this, _tail)) {
-    if (index === __privateGet(this, _head)) {
-      __privateSet(this, _head, __privateGet(this, _next)[index]);
-    } else {
-      __privateMethod(this, _connect, connect_fn).call(this, __privateGet(this, _prev)[index], __privateGet(this, _next)[index]);
     }
-    __privateMethod(this, _connect, connect_fn).call(this, __privateGet(this, _tail), index);
-    __privateSet(this, _tail, index);
-  }
-};
-_delete = new WeakSet();
-delete_fn = function(k, reason) {
-  var _a2, _b2, _c, _d;
-  let deleted = false;
-  if (__privateGet(this, _size) !== 0) {
-    const index = __privateGet(this, _keyMap).get(k);
-    if (index !== void 0) {
-      deleted = true;
-      if (__privateGet(this, _size) === 1) {
-        __privateMethod(this, _clear, clear_fn).call(this, reason);
-      } else {
-        __privateGet(this, _removeItemSize).call(this, index);
-        const v = __privateGet(this, _valList)[index];
-        if (__privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, v)) {
-          v.__abortController.abort(new Error("deleted"));
-        } else if (__privateGet(this, _hasDispose) || __privateGet(this, _hasDisposeAfter)) {
-          if (__privateGet(this, _hasDispose)) {
-            (_a2 = __privateGet(this, _dispose)) == null ? void 0 : _a2.call(this, v, k, reason);
-          }
-          if (__privateGet(this, _hasDisposeAfter)) {
-            (_b2 = __privateGet(this, _disposed)) == null ? void 0 : _b2.push([v, k, reason]);
-          }
-        }
-        __privateGet(this, _keyMap).delete(k);
-        __privateGet(this, _keyList)[index] = void 0;
-        __privateGet(this, _valList)[index] = void 0;
-        if (index === __privateGet(this, _tail)) {
-          __privateSet(this, _tail, __privateGet(this, _prev)[index]);
-        } else if (index === __privateGet(this, _head)) {
-          __privateSet(this, _head, __privateGet(this, _next)[index]);
-        } else {
-          const pi = __privateGet(this, _prev)[index];
-          __privateGet(this, _next)[pi] = __privateGet(this, _next)[index];
-          const ni = __privateGet(this, _next)[index];
-          __privateGet(this, _prev)[ni] = __privateGet(this, _prev)[index];
-        }
-        __privateWrapper(this, _size)._--;
-        __privateGet(this, _free).push(index);
+    this.#keyMap.clear();
+    this.#valList.fill(void 0);
+    this.#keyList.fill(void 0);
+    if (this.#ttls && this.#starts) {
+      this.#ttls.fill(0);
+      this.#starts.fill(0);
+    }
+    if (this.#sizes) {
+      this.#sizes.fill(0);
+    }
+    this.#head = 0;
+    this.#tail = 0;
+    this.#free.length = 0;
+    this.#calculatedSize = 0;
+    this.#size = 0;
+    if (this.#hasDisposeAfter && this.#disposed) {
+      const dt = this.#disposed;
+      let task;
+      while (task = dt?.shift()) {
+        this.#disposeAfter?.(...task);
       }
     }
   }
-  if (__privateGet(this, _hasDisposeAfter) && ((_c = __privateGet(this, _disposed)) == null ? void 0 : _c.length)) {
-    const dt = __privateGet(this, _disposed);
-    let task;
-    while (task = dt == null ? void 0 : dt.shift()) {
-      (_d = __privateGet(this, _disposeAfter)) == null ? void 0 : _d.call(this, ...task);
-    }
-  }
-  return deleted;
-};
-_clear = new WeakSet();
-clear_fn = function(reason) {
-  var _a2, _b2, _c;
-  for (const index of __privateMethod(this, _rindexes, rindexes_fn).call(this, { allowStale: true })) {
-    const v = __privateGet(this, _valList)[index];
-    if (__privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, v)) {
-      v.__abortController.abort(new Error("deleted"));
-    } else {
-      const k = __privateGet(this, _keyList)[index];
-      if (__privateGet(this, _hasDispose)) {
-        (_a2 = __privateGet(this, _dispose)) == null ? void 0 : _a2.call(this, v, k, reason);
-      }
-      if (__privateGet(this, _hasDisposeAfter)) {
-        (_b2 = __privateGet(this, _disposed)) == null ? void 0 : _b2.push([v, k, reason]);
-      }
-    }
-  }
-  __privateGet(this, _keyMap).clear();
-  __privateGet(this, _valList).fill(void 0);
-  __privateGet(this, _keyList).fill(void 0);
-  if (__privateGet(this, _ttls) && __privateGet(this, _starts)) {
-    __privateGet(this, _ttls).fill(0);
-    __privateGet(this, _starts).fill(0);
-  }
-  if (__privateGet(this, _sizes)) {
-    __privateGet(this, _sizes).fill(0);
-  }
-  __privateSet(this, _head, 0);
-  __privateSet(this, _tail, 0);
-  __privateGet(this, _free).length = 0;
-  __privateSet(this, _calculatedSize, 0);
-  __privateSet(this, _size, 0);
-  if (__privateGet(this, _hasDisposeAfter) && __privateGet(this, _disposed)) {
-    const dt = __privateGet(this, _disposed);
-    let task;
-    while (task = dt == null ? void 0 : dt.shift()) {
-      (_c = __privateGet(this, _disposeAfter)) == null ? void 0 : _c.call(this, ...task);
-    }
-  }
-};
-let LRUCache = _LRUCache;
-const _VirtualMemoryController = class _VirtualMemoryController {
+}
+class VirtualMemoryController {
+  static oneHundredMb = 1e8;
+  static _meshes = this.setupMeshes();
+  static _capacity;
+  static _memoryAttributes = [
+    "positionBuffer",
+    "indexBuffer",
+    "normalBuffer"
+  ];
   static get(id) {
     return this._meshes.get(id);
   }
@@ -32319,9 +31637,17 @@ const _VirtualMemoryController = class _VirtualMemoryController {
       this._meshes.delete(id);
     }
   }
+  static updateMeshMemory = (mesh) => {
+    mesh.usedMemory = 0;
+    for (const key of this._memoryAttributes) {
+      if (mesh.usedMemory !== void 0 && mesh[key]) {
+        mesh.usedMemory += mesh[key].byteLength;
+      }
+    }
+    this.lockIn(mesh);
+  };
   static setCapacity(value) {
-    if (value === this._capacity)
-      return;
+    if (value === this._capacity) return;
     this._meshes.clear();
     this._meshes = this.setupMeshes(value);
     this._capacity = value;
@@ -32354,107 +31680,90 @@ const _VirtualMemoryController = class _VirtualMemoryController {
       return this.getDataSetMemory(mesh);
     };
   }
-};
-__publicField(_VirtualMemoryController, "oneHundredMb", 1e8);
-__publicField(_VirtualMemoryController, "_meshes", _VirtualMemoryController.setupMeshes());
-__publicField(_VirtualMemoryController, "_capacity");
-__publicField(_VirtualMemoryController, "_memoryAttributes", [
-  "positionBuffer",
-  "indexBuffer",
-  "normalBuffer"
-]);
-__publicField(_VirtualMemoryController, "updateMeshMemory", (mesh) => {
-  mesh.usedMemory = 0;
-  for (const key of _VirtualMemoryController._memoryAttributes) {
-    if (mesh.usedMemory !== void 0 && mesh[key]) {
-      mesh.usedMemory += mesh[key].byteLength;
-    }
-  }
-  _VirtualMemoryController.lockIn(mesh);
-});
-let VirtualMemoryController = _VirtualMemoryController;
-const _VirtualTilesController = class _VirtualTilesController {
+}
+class VirtualTilesController {
+  meshes;
+  tilesUpdated = false;
+  static _graphicMemoryConsumed = 0;
+  _sampleAmount;
+  _tileDimension;
+  _tileBySample;
+  _lodBySample;
+  _virtualMeshes = /* @__PURE__ */ new Map();
+  _meshConnection;
+  _samples;
+  _tileIdGenerator = new CRC();
+  _tiles = /* @__PURE__ */ new Map();
+  _tilesChanged = /* @__PURE__ */ new Set();
+  _sizeByTile = /* @__PURE__ */ new Map();
+  _samplesDimensions;
+  _sampleLodClass;
+  _sampleLodState;
+  _sampleLodSize;
+  _boxes;
+  _items;
+  _materials;
+  _modelId;
+  _lastView = {
+    rotation: new THREE__namespace.Vector3(),
+    location: new THREE__namespace.Vector3()
+  };
+  _params = {
+    updateTime: 16,
+    updateSamples: 64,
+    updateviewOrientation: 8 * Math.PI / 180,
+    updateViewPosition: 256,
+    smallTileSize: 0.32,
+    mediumTileSize: 4,
+    smallObjectSize: 2,
+    smallScreenSize: 2,
+    mediumScreenSize: 4,
+    largeScreenSize: 16,
+    tempTileDataSize: 6,
+    tileIdIncrement: 1,
+    tileSizeMultiplier: 10,
+    minTileDimension: 32,
+    tileDimensionFactor: 8
+  };
+  _temp = {
+    sample: new Sample(),
+    representation: new Representation(),
+    vector: new THREE__namespace.Vector3(),
+    matrix: new THREE__namespace.Matrix4(),
+    transform: new THREE__namespace.Matrix4(),
+    boundingBox: new THREE__namespace.Box3(),
+    sampleGeometry: {},
+    box: new THREE__namespace.Box3(),
+    raycastPoints: [],
+    tileData: {
+      positionCount: this._params.tempTileDataSize,
+      objectClass: ObjectClass.LINE,
+      positionBuffer: new Float32Array(this._params.tempTileDataSize)
+    },
+    tileCenter: new THREE__namespace.Vector3(),
+    tile: {
+      objectClass: ObjectClass.LINE,
+      positionCount: 6
+    },
+    viewDimension: 0,
+    pastFieldOfview: 0
+  };
+  _currentSample = 0;
+  _virtualPlanes = [];
+  _changedSamples = 0;
+  _virtualView;
+  /**
+   * Per-sample frustum verdict from the spatial hierarchy, refreshed on
+   * every real view change: 1 = the sample's box is provably outside
+   * the frustum/clipping planes (skip all per-sample plane math in
+   * {@link fetchLodLevel}), 0 = candidate (run the exact per-sample
+   * test as before, so the final classification is unchanged). All
+   * zeroes when no view or lookup exists — the pass then behaves
+   * exactly like the flat version.
+   */
+  _outsideMask;
+  _lodMode = LodMode.DEFAULT;
   constructor(data) {
-    __publicField(this, "meshes");
-    __publicField(this, "tilesUpdated", false);
-    __publicField(this, "_sampleAmount");
-    __publicField(this, "_tileDimension");
-    __publicField(this, "_tileBySample");
-    __publicField(this, "_lodBySample");
-    __publicField(this, "_virtualMeshes", /* @__PURE__ */ new Map());
-    __publicField(this, "_meshConnection");
-    __publicField(this, "_samples");
-    __publicField(this, "_tileIdGenerator", new CRC());
-    __publicField(this, "_tiles", /* @__PURE__ */ new Map());
-    __publicField(this, "_tilesChanged", /* @__PURE__ */ new Set());
-    __publicField(this, "_sizeByTile", /* @__PURE__ */ new Map());
-    __publicField(this, "_samplesDimensions");
-    __publicField(this, "_sampleLodClass");
-    __publicField(this, "_sampleLodState");
-    __publicField(this, "_sampleLodSize");
-    __publicField(this, "_boxes");
-    __publicField(this, "_items");
-    __publicField(this, "_materials");
-    __publicField(this, "_modelId");
-    __publicField(this, "_lastView", {
-      rotation: new THREE__namespace.Vector3(),
-      location: new THREE__namespace.Vector3()
-    });
-    __publicField(this, "_params", {
-      updateTime: 16,
-      updateSamples: 64,
-      updateviewOrientation: 8 * Math.PI / 180,
-      updateViewPosition: 256,
-      smallTileSize: 0.32,
-      mediumTileSize: 4,
-      smallObjectSize: 2,
-      smallScreenSize: 2,
-      mediumScreenSize: 4,
-      largeScreenSize: 16,
-      tempTileDataSize: 6,
-      tileIdIncrement: 1,
-      tileSizeMultiplier: 10,
-      minTileDimension: 32,
-      tileDimensionFactor: 8
-    });
-    __publicField(this, "_temp", {
-      sample: new Sample(),
-      representation: new Representation(),
-      vector: new THREE__namespace.Vector3(),
-      matrix: new THREE__namespace.Matrix4(),
-      transform: new THREE__namespace.Matrix4(),
-      boundingBox: new THREE__namespace.Box3(),
-      sampleGeometry: {},
-      box: new THREE__namespace.Box3(),
-      raycastPoints: [],
-      tileData: {
-        positionCount: this._params.tempTileDataSize,
-        objectClass: ObjectClass.LINE,
-        positionBuffer: new Float32Array(this._params.tempTileDataSize)
-      },
-      tileCenter: new THREE__namespace.Vector3(),
-      tile: {
-        objectClass: ObjectClass.LINE,
-        positionCount: 6
-      },
-      viewDimension: 0,
-      pastFieldOfview: 0
-    });
-    __publicField(this, "_currentSample", 0);
-    __publicField(this, "_virtualPlanes", []);
-    __publicField(this, "_changedSamples", 0);
-    __publicField(this, "_virtualView");
-    /**
-     * Per-sample frustum verdict from the spatial hierarchy, refreshed on
-     * every real view change: 1 = the sample's box is provably outside
-     * the frustum/clipping planes (skip all per-sample plane math in
-     * {@link fetchLodLevel}), 0 = candidate (run the exact per-sample
-     * test as before, so the final classification is unchanged). All
-     * zeroes when no view or lookup exists — the pass then behaves
-     * exactly like the flat version.
-     */
-    __publicField(this, "_outsideMask");
-    __publicField(this, "_lodMode", LodMode.DEFAULT);
     this._modelId = data.modelId;
     this._boxes = data.boxes;
     this._items = data.items;
@@ -32507,9 +31816,9 @@ const _VirtualTilesController = class _VirtualTilesController {
     for (let i = 0; i < this._sampleAmount; i++) {
       this.generateSampleInTiles(this._samplesDimensions[i]);
       if (i % step === 0) {
-        onProgress == null ? void 0 : onProgress(i / this._sampleAmount);
+        onProgress?.(i / this._sampleAmount);
         await new Promise((resolve) => setTimeout(resolve, 0));
-        throwIfAborted == null ? void 0 : throwIfAborted();
+        throwIfAborted?.();
       }
     }
     this.setupTileVisibilityAndHighlight();
@@ -32540,9 +31849,8 @@ const _VirtualTilesController = class _VirtualTilesController {
    * (empty model) or no view yet.
    */
   updateOutsideMask() {
-    var _a2;
     const lookup = this._boxes.lookup;
-    const frustum = (_a2 = this._virtualView) == null ? void 0 : _a2.cameraFrustum;
+    const frustum = this._virtualView?.cameraFrustum;
     if (!lookup || !frustum) {
       this._outsideMask.fill(0);
       return;
@@ -32586,14 +31894,11 @@ const _VirtualTilesController = class _VirtualTilesController {
    */
   getDrawChunksForItems(itemIds) {
     const result = [];
-    if (itemIds.size === 0)
-      return result;
+    if (itemIds.size === 0) return result;
     for (const [tileId, tile] of this._tiles) {
-      if (!tile.notVirtual)
-        continue;
+      if (!tile.notVirtual) continue;
       const totalIndices = tile.indexCount ?? 0;
-      if (!totalIndices)
-        continue;
+      if (!totalIndices) continue;
       const positions = [];
       const sizes = [];
       let runStart = -1;
@@ -32601,8 +31906,7 @@ const _VirtualTilesController = class _VirtualTilesController {
       for (const [sample] of tile.sampleLocation) {
         const inSet = itemIds.has(this.itemId(sample));
         if (inSet) {
-          if (runStart < 0)
-            runStart = location;
+          if (runStart < 0) runStart = location;
         } else if (runStart >= 0) {
           const startIdx = tile.indexLocation[runStart];
           const endIdx = tile.indexLocation[location];
@@ -32617,8 +31921,7 @@ const _VirtualTilesController = class _VirtualTilesController {
         positions.push(startIdx);
         sizes.push(totalIndices - startIdx);
       }
-      if (positions.length === 0)
-        continue;
+      if (positions.length === 0) continue;
       result.push({
         tileId,
         position: new Uint32Array(positions),
@@ -32826,8 +32129,7 @@ const _VirtualTilesController = class _VirtualTilesController {
   }
   updateOrientationIfNeeded() {
     const orientation = this.getCurrentViewOrientation();
-    if (!orientation)
-      return;
+    if (!orientation) return;
     const orientationThreshold = this._params.updateviewOrientation;
     const orientationChange = orientation.angleTo(this._lastView.rotation);
     const orientationNeedsUpdate = orientationChange > orientationThreshold;
@@ -32954,7 +32256,7 @@ const _VirtualTilesController = class _VirtualTilesController {
     return MultiBufferData.get(tile.visibilities, locations, filter);
   }
   memoryOverflow() {
-    const current = _VirtualTilesController._graphicMemoryConsumed;
+    const current = VirtualTilesController._graphicMemoryConsumed;
     const available = this._virtualView.graphicThreshold;
     return current > available;
   }
@@ -33076,8 +32378,7 @@ const _VirtualTilesController = class _VirtualTilesController {
     this._samples.setVisible(id, vis);
     this._samples.setHighlight(id, high);
     const tileIds = this.getTileIds(id, lod);
-    if (tileIds === void 0)
-      return;
+    if (tileIds === void 0) return;
     MiscHelper.forEach(tileIds, (tileId) => {
       this.updateTile(tileId, id, high, vis);
     });
@@ -33110,7 +32411,7 @@ const _VirtualTilesController = class _VirtualTilesController {
     if (shouldDelete) {
       this.deleteGeometry(tileId);
       tile.notVirtual = false;
-      _VirtualTilesController._graphicMemoryConsumed -= tile.usedMemory;
+      VirtualTilesController._graphicMemoryConsumed -= tile.usedMemory;
       return;
     }
     this._tilesChanged.add(tileId);
@@ -33317,8 +32618,7 @@ const _VirtualTilesController = class _VirtualTilesController {
     if (tileIds === void 0) {
       tileIds = tileId;
     } else if (typeof tileIds === "number") {
-      if (tileIds !== tileId)
-        tileIds = [tileIds, tileId];
+      if (tileIds !== tileId) tileIds = [tileIds, tileId];
     } else if (!tileIds.includes(tileId)) {
       tileIds.push(tileId);
     }
@@ -33459,7 +32759,7 @@ const _VirtualTilesController = class _VirtualTilesController {
     return { visibilityData, highlightData, highlightIds };
   }
   updateMemoryOnTileLoad(tile) {
-    _VirtualTilesController._graphicMemoryConsumed += tile.usedMemory;
+    VirtualTilesController._graphicMemoryConsumed += tile.usedMemory;
   }
   fetchTileMatrixOnLoad(tile) {
     if (tile.location) {
@@ -33566,15 +32866,13 @@ const _VirtualTilesController = class _VirtualTilesController {
     this.meshes.samples(sample, this._temp.sample);
     return this._temp.sample.item();
   }
-};
-__publicField(_VirtualTilesController, "_graphicMemoryConsumed", 0);
-let VirtualTilesController = _VirtualTilesController;
+}
 class VirtualMaterialController {
+  _modelId;
+  _list = [];
+  _idsByDefinition = /* @__PURE__ */ new Map();
+  _onTransfer;
   constructor(modelId, onTransfer) {
-    __publicField(this, "_modelId");
-    __publicField(this, "_list", []);
-    __publicField(this, "_idsByDefinition", /* @__PURE__ */ new Map());
-    __publicField(this, "_onTransfer");
     this._modelId = modelId;
     this._onTransfer = onTransfer;
   }
@@ -33595,13 +32893,11 @@ class VirtualMaterialController {
   getItemsMaterialDefinition(model, indices, localIds) {
     const result = [];
     const meshes = model.meshes();
-    if (!meshes)
-      return [];
+    if (!meshes) return [];
     const map = /* @__PURE__ */ new Map();
     for (const [index, itemIndex] of indices.entries()) {
       const sample = meshes.samples(itemIndex);
-      if (!sample)
-        continue;
+      if (!sample) continue;
       const materialIndex = sample.material();
       let materialItems = map.get(materialIndex);
       if (!materialItems) {
@@ -33612,8 +32908,7 @@ class VirtualMaterialController {
     }
     for (const [materialIndex, localIds2] of map.entries()) {
       const material = meshes.materials(materialIndex);
-      if (!material)
-        continue;
+      if (!material) continue;
       const definition = ParserHelper.parseMaterial(material);
       result.push({ localIds: [...localIds2], definition });
     }
@@ -33654,28 +32949,19 @@ class VirtualMaterialController {
   }
 }
 class VirtualPropertiesController {
+  _model;
+  _boxes;
+  _localIdsToGeometryIds = /* @__PURE__ */ new Map();
+  _guidToLocalIdMap = /* @__PURE__ */ new Map();
+  _items = /* @__PURE__ */ new Map();
+  _itemDataCache = /* @__PURE__ */ new Map();
+  _itemDataConfig = {
+    attributesDefault: true,
+    relationsDefault: { attributes: false, relations: false }
+  };
+  _spatialStructure = null;
+  _virtualModel;
   constructor(virtualModel, boxes, config) {
-    __publicField(this, "_model");
-    __publicField(this, "_boxes");
-    __publicField(this, "_localIdsToGeometryIds", /* @__PURE__ */ new Map());
-    __publicField(this, "_guidToLocalIdMap", /* @__PURE__ */ new Map());
-    __publicField(this, "_items", /* @__PURE__ */ new Map());
-    __publicField(this, "_itemDataCache", /* @__PURE__ */ new Map());
-    __publicField(this, "_itemDataConfig", {
-      attributesDefault: true,
-      relationsDefault: { attributes: false, relations: false }
-    });
-    __publicField(this, "_spatialStructure", null);
-    __publicField(this, "_virtualModel");
-    __publicField(this, "_relations", /* @__PURE__ */ new Map());
-    // Memoized localId → array index lookups. The flatbuffer accessors return
-    // a fresh TypedArray view on every call, so the caches are keyed by the
-    // underlying buffer and length instead of array identity. Without these,
-    // every getItemAttributes/getItemRelations call does a linear indexOf scan,
-    // which makes bulk reads (e.g. getItemsData over all psets) O(n²).
-    __publicField(this, "_localIdIndexCache", null);
-    __publicField(this, "_relationsItemIndexCache", null);
-    __publicField(this, "_categoryIndexCache", null);
     this._virtualModel = virtualModel;
     this._model = virtualModel.data;
     this._boxes = boxes;
@@ -33705,8 +32991,7 @@ class VirtualPropertiesController {
       }
       for (let i = 0; i < this._model.guidsItemsLength(); i++) {
         const localId = this._model.guidsItems(i);
-        if (localId === null)
-          continue;
+        if (localId === null) continue;
         const guid = this._model.guids(i);
         this._guidToLocalIdMap.set(guid, localId);
         let itemInfo = this._items.get(localId);
@@ -33723,15 +33008,21 @@ class VirtualPropertiesController {
       }
     }
   }
+  _relations = /* @__PURE__ */ new Map();
+  // Memoized localId → array index lookups. The flatbuffer accessors return
+  // a fresh TypedArray view on every call, so the caches are keyed by the
+  // underlying buffer and length instead of array identity. Without these,
+  // every getItemAttributes/getItemRelations call does a linear indexOf scan,
+  // which makes bulk reads (e.g. getItemsData over all psets) O(n²).
+  _localIdIndexCache = null;
+  _relationsItemIndexCache = null;
   indexOfLocalId(localId) {
     const arr = this._model.localIdsArray();
-    if (!arr)
-      return void 0;
+    if (!arr) return void 0;
     let cache = this._localIdIndexCache;
     if (!cache || cache.length !== arr.length || cache.buffer !== arr.buffer) {
       const map = /* @__PURE__ */ new Map();
-      for (let i = 0; i < arr.length; i++)
-        map.set(arr[i], i);
+      for (let i = 0; i < arr.length; i++) map.set(arr[i], i);
       cache = { buffer: arr.buffer, length: arr.length, map };
       this._localIdIndexCache = cache;
     }
@@ -33739,13 +33030,11 @@ class VirtualPropertiesController {
   }
   indexOfRelationsItem(localId) {
     const arr = this._model.relationsItemsArray();
-    if (!arr)
-      return void 0;
+    if (!arr) return void 0;
     let cache = this._relationsItemIndexCache;
     if (!cache || cache.length !== arr.length || cache.buffer !== arr.buffer) {
       const map = /* @__PURE__ */ new Map();
-      for (let i = 0; i < arr.length; i++)
-        map.set(arr[i], i);
+      for (let i = 0; i < arr.length; i++) map.set(arr[i], i);
       cache = { buffer: arr.buffer, length: arr.length, map };
       this._relationsItemIndexCache = cache;
     }
@@ -33761,8 +33050,7 @@ class VirtualPropertiesController {
     const psetLocalIds = categoriesIds[category];
     for (const psetId of psetLocalIds) {
       const relations = this.getItemRelations(psetId);
-      if (!(relations && relations[relation]))
-        continue;
+      if (!(relations && relations[relation])) continue;
       const localIds = relations[relation];
       for (const itemId of localIds) {
         let relationsObject = this._relations.get(itemId);
@@ -33802,19 +33090,16 @@ class VirtualPropertiesController {
   getItemIdsFromLocalIds(localIds) {
     if (!localIds) {
       const meshes = this._model.meshes();
-      if (!meshes)
-        return [];
+      if (!meshes) return [];
       const count = meshes.meshesItemsLength();
       const all = new Array(count);
-      for (let itemId = 0; itemId < count; itemId++)
-        all[itemId] = itemId;
+      for (let itemId = 0; itemId < count; itemId++) all[itemId] = itemId;
       return all;
     }
     const itemIds = [];
     for (const localId of localIds) {
       const found = this._localIdsToGeometryIds.get(localId);
-      if (!found)
-        continue;
+      if (!found) continue;
       for (const itemId of found) {
         itemIds.push(itemId);
       }
@@ -33827,13 +33112,10 @@ class VirtualPropertiesController {
     const result = [];
     for (const itemId of itemIds) {
       const localIdIndex = meshes.meshesItems(itemId);
-      if (localIdIndex === null)
-        continue;
+      if (localIdIndex === null) continue;
       const localId = this._model.localIds(localIdIndex);
-      if (localId === null)
-        continue;
-      if (seen.has(localId))
-        continue;
+      if (localId === null) continue;
+      if (seen.has(localId)) continue;
       seen.add(localId);
       result.push(localId);
     }
@@ -33865,8 +33147,7 @@ class VirtualPropertiesController {
     const result = /* @__PURE__ */ new Set();
     for (const id of ids) {
       const localId = this.convertToLocalId(id);
-      if (localId === null)
-        continue;
+      if (localId === null) continue;
       this.traverseSpatialStructure(localId, result);
     }
     return [...result];
@@ -33881,18 +33162,15 @@ class VirtualPropertiesController {
   }
   getLocalIds() {
     const array = this._model.localIdsArray();
-    if (!array)
-      return [];
+    if (!array) return [];
     return Array.from(array);
   }
   getItemsCategories(ids) {
-    var _a2;
     const result = [];
     for (const id of ids) {
       const localId = this.convertToLocalId(id);
-      if (localId === null)
-        continue;
-      let category = ((_a2 = this._items.get(localId)) == null ? void 0 : _a2.category) ?? null;
+      if (localId === null) continue;
+      let category = this._items.get(localId)?.category ?? null;
       if (category === null) {
         const created = this._virtualModel.requestIndex.first(
           localId,
@@ -33915,10 +33193,9 @@ class VirtualPropertiesController {
     return result;
   }
   getGuidsByLocalIds(localIds) {
-    var _a2;
     const result = [];
     for (const id of localIds) {
-      const guid = (_a2 = this._items.get(id)) == null ? void 0 : _a2.guid;
+      const guid = this._items.get(id)?.guid;
       result.push(guid !== void 0 ? guid : null);
     }
     return result;
@@ -33927,8 +33204,7 @@ class VirtualPropertiesController {
     const names = /* @__PURE__ */ new Set();
     for (let i = 0; i < this._model.uniqueAttributesLength(); i++) {
       const attribute = this._model.uniqueAttributes(i);
-      if (!attribute)
-        continue;
+      if (!attribute) continue;
       const [name] = JSON.parse(attribute);
       names.add(name);
     }
@@ -33938,15 +33214,13 @@ class VirtualPropertiesController {
     const values = /* @__PURE__ */ new Set();
     for (let i = 0; i < this._model.uniqueAttributesLength(); i++) {
       const attribute = this._model.uniqueAttributes(i);
-      if (!attribute)
-        continue;
+      if (!attribute) continue;
       const [, value] = JSON.parse(attribute);
       values.add(value);
     }
     return [...values];
   }
   getAttributesUniqueValues(params) {
-    var _a2, _b2, _c;
     const map = /* @__PURE__ */ new Map();
     const areCategoriesDefined = params.every(
       (value) => value.categories !== void 0
@@ -33954,23 +33228,19 @@ class VirtualPropertiesController {
     const categoriesRegex = params.map((value) => value.categories).filter((value) => value !== void 0).flat();
     for (let i = 0; i < this._model.categoriesLength(); i++) {
       const localId = this._model.localIds(i);
-      if (localId === null)
-        continue;
+      if (localId === null) continue;
       let valid = true;
       if (areCategoriesDefined) {
         const category2 = this._model.categories(i);
-        valid = categoriesRegex.some((regex) => regex == null ? void 0 : regex.test(category2));
+        valid = categoriesRegex.some((regex) => regex?.test(category2));
       }
-      if (!valid)
-        continue;
+      if (!valid) continue;
       const buffer = this._model.attributes(i);
-      if (!buffer)
-        continue;
+      if (!buffer) continue;
       const attributeSet = {};
       for (let j = 0; j < buffer.dataLength(); j++) {
         const attr = buffer.data(j);
-        if (!attr)
-          continue;
+        if (!attr) continue;
         const [name, value, type] = JSON.parse(attr);
         attributeSet[name] = { value, type };
       }
@@ -33981,16 +33251,14 @@ class VirtualPropertiesController {
         if (categories) {
           categoryMatch = categories.some((value) => value.test(category));
         }
-        if (!categoryMatch)
-          continue;
+        if (!categoryMatch) continue;
         let setPasses = true;
         if (attributes) {
           const { aggregation, queries } = attributes;
           const queryResults = [];
           for (const { name, value, type, negate } of queries) {
             const key = keys.find((key2) => name.test(key2));
-            if (!(key && ((_a2 = attributeSet[key]) == null ? void 0 : _a2.value) !== void 0))
-              break;
+            if (!(key && attributeSet[key]?.value !== void 0)) break;
             let pass = false;
             const { value: keyValue, type: keyType } = attributeSet[key];
             if (value instanceof RegExp) {
@@ -34001,18 +33269,16 @@ class VirtualPropertiesController {
             if (type !== void 0) {
               pass = pass && typeof keyType === "string" && type.test(keyType);
             }
-            if (negate)
-              pass = !pass;
+            if (negate) pass = !pass;
             queryResults.push(pass);
           }
           setPasses = aggregation === "exclusive" ? queryResults.every((result2) => result2) : queryResults.some((result2) => result2);
         }
         if (setPasses) {
           const key = keys.find((key2) => get.test(key2));
-          if (!(key && ((_b2 = attributeSet[key]) == null ? void 0 : _b2.value) !== void 0))
-            continue;
+          if (!(key && attributeSet[key]?.value !== void 0)) continue;
           const mapKey = resultKey ?? key;
-          const value = (_c = attributeSet[key]) == null ? void 0 : _c.value;
+          const value = attributeSet[key]?.value;
           if (!map.has(mapKey)) {
             map.set(mapKey, /* @__PURE__ */ new Map());
           }
@@ -34040,8 +33306,7 @@ class VirtualPropertiesController {
     const types = /* @__PURE__ */ new Set();
     for (let i = 0; i < this._model.uniqueAttributesLength(); i++) {
       const attribute = this._model.uniqueAttributes(i);
-      if (!attribute)
-        continue;
+      if (!attribute) continue;
       const [, , type] = JSON.parse(attribute);
       types.add(type);
     }
@@ -34051,8 +33316,7 @@ class VirtualPropertiesController {
     const names = /* @__PURE__ */ new Set();
     for (let i = 0; i < this._model.relationNamesLength(); i++) {
       const name = this._model.relationNames(i);
-      if (!name)
-        continue;
+      if (!name) continue;
       names.add(name);
     }
     return [...names];
@@ -34141,7 +33405,6 @@ class VirtualPropertiesController {
     data[name] = { value, type };
   }
   getItemData(id, config = {}) {
-    var _a2;
     const allAttributes = this._itemDataConfig.attributesDefault;
     const attributesConfig = this._itemDataConfig.attributes;
     const relationsConfig = this._itemDataConfig.relations ?? {};
@@ -34178,7 +33441,7 @@ class VirtualPropertiesController {
       return {};
     }
     const [category] = this.getItemsCategories([localId]);
-    const guid = typeof id === "string" ? id : ((_a2 = this._items.get(id)) == null ? void 0 : _a2.guid) ?? null;
+    const guid = typeof id === "string" ? id : this._items.get(id)?.guid ?? null;
     const data = {
       _category: { value: category },
       _localId: { value: localId },
@@ -34189,10 +33452,10 @@ class VirtualPropertiesController {
       const itemAttrs = this.getItemAttributes(id);
       for (const [key, value] of Object.entries(itemAttrs ?? {})) {
         if (allAttributes) {
-          if (!(attributesConfig == null ? void 0 : attributesConfig.includes(key))) {
+          if (!attributesConfig?.includes(key)) {
             data[key] = value;
           }
-        } else if (attributesConfig == null ? void 0 : attributesConfig.includes(key)) {
+        } else if (attributesConfig?.includes(key)) {
           data[key] = value;
         }
       }
@@ -34227,8 +33490,7 @@ class VirtualPropertiesController {
     this._itemDataCache.clear();
     const result = [];
     const _ids = ids.length !== 0 ? ids : this._model.localIdsArray();
-    if (!_ids)
-      return result;
+    if (!_ids) return result;
     this._itemDataConfig = {
       ...this._itemDataConfig,
       ...config
@@ -34291,8 +33553,7 @@ class VirtualPropertiesController {
     const categories = /* @__PURE__ */ new Set();
     for (let index = 0; index < this._model.categoriesLength(); index++) {
       const category = this._model.categories(index);
-      if (!category)
-        continue;
+      if (!category) continue;
       categories.add(category);
     }
     for (let i = 0; i < this._virtualModel.requests.length; i++) {
@@ -34340,12 +33601,10 @@ class VirtualPropertiesController {
           const target = result[currentCategory];
           if (deletedItems.size > 0) {
             for (const localId of ids) {
-              if (!deletedItems.has(localId))
-                target.push(localId);
+              if (!deletedItems.has(localId)) target.push(localId);
             }
           } else {
-            for (const localId of ids)
-              target.push(localId);
+            for (const localId of ids) target.push(localId);
           }
           break;
         }
@@ -34353,6 +33612,7 @@ class VirtualPropertiesController {
     }
     return result;
   }
+  _categoryIndexCache = null;
   /**
    * Lazily built category → localIds index over the immutable flatbuffer
    * data. Keyed by the underlying buffer and length so it rebuilds if the
@@ -34367,8 +33627,7 @@ class VirtualPropertiesController {
       const map = /* @__PURE__ */ new Map();
       for (let index = 0; index < length; index++) {
         const currentCategory = this._model.categories(index);
-        if (!currentCategory)
-          continue;
+        if (!currentCategory) continue;
         const localId = this._model.localIds(index);
         let ids = map.get(currentCategory);
         if (!ids) {
@@ -34444,23 +33703,19 @@ class VirtualPropertiesController {
     const allAttributesLength = this._model.attributesLength();
     const res = [];
     const missingItemsToIterate = new Set(itemIds);
-    const itemIdSet = (itemIds == null ? void 0 : itemIds.length) ? new Set(itemIds) : null;
+    const itemIdSet = itemIds?.length ? new Set(itemIds) : null;
     for (let i = 0; i < allAttributesLength; i++) {
       const localId = this._model.localIds(i);
-      if (localId === null)
-        continue;
+      if (localId === null) continue;
       missingItemsToIterate.delete(localId);
-      if (itemIdSet && !itemIdSet.has(localId))
-        continue;
+      if (itemIdSet && !itemIdSet.has(localId)) continue;
       const attribute = this._model.attributes(i);
-      if (!attribute)
-        continue;
-      const dataLength = attribute == null ? void 0 : attribute.dataLength();
+      if (!attribute) continue;
+      const dataLength = attribute?.dataLength();
       let itemPasses = false;
       for (let j = 0; j < dataLength; j++) {
         const data = attribute.data(j);
-        if (!data)
-          continue;
+        if (!data) continue;
         const [attrName, val, typeValue] = JSON.parse(data);
         const pass = this.checkAttribute(
           {
@@ -34517,8 +33772,7 @@ class VirtualPropertiesController {
           localId,
           EditRequestType.CREATE_ITEM
         );
-        if (!created)
-          continue;
+        if (!created) continue;
         const data = {};
         for (const name2 in created.data.data) {
           const found = created.data.data[name2];
@@ -34558,9 +33812,8 @@ class VirtualPropertiesController {
     const sources = sourceItemIds ?? this.getAllLocalIds();
     for (const srcId of sources) {
       const rels = this.getItemRelations(srcId);
-      const linked = rels == null ? void 0 : rels[name];
-      if (!linked)
-        continue;
+      const linked = rels?.[name];
+      if (!linked) continue;
       if (targetItemIds) {
         for (const trgId of linked) {
           if (targetItemIds.has(trgId)) {
@@ -34575,24 +33828,21 @@ class VirtualPropertiesController {
     return res;
   }
   getItemsByQuery(params, config) {
-    var _a2;
     const { categories, attributes, relation } = params;
-    let candidateIds = config == null ? void 0 : config.localIds;
+    let candidateIds = config?.localIds;
     if (candidateIds) {
       if (categories) {
         const itemsCategories = this.getItemsCategories(candidateIds);
         candidateIds = candidateIds.filter((_, index) => {
           const category = itemsCategories[index];
-          if (!category)
-            return null;
+          if (!category) return null;
           return categories.some((entry) => entry.test(category));
         });
       }
     } else {
-      candidateIds = ((_a2 = categories == null ? void 0 : categories.filter(Boolean)) == null ? void 0 : _a2.length) ? Object.values(this.getItemsOfCategories(categories)).flat() : void 0;
+      candidateIds = categories?.filter(Boolean)?.length ? Object.values(this.getItemsOfCategories(categories)).flat() : void 0;
     }
-    if ((candidateIds == null ? void 0 : candidateIds.length) === 0)
-      return [];
+    if (candidateIds?.length === 0) return [];
     if (attributes) {
       const aggregation = attributes.aggregation ?? "exclusive";
       const ids = [];
@@ -34632,8 +33882,7 @@ class VirtualPropertiesController {
       }
       candidateIds = [...set];
     }
-    if ((candidateIds == null ? void 0 : candidateIds.length) === 0)
-      return [];
+    if (candidateIds?.length === 0) return [];
     if (relation && Boolean(relation.name)) {
       const { name, query } = relation;
       const targetIds = query ? new Set(this.getItemsByQuery(query)) : void 0;
@@ -34669,8 +33918,7 @@ class VirtualPropertiesController {
     for (let i = 0; i < length; i++) {
       const localIdIndex = geometries.meshesItems(i);
       const localId = this._model.localIds(localIdIndex);
-      if (localId === null)
-        continue;
+      if (localId === null) continue;
       if (!this._localIdsToGeometryIds.has(localId)) {
         this._localIdsToGeometryIds.set(localId, []);
       }
@@ -34679,11 +33927,9 @@ class VirtualPropertiesController {
   }
   convertToLocalId(id) {
     const isLocalId = typeof id === "number";
-    if (isLocalId)
-      return id;
+    if (isLocalId) return id;
     const localId = this._guidToLocalIdMap.get(id);
-    if (localId === void 0)
-      return null;
+    if (localId === void 0) return null;
     return localId;
   }
   getChildrenLocalIds(treeItem, collector) {
@@ -34697,8 +33943,7 @@ class VirtualPropertiesController {
     }
   }
   traverseSpatialStructure(localId, collector, treeItem = this.getSpatialStructure()) {
-    if (!treeItem)
-      return;
+    if (!treeItem) return;
     if (treeItem.localId === localId && treeItem.children) {
       for (const child of treeItem.children) {
         this.getChildrenLocalIds(child, collector);
@@ -34713,8 +33958,8 @@ class VirtualPropertiesController {
   }
 }
 class AlignmentsController {
+  _fragments;
   constructor(virtualFragmentsModel) {
-    __publicField(this, "_fragments");
     this._fragments = virtualFragmentsModel;
   }
   getAlignments() {
@@ -34737,9 +33982,7 @@ class AlignmentsController {
   }
 }
 class VirtualTemplateController {
-  constructor() {
-    __publicField(this, "_templates", /* @__PURE__ */ new Map());
-  }
+  _templates = /* @__PURE__ */ new Map();
   add(code, template) {
     this._templates.set(code, template);
   }
@@ -34760,16 +34003,16 @@ class VirtualTemplateController {
     return result;
   }
 }
-const DELETED = Symbol("deleted index");
+const DELETED = /* @__PURE__ */ Symbol("deleted index");
 class VirtualIndexesController {
+  _vm;
+  _storedByName = /* @__PURE__ */ new Map();
+  _storedNames = null;
+  /** Overlay built from pending CREATE/UPDATE/DELETE_INDEX requests. */
+  _overlay = null;
+  /** Length of the request list when the overlay was built; rebuild on mismatch. */
+  _overlayRequestsLen = -1;
   constructor(vm) {
-    __publicField(this, "_vm");
-    __publicField(this, "_storedByName", /* @__PURE__ */ new Map());
-    __publicField(this, "_storedNames", null);
-    /** Overlay built from pending CREATE/UPDATE/DELETE_INDEX requests. */
-    __publicField(this, "_overlay", null);
-    /** Length of the request list when the overlay was built; rebuild on mismatch. */
-    __publicField(this, "_overlayRequestsLen", -1);
     this._vm = vm;
   }
   /**
@@ -34784,16 +34027,13 @@ class VirtualIndexesController {
     const seen = /* @__PURE__ */ new Set();
     for (const name of stored) {
       const o = overlay.get(name);
-      if (o === DELETED)
-        continue;
+      if (o === DELETED) continue;
       out.push(name);
       seen.add(name);
     }
     for (const [name, entry] of overlay) {
-      if (entry === DELETED)
-        continue;
-      if (seen.has(name))
-        continue;
+      if (entry === DELETED) continue;
+      if (seen.has(name)) continue;
       out.push(name);
     }
     return out;
@@ -34813,22 +34053,18 @@ class VirtualIndexesController {
    */
   getKeys(name) {
     const entry = this.resolve(name);
-    if (!entry)
-      return null;
+    if (!entry) return null;
     return entry.info.keyType === "number" ? this.materializeNumberKeys(entry) : this.materializeStringKeys(entry);
   }
   getKey(name, index) {
     const entry = this.resolve(name);
-    if (!entry)
-      return null;
+    if (!entry) return null;
     return entry.info.keyType === "number" ? this.materializeNumberKeys(entry)[index] ?? null : this.readStringKey(entry.source, index);
   }
   getValues(name) {
     const entry = this.resolve(name);
-    if (!entry)
-      return null;
-    if (entry.info.valueType === "none")
-      return null;
+    if (!entry) return null;
+    if (entry.info.valueType === "none") return null;
     const inverse = this.inverseMap(entry);
     return Array.from(inverse.keys());
   }
@@ -34837,10 +34073,8 @@ class VirtualIndexesController {
    */
   has(name, key) {
     const entry = this.resolve(name);
-    if (!entry)
-      return false;
-    if (typeof key !== entry.info.keyType)
-      return false;
+    if (!entry) return false;
+    if (typeof key !== entry.info.keyType) return false;
     return this.keyMap(entry).has(key);
   }
   /**
@@ -34850,16 +34084,12 @@ class VirtualIndexesController {
    */
   getEntry(name, key) {
     const entry = this.resolve(name);
-    if (!entry)
-      return null;
-    if (typeof key !== entry.info.keyType)
-      return null;
+    if (!entry) return null;
+    if (typeof key !== entry.info.keyType) return null;
     const position = this.keyMap(entry).get(key);
-    if (position === void 0)
-      return null;
+    if (position === void 0) return null;
     const { mode, valueType } = entry.info;
-    if (mode === "keysOnly" || valueType === "none")
-      return null;
+    if (mode === "keysOnly" || valueType === "none") return null;
     if (mode === "oneToOne") {
       return this.readScalarValue(entry, position);
     }
@@ -34875,16 +34105,12 @@ class VirtualIndexesController {
    */
   getInverseEntry(name, value) {
     const entry = this.resolve(name);
-    if (!entry)
-      return null;
-    if (entry.info.valueType === "none")
-      return null;
-    if (typeof value !== entry.info.valueType)
-      return null;
+    if (!entry) return null;
+    if (entry.info.valueType === "none") return null;
+    if (typeof value !== entry.info.valueType) return null;
     const inverse = this.inverseMap(entry);
     const keys = inverse.get(value);
-    if (!keys)
-      return null;
+    if (!keys) return null;
     return entry.info.keyType === "number" ? Uint32Array.from(keys) : keys.slice();
   }
   /**
@@ -34903,11 +34129,9 @@ class VirtualIndexesController {
     this._storedByName.delete(name);
     if (this._storedNames) {
       const i = this._storedNames.indexOf(name);
-      if (i !== -1)
-        this._storedNames.splice(i, 1);
+      if (i !== -1) this._storedNames.splice(i, 1);
     }
-    if (this._overlay)
-      this._overlay.delete(name);
+    if (this._overlay) this._overlay.delete(name);
   }
   // ---------------------------------------------------------------------------
   // Resolution
@@ -34915,23 +34139,18 @@ class VirtualIndexesController {
   resolve(name) {
     const overlay = this.overlay();
     const pending = overlay.get(name);
-    if (pending === DELETED)
-      return null;
-    if (pending !== void 0)
-      return pending;
+    if (pending === DELETED) return null;
+    if (pending !== void 0) return pending;
     return this.resolveStored(name);
   }
   resolveStored(name) {
     const cached = this._storedByName.get(name);
-    if (cached)
-      return cached;
+    if (cached) return cached;
     const length = this._vm.data.indexesLength();
     for (let i = 0; i < length; i++) {
       const fb = this._vm.data.indexes(i);
-      if (!fb)
-        continue;
-      if (fb.name() !== name)
-        continue;
+      if (!fb) continue;
+      if (fb.name() !== name) continue;
       const entry = this.entryFromFb(fb, name);
       this._storedByName.set(name, entry);
       return entry;
@@ -34939,17 +34158,14 @@ class VirtualIndexesController {
     return null;
   }
   storedNames() {
-    if (this._storedNames)
-      return this._storedNames;
+    if (this._storedNames) return this._storedNames;
     const names = [];
     const length = this._vm.data.indexesLength();
     for (let i = 0; i < length; i++) {
       const idx = this._vm.data.indexes(i);
-      if (!idx)
-        continue;
+      if (!idx) continue;
       const name = idx.name();
-      if (!name)
-        continue;
+      if (!name) continue;
       names.push(name);
     }
     this._storedNames = names;
@@ -34985,16 +34201,12 @@ class VirtualIndexesController {
     const keyType = stringKeys > 0 ? "string" : "number";
     const size = keyType === "string" ? stringKeys : numberKeys;
     let valueType = "none";
-    if (stringValues > 0)
-      valueType = "string";
-    else if (numberValues > 0)
-      valueType = "number";
+    if (stringValues > 0) valueType = "string";
+    else if (numberValues > 0) valueType = "number";
     let mode = "keysOnly";
     if (valueType !== "none") {
-      if (endLen === 0)
-        mode = "oneToOne";
-      else
-        mode = startLen > 0 ? "oneToNNonLinear" : "oneToNLinear";
+      if (endLen === 0) mode = "oneToOne";
+      else mode = startLen > 0 ? "oneToNNonLinear" : "oneToNLinear";
     }
     return {
       source: { kind: "fb", fb },
@@ -35004,7 +34216,6 @@ class VirtualIndexesController {
     };
   }
   entryFromRaw(data) {
-    var _a2, _b2;
     const keyType = typeof data.keys[0] === "string" ? "string" : "number";
     const size = data.keys.length;
     let valueType = "none";
@@ -35013,12 +34224,10 @@ class VirtualIndexesController {
     }
     let mode = "keysOnly";
     if (valueType !== "none") {
-      const endLen = ((_a2 = data.end) == null ? void 0 : _a2.length) ?? 0;
-      const startLen = ((_b2 = data.start) == null ? void 0 : _b2.length) ?? 0;
-      if (endLen === 0)
-        mode = "oneToOne";
-      else
-        mode = startLen > 0 ? "oneToNNonLinear" : "oneToNLinear";
+      const endLen = data.end?.length ?? 0;
+      const startLen = data.start?.length ?? 0;
+      if (endLen === 0) mode = "oneToOne";
+      else mode = startLen > 0 ? "oneToNNonLinear" : "oneToNLinear";
     }
     const numberKeysArray = keyType === "number" ? Uint32Array.from(data.keys) : null;
     const numberValuesArray = valueType === "number" && data.values ? Uint32Array.from(data.values) : null;
@@ -35063,22 +34272,19 @@ class VirtualIndexesController {
   // ---------------------------------------------------------------------------
   /** Lazily build the `key -> position in keys vector` map for forward lookup. */
   keyMap(entry) {
-    if (entry.keyPositions)
-      return entry.keyPositions;
+    if (entry.keyPositions) return entry.keyPositions;
     const map = /* @__PURE__ */ new Map();
     const { source, info } = entry;
     if (info.keyType === "number") {
       for (let i = 0; i < info.size; i++) {
         const k = this.readNumberKey(source, i);
-        if (k === null)
-          continue;
+        if (k === null) continue;
         map.set(k, i);
       }
     } else {
       for (let i = 0; i < info.size; i++) {
         const k = this.readStringKey(source, i);
-        if (k === null)
-          continue;
+        if (k === null) continue;
         map.set(k, i);
       }
     }
@@ -35105,8 +34311,7 @@ class VirtualIndexesController {
   }
   readNumberSlice(entry, start, end) {
     const all = this.numberValuesArray(entry.source);
-    if (!all)
-      return new Uint32Array(0);
+    if (!all) return new Uint32Array(0);
     return all.subarray(start, end);
   }
   readStringSlice(entry, start, end) {
@@ -35131,8 +34336,7 @@ class VirtualIndexesController {
   }
   /** Lazily build the inverse map. */
   inverseMap(entry) {
-    if (entry.inverse)
-      return entry.inverse;
+    if (entry.inverse) return entry.inverse;
     const map = /* @__PURE__ */ new Map();
     const { source, info } = entry;
     const pushKey = (value, key) => {
@@ -35148,20 +34352,17 @@ class VirtualIndexesController {
     };
     for (let i = 0; i < info.size; i++) {
       const key = info.keyType === "number" ? this.readNumberKey(source, i) : this.readStringKey(source, i);
-      if (key === null)
-        continue;
+      if (key === null) continue;
       if (info.mode === "oneToOne") {
         const v = this.readScalarValue(entry, i);
-        if (v !== null)
-          pushKey(v, key);
+        if (v !== null) pushKey(v, key);
         continue;
       }
       if (info.mode === "oneToNLinear" || info.mode === "oneToNNonLinear") {
         const [start, end] = this.sliceBounds(entry, i);
         for (let j = start; j < end; j++) {
           const v = info.valueType === "number" ? this.readNumberValueAt(source, j) : this.readStringValueAt(source, j);
-          if (v !== null && v !== void 0)
-            pushKey(v, key);
+          if (v !== null && v !== void 0) pushKey(v, key);
         }
       }
     }
@@ -35169,17 +34370,33 @@ class VirtualIndexesController {
     return map;
   }
 }
-const _VirtualBox = class _VirtualBox {
+class VirtualBox {
+  _dataBuffer;
+  _dataPosition;
+  static _data = {
+    size: 6,
+    defaultPosition: 0,
+    min: {
+      x: 0,
+      y: 2,
+      z: 4
+    },
+    max: {
+      x: 1,
+      y: 3,
+      z: 5
+    },
+    coords: ["x", "y", "z"],
+    points: ["min", "max"]
+  };
   constructor(position, data) {
-    __publicField(this, "_dataBuffer");
-    __publicField(this, "_dataPosition");
     this._dataBuffer = data || this.getDefaultData();
-    this._dataPosition = position || _VirtualBox._data.defaultPosition;
+    this._dataPosition = position || VirtualBox._data.defaultPosition;
   }
   set(values) {
     let counter = 0;
-    for (const point of _VirtualBox._data.points) {
-      for (const coord of _VirtualBox._data.coords) {
+    for (const point of VirtualBox._data.points) {
+      for (const coord of VirtualBox._data.coords) {
         const position = this.getPosition(coord, point);
         const result = values[counter++];
         this.setValue(position, result);
@@ -35191,8 +34408,8 @@ const _VirtualBox = class _VirtualBox {
     return this._dataBuffer[position];
   }
   clone(box) {
-    for (const point of _VirtualBox._data.points) {
-      for (const coord of _VirtualBox._data.coords) {
+    for (const point of VirtualBox._data.points) {
+      for (const coord of VirtualBox._data.coords) {
         const position = this.getPosition(coord, point);
         const result = box.get(coord, point);
         this.setValue(position, result);
@@ -35200,8 +34417,8 @@ const _VirtualBox = class _VirtualBox {
     }
   }
   combine(box1, box2) {
-    for (const point of _VirtualBox._data.points) {
-      for (const coord of _VirtualBox._data.coords) {
+    for (const point of VirtualBox._data.points) {
+      for (const coord of VirtualBox._data.coords) {
         this.save(coord, point, box1, box2);
       }
     }
@@ -35210,10 +34427,10 @@ const _VirtualBox = class _VirtualBox {
     this._dataBuffer[position] = value;
   }
   getDefaultData() {
-    return new Float64Array(_VirtualBox._data.size);
+    return new Float64Array(VirtualBox._data.size);
   }
   getPosition(coord, point) {
-    const coordPosition = _VirtualBox._data[point][coord];
+    const coordPosition = VirtualBox._data[point][coord];
     return coordPosition + this._dataPosition;
   }
   save(coord, point, first, second) {
@@ -35223,54 +34440,36 @@ const _VirtualBox = class _VirtualBox {
     const result = Math[point](data1, data2);
     this.setValue(position, result);
   }
-};
-__publicField(_VirtualBox, "_data", {
-  size: 6,
-  defaultPosition: 0,
-  min: {
-    x: 0,
-    y: 2,
-    z: 4
-  },
-  max: {
-    x: 1,
-    y: 3,
-    z: 5
-  },
-  coords: ["x", "y", "z"],
-  points: ["min", "max"]
-});
-let VirtualBox = _VirtualBox;
-const _VirtualSpatialPoint = class _VirtualSpatialPoint {
+}
+class VirtualSpatialPoint {
+  box;
+  data = 0;
+  static _data = {
+    threshold: 0,
+    factor: -1
+  };
   constructor(position, data) {
-    __publicField(this, "box");
-    __publicField(this, "data", 0);
     this.box = new VirtualBox(position, data);
   }
   get size() {
-    return this.data * _VirtualSpatialPoint._data.factor;
+    return this.data * VirtualSpatialPoint._data.factor;
   }
   get isPoint() {
-    return this.data >= _VirtualSpatialPoint._data.threshold;
+    return this.data >= VirtualSpatialPoint._data.threshold;
   }
   transform(size, box, group) {
     if (!group) {
-      size *= _VirtualSpatialPoint._data.factor;
+      size *= VirtualSpatialPoint._data.factor;
     }
     this.data = size;
     this.box.clone(box);
   }
-};
-__publicField(_VirtualSpatialPoint, "_data", {
-  threshold: 0,
-  factor: -1
-});
-let VirtualSpatialPoint = _VirtualSpatialPoint;
+}
 class VirtualBoxCompressor {
+  _boxes;
+  _min = new THREE__namespace.Vector3();
+  _max = new THREE__namespace.Vector3();
   constructor(boxes) {
-    __publicField(this, "_boxes");
-    __publicField(this, "_min", new THREE__namespace.Vector3());
-    __publicField(this, "_max", new THREE__namespace.Vector3());
     this._boxes = boxes;
   }
   inflate(bounds) {
@@ -35299,9 +34498,9 @@ class VirtualBoxCompressor {
   }
 }
 class VirtualBoxCollider {
+  _data;
+  _compressor;
   constructor(compressor, data) {
-    __publicField(this, "_data");
-    __publicField(this, "_compressor");
     this._data = data;
     this._compressor = compressor;
   }
@@ -35360,7 +34559,7 @@ class VirtualBoxCollider {
   }
   getRayOnSeen(bounds) {
     let onSeen = this.newDefaultCallback(true);
-    const boundsExists = (bounds == null ? void 0 : bounds.length) > 0;
+    const boundsExists = bounds?.length > 0;
     if (boundsExists) {
       onSeen = (box) => {
         return CameraUtils.collides(box, bounds);
@@ -35443,17 +34642,17 @@ class VirtualBoxCollider {
   }
 }
 class VirtualBoxSorter {
+  _boxes;
+  _total = new THREE__namespace.Vector3();
+  _change = new THREE__namespace.Vector3();
+  _average = new THREE__namespace.Vector3();
+  _tempCenterVector = new THREE__namespace.Vector3();
+  _tempVectors = {
+    x: new THREE__namespace.Vector3(),
+    y: new THREE__namespace.Vector3(),
+    z: new THREE__namespace.Vector3()
+  };
   constructor(boxes) {
-    __publicField(this, "_boxes");
-    __publicField(this, "_total", new THREE__namespace.Vector3());
-    __publicField(this, "_change", new THREE__namespace.Vector3());
-    __publicField(this, "_average", new THREE__namespace.Vector3());
-    __publicField(this, "_tempCenterVector", new THREE__namespace.Vector3());
-    __publicField(this, "_tempVectors", {
-      x: new THREE__namespace.Vector3(),
-      y: new THREE__namespace.Vector3(),
-      z: new THREE__namespace.Vector3()
-    });
     this._boxes = boxes;
   }
   sort(dataBuffer, a, b) {
@@ -35537,11 +34736,11 @@ class VirtualBoxSorter {
   }
 }
 class VirtualBoxMaker {
+  _data;
+  _compressor;
+  _boxes;
+  _sorter;
   constructor(boxes, compressor, data) {
-    __publicField(this, "_data");
-    __publicField(this, "_compressor");
-    __publicField(this, "_boxes");
-    __publicField(this, "_sorter");
     this._data = data;
     this._compressor = compressor;
     this._boxes = boxes;
@@ -35606,13 +34805,15 @@ class VirtualBoxMaker {
     point.data = data;
   }
 }
-const _VirtualBoxStructure = class _VirtualBoxStructure {
+class VirtualBoxStructure {
+  static _boxSize = 6;
+  static _limitThreshold = 32;
+  _compressor;
+  _collider;
+  _maker;
+  _data;
+  _boxes;
   constructor(boxes) {
-    __publicField(this, "_compressor");
-    __publicField(this, "_collider");
-    __publicField(this, "_maker");
-    __publicField(this, "_data");
-    __publicField(this, "_boxes");
     this._boxes = boxes;
     this._compressor = new VirtualBoxCompressor(boxes);
     this._data = this.getData();
@@ -35640,7 +34841,7 @@ const _VirtualBoxStructure = class _VirtualBoxStructure {
     return this._collider.rayCollide(bounds, beam);
   }
   setupLimits() {
-    for (let i = 0; i < _VirtualBoxStructure._limitThreshold; i++) {
+    for (let i = 0; i < VirtualBoxStructure._limitThreshold; i++) {
       this._data.limits.primary.push(new VirtualBox());
       this._data.limits.secondary.push(new VirtualBox());
     }
@@ -35660,10 +34861,10 @@ const _VirtualBoxStructure = class _VirtualBoxStructure {
   initData() {
     const pointBuffer = this.getPointBuffer();
     const pointsAmount = this.getPointsAmount(pointBuffer);
-    const size = pointsAmount * _VirtualBoxStructure._boxSize;
+    const size = pointsAmount * VirtualBoxStructure._boxSize;
     const data = new Float64Array(size);
     for (let i = 0; i < pointsAmount; i++) {
-      const position = i * _VirtualBoxStructure._boxSize;
+      const position = i * VirtualBoxStructure._boxSize;
       const newPoint = new VirtualSpatialPoint(position, data);
       this._data.points.push(newPoint);
     }
@@ -35680,21 +34881,24 @@ const _VirtualBoxStructure = class _VirtualBoxStructure {
       }
     };
   }
-};
-__publicField(_VirtualBoxStructure, "_boxSize", 6);
-__publicField(_VirtualBoxStructure, "_limitThreshold", 32);
-let VirtualBoxStructure = _VirtualBoxStructure;
+}
 class VirtualBoxController {
+  lookup = null;
+  _boxSize = 6;
+  _pointSize = 3;
+  _temp;
+  _dimensionsOfSamples;
+  _samples = [];
+  _boxes;
+  _meshes;
+  _box;
+  get fullBox() {
+    return this._box;
+  }
+  set fullBox(box) {
+    this._box = box;
+  }
   constructor(fragments) {
-    __publicField(this, "lookup", null);
-    __publicField(this, "_boxSize", 6);
-    __publicField(this, "_pointSize", 3);
-    __publicField(this, "_temp");
-    __publicField(this, "_dimensionsOfSamples");
-    __publicField(this, "_samples", []);
-    __publicField(this, "_boxes");
-    __publicField(this, "_meshes");
-    __publicField(this, "_box");
     this._temp = {
       box: new THREE__namespace.Box3(),
       vector: new THREE__namespace.Vector3(),
@@ -35713,12 +34917,6 @@ class VirtualBoxController {
     const boxSize = sampleCount * this._boxSize;
     this._boxes = new Float64Array(boxSize);
     this.lookup = this.newLookup();
-  }
-  get fullBox() {
-    return this._box;
-  }
-  set fullBox(box) {
-    this._box = box;
   }
   sampleOf(id) {
     return this._samples[id];
@@ -35800,8 +34998,8 @@ class VirtualBoxController {
   }
 }
 class GridsController {
+  _fragments;
   constructor(virtualFragmentsModel) {
-    __publicField(this, "_fragments");
     this._fragments = virtualFragmentsModel;
   }
   async getGrids() {
@@ -35903,18 +35101,16 @@ class CoordinatesHelper {
   }
 }
 class HighlightHelper {
-  constructor() {
-    __publicField(this, "_highlightProps", [
-      "color",
-      "opacity",
-      "transparent",
-      "renderedFaces",
-      "depthTest",
-      "depthWrite",
-      "polygonOffsetFactor",
-      "polygonOffsetUnits"
-    ]);
-  }
+  _highlightProps = [
+    "color",
+    "opacity",
+    "transparent",
+    "renderedFaces",
+    "depthTest",
+    "depthWrite",
+    "polygonOffsetFactor",
+    "polygonOffsetUnits"
+  ];
   resetHighlight(model, items) {
     if (!items) {
       model.itemConfig.clearHighlight();
@@ -35937,8 +35133,7 @@ class HighlightHelper {
     const count = model.itemConfig.size;
     for (let itemId = 0; itemId < count; itemId++) {
       const hasHighlight = model.itemConfig.getHighlight(itemId);
-      if (!hasHighlight)
-        continue;
+      if (!hasHighlight) continue;
       const [localId] = model.properties.getLocalIdsFromItemIds([itemId]);
       found.push(localId);
     }
@@ -36093,9 +35288,7 @@ class HighlightHelper {
   }
 }
 class VisibilityHelper {
-  constructor() {
-    __publicField(this, "_hiddenForEdit", /* @__PURE__ */ new Set());
-  }
+  _hiddenForEdit = /* @__PURE__ */ new Set();
   resetVisible(model) {
     model.itemConfig.clearVisible();
     model.tiles.restart();
@@ -36192,8 +35385,7 @@ class GeometryHelper {
   getSampleGeometry(model, itemIndex, lod) {
     const sampleIndices = model.boxes.sampleOf(itemIndex);
     const result = [];
-    if (!sampleIndices)
-      return result;
+    if (!sampleIndices) return result;
     const meshes = model.data.meshes();
     for (const sampleIndex of sampleIndices) {
       const sample = model.tiles.fetchSample(sampleIndex, lod);
@@ -36224,8 +35416,7 @@ class GeometryHelper {
     const p3 = { x: 0, y: 0, z: 0 };
     const geometries = this.getSampleGeometry(model, id, CurrentLod.GEOMETRY);
     for (const { indices, positions } of geometries) {
-      if (!(indices && positions))
-        continue;
+      if (!(indices && positions)) continue;
       for (let i = 0; i < indices.length - 2; i += 3) {
         const i1 = indices[i] * 3;
         const i2 = indices[i + 1] * 3;
@@ -36255,9 +35446,7 @@ class GeometryHelper {
   }
 }
 class SectionHelper {
-  constructor() {
-    __publicField(this, "_sectionGenerator", new SectionGenerator());
-  }
+  _sectionGenerator = new SectionGenerator();
   getSection(model, plane, indices) {
     this._sectionGenerator.plane = plane;
     performance.now();
@@ -36265,8 +35454,7 @@ class SectionHelper {
     const meshes = [];
     for (const itemID of indices) {
       const sampleIds = model.boxes.sampleOf(itemID);
-      if (!sampleIds)
-        continue;
+      if (!sampleIds) continue;
       for (const sampleId of sampleIds) {
         const boundingBox2 = model.boxes.get(sampleId);
         if (!plane.intersectsBox(boundingBox2)) {
@@ -36278,8 +35466,7 @@ class SectionHelper {
           continue;
         }
         const sample = model.tiles.meshes.samples(sampleId);
-        if (!sample)
-          continue;
+        if (!sample) continue;
         const definitionID = sample.representation();
         if (!visitedGeometries.has(definitionID)) {
           const geometries2 = [];
@@ -36302,8 +35489,7 @@ class SectionHelper {
           visitedGeometries.set(definitionID, geometries2);
         }
         const geometries = visitedGeometries.get(definitionID);
-        if (!geometries)
-          continue;
+        if (!geometries) continue;
         for (const geometry of geometries) {
           const mesh = new THREE__namespace.Mesh(geometry);
           const transform = model.tiles.getSampleTransform(sampleId);
@@ -36334,53 +35520,50 @@ class SectionHelper {
   }
 }
 class SequenceHelper {
+  _model;
   constructor(model) {
-    __publicField(this, "_model");
-    __publicField(this, "sequenceSelectorFunction", {
-      withVisiblity: (_) => this._model.getItemsByVisibility(_),
-      highlighted: () => this._model.getHighlightItemIds(),
-      children: (_) => this._model.getItemsChildren(_),
-      ofCategory: (_) => {
-        const categoryIds = this._model.getItemsOfCategories(_);
-        return Object.values(categoryIds).flat();
-      },
-      withCondition: () => [],
-      withGeometry: () => this._model.getItemsWithGeometry()
-    });
-    __publicField(this, "sequenceResultFunction", {
-      attributes: (ids) => ids.map((id) => this._model.getItemAttributes(id)),
-      mergedBoxes: (_) => this._model.getBBoxes(_),
-      category: (ids) => this._model.getItemsCategories(ids),
-      children: (_) => this._model.getItemsChildren(_),
-      data: (ids, ...args) => this._model.getItemsData(ids, args[0]),
-      geometry: (ids) => this._model.getItemsGeometry(ids),
-      guid: (_) => this._model.getGuidsByLocalIds(_),
-      highlight: (_) => this._model.getHighlight(_),
-      relations: (ids) => ids.map((id) => this._model.getItemRelations(id)),
-      visibility: (_) => this._model.getVisible(_)
-    });
     this._model = model;
   }
   getSequenced(result, fromItems, inputs) {
-    var _a2;
     const resultFunction = this.sequenceResultFunction[result];
-    if (!resultFunction)
-      return null;
+    if (!resultFunction) return null;
     let partial = [];
     let iterations = 0;
     for (const action of fromItems) {
       const selectorFunction = this.sequenceSelectorFunction[action];
-      if (!selectorFunction)
-        continue;
-      const input2 = (_a2 = inputs == null ? void 0 : inputs.selector) == null ? void 0 : _a2[action];
+      if (!selectorFunction) continue;
+      const input2 = inputs?.selector?.[action];
       const data = iterations === 0 ? input2 : partial;
       partial = selectorFunction(data);
       iterations++;
     }
-    const input = inputs == null ? void 0 : inputs.result;
+    const input = inputs?.result;
     const out = resultFunction(partial, input);
     return out;
   }
+  sequenceSelectorFunction = {
+    withVisiblity: (_) => this._model.getItemsByVisibility(_),
+    highlighted: () => this._model.getHighlightItemIds(),
+    children: (_) => this._model.getItemsChildren(_),
+    ofCategory: (_) => {
+      const categoryIds = this._model.getItemsOfCategories(_);
+      return Object.values(categoryIds).flat();
+    },
+    withCondition: () => [],
+    withGeometry: () => this._model.getItemsWithGeometry()
+  };
+  sequenceResultFunction = {
+    attributes: (ids) => ids.map((id) => this._model.getItemAttributes(id)),
+    mergedBoxes: (_) => this._model.getBBoxes(_),
+    category: (ids) => this._model.getItemsCategories(ids),
+    children: (_) => this._model.getItemsChildren(_),
+    data: (ids, ...args) => this._model.getItemsData(ids, args[0]),
+    geometry: (ids) => this._model.getItemsGeometry(ids),
+    guid: (_) => this._model.getGuidsByLocalIds(_),
+    highlight: (_) => this._model.getHighlight(_),
+    relations: (ids) => ids.map((id) => this._model.getItemRelations(id)),
+    visibility: (_) => this._model.getVisible(_)
+  };
 }
 class ItemsHelper {
   traverse(model, itemIds, onItem) {
@@ -36395,8 +35578,7 @@ class ItemsHelper {
     const count = model.itemConfig.size;
     for (let itemId = 0; itemId < count; itemId++) {
       const conditionPass = condition(itemId);
-      if (!conditionPass)
-        continue;
+      if (!conditionPass) continue;
       found.push(itemId);
     }
     return found;
@@ -36415,14 +35597,12 @@ class ItemsHelper {
   }
 }
 class EditRequestIndex {
-  constructor() {
-    /** Local ids with a pending DELETE_ITEM request. */
-    __publicField(this, "deletedItems", /* @__PURE__ */ new Set());
-    __publicField(this, "_byLocalId", /* @__PURE__ */ new Map());
-    __publicField(this, "_deleteCounts", /* @__PURE__ */ new Map());
-    __publicField(this, "_source", null);
-    __publicField(this, "_size", 0);
-  }
+  /** Local ids with a pending DELETE_ITEM request. */
+  deletedItems = /* @__PURE__ */ new Set();
+  _byLocalId = /* @__PURE__ */ new Map();
+  _deleteCounts = /* @__PURE__ */ new Map();
+  _source = null;
+  _size = 0;
   /**
    * Makes sure the index reflects `requests`. Cheap when the tracked array is
    * unchanged; rebuilds when it was replaced or its length drifted.
@@ -36528,39 +35708,34 @@ class EditRequestIndex {
   }
 }
 class VirtualFragmentsModel {
+  data;
+  view;
+  raycaster;
+  itemConfig;
+  properties;
+  materials;
+  tiles;
+  boxes;
+  indexes;
+  requests = [];
+  _requestIndex = new EditRequestIndex();
+  _raycastHelper = new RaycastHelper();
+  _coordinatesHelper = new CoordinatesHelper();
+  _highlightHelper = new HighlightHelper();
+  _visibilityHelper = new VisibilityHelper();
+  _geometryHelper = new GeometryHelper();
+  _sectionHelper = new SectionHelper();
+  _itemsHelper = new ItemsHelper();
+  _sequenceHelper = new SequenceHelper(this);
+  _config = {};
+  _modelId;
+  _alignments;
+  _grids;
+  _connection;
+  _reprIdMap = /* @__PURE__ */ new Map();
+  _nextId = 0;
+  _requestsForRedo = [];
   constructor(modelId, data, connection, config) {
-    __publicField(this, "data");
-    __publicField(this, "view");
-    __publicField(this, "raycaster");
-    __publicField(this, "itemConfig");
-    __publicField(this, "properties");
-    __publicField(this, "materials");
-    __publicField(this, "tiles");
-    __publicField(this, "boxes");
-    __publicField(this, "indexes");
-    __publicField(this, "requests", []);
-    __publicField(this, "_requestIndex", new EditRequestIndex());
-    __publicField(this, "_raycastHelper", new RaycastHelper());
-    __publicField(this, "_coordinatesHelper", new CoordinatesHelper());
-    __publicField(this, "_highlightHelper", new HighlightHelper());
-    __publicField(this, "_visibilityHelper", new VisibilityHelper());
-    __publicField(this, "_geometryHelper", new GeometryHelper());
-    __publicField(this, "_sectionHelper", new SectionHelper());
-    __publicField(this, "_itemsHelper", new ItemsHelper());
-    __publicField(this, "_sequenceHelper", new SequenceHelper(this));
-    __publicField(this, "_config", {});
-    __publicField(this, "_modelId");
-    __publicField(this, "_alignments");
-    __publicField(this, "_grids");
-    __publicField(this, "_connection");
-    __publicField(this, "_reprIdMap", /* @__PURE__ */ new Map());
-    __publicField(this, "_nextId", 0);
-    __publicField(this, "_requestsForRedo", []);
-    __publicField(this, "_onTransferMaterial", (data, trans) => {
-      if (!this._connection)
-        return void 0;
-      return this._connection.fetch(data, trans);
-    });
     this._modelId = modelId;
     this._connection = connection;
     this._config = { ...this._config, ...config };
@@ -37168,6 +36343,10 @@ class VirtualFragmentsModel {
     const byteBuffer = new ByteBuffer(uintArray);
     return Model.getRootAsModel(byteBuffer);
   }
+  _onTransferMaterial = (data, trans) => {
+    if (!this._connection) return void 0;
+    return this._connection.fetch(data, trans);
+  };
   setupItemsConfig() {
     const meshes = this.data.meshes();
     const itemsCount = meshes ? meshes.meshesItemsLength() : 0;
@@ -37175,40 +36354,15 @@ class VirtualFragmentsModel {
   }
 }
 class SingleThreadedFragmentsModel {
+  _modelId;
+  _virtualModel;
   /**
-   * The constructor of the fragments model.
-   * @param raw - Whether `modelData` is raw (uncompressed) or deflated. If
-   * omitted, it is auto-detected from the buffer (see {@link isRawBuffer}).
+   * The promise of the asynchronous part of the model setup, started by the
+   * constructor. See {@link ready}. It is memoized: the setup runs exactly
+   * once, no public path can re-trigger it.
    */
-  constructor(modelId, modelData, raw) {
-    __publicField(this, "_modelId");
-    __publicField(this, "_virtualModel");
-    /**
-     * The promise of the asynchronous part of the model setup, started by the
-     * constructor. See {@link ready}. It is memoized: the setup runs exactly
-     * once, no public path can re-trigger it.
-     */
-    __publicField(this, "_setup");
-    __publicField(this, "_disposed", false);
-    this._modelId = modelId;
-    const isRaw = raw ?? isRawBuffer(modelData);
-    let data = modelData;
-    if (!isRaw) {
-      data = pako.inflate(modelData);
-    }
-    this._virtualModel = new VirtualFragmentsModel(
-      modelId,
-      data,
-      void 0
-    );
-    this._setup = this._virtualModel.setupData(void 0, () => {
-      if (this._disposed) {
-        throw new LoadAbortedError(this._modelId);
-      }
-    });
-    this._setup.catch(() => {
-    });
-  }
+  _setup;
+  _disposed = false;
   /**
    * The ID of the model.
    */
@@ -37227,6 +36381,31 @@ class SingleThreadedFragmentsModel {
    */
   get ready() {
     return this._setup;
+  }
+  /**
+   * The constructor of the fragments model.
+   * @param raw - Whether `modelData` is raw (uncompressed) or deflated. If
+   * omitted, it is auto-detected from the buffer (see {@link isRawBuffer}).
+   */
+  constructor(modelId, modelData, raw) {
+    this._modelId = modelId;
+    const isRaw = raw ?? isRawBuffer(modelData);
+    let data = modelData;
+    if (!isRaw) {
+      data = pako.inflate(modelData);
+    }
+    this._virtualModel = new VirtualFragmentsModel(
+      modelId,
+      data,
+      void 0
+    );
+    this._setup = this._virtualModel.setupData(void 0, () => {
+      if (this._disposed) {
+        throw new LoadAbortedError(this._modelId);
+      }
+    });
+    this._setup.catch(() => {
+    });
   }
   /**
    * Dispose the model. Use this when you're done with the model.
@@ -37603,21 +36782,21 @@ class SingleThreadedFragmentsModel {
 }
 const DEFAULT_POOL = "__default__";
 class ThreadsData {
-  constructor(threadPath) {
-    __publicField(this, "_modelThread", /* @__PURE__ */ new Map());
-    __publicField(this, "_threadsModelAmount", /* @__PURE__ */ new Map());
-    __publicField(this, "_threadPort", /* @__PURE__ */ new Map());
-    __publicField(this, "_threadPath");
-    __publicField(this, "_placeholder");
-    // Per-thread group tag. Default-pool threads use DEFAULT_POOL.
-    __publicField(this, "_threadGroup", /* @__PURE__ */ new Map());
-    // Per-model group tag, mirrors what the user passed at load().
-    __publicField(this, "_modelGroup", /* @__PURE__ */ new Map());
-    this._placeholder = {};
-    this._threadPath = threadPath;
-  }
+  _modelThread = /* @__PURE__ */ new Map();
+  _threadsModelAmount = /* @__PURE__ */ new Map();
+  _threadPort = /* @__PURE__ */ new Map();
+  _threadPath;
+  _placeholder;
+  // Per-thread group tag. Default-pool threads use DEFAULT_POOL.
+  _threadGroup = /* @__PURE__ */ new Map();
+  // Per-model group tag, mirrors what the user passed at load().
+  _modelGroup = /* @__PURE__ */ new Map();
   get path() {
     return this._threadPath;
+  }
+  constructor(threadPath) {
+    this._placeholder = {};
+    this._threadPath = threadPath;
   }
   usePlaceholder(id) {
     this._modelThread.set(id, this._placeholder);
@@ -37649,8 +36828,7 @@ class ThreadsData {
   }
   getThreadGroup(thread2) {
     const group = this._threadGroup.get(thread2);
-    if (group === void 0 || group === DEFAULT_POOL)
-      return void 0;
+    if (group === void 0 || group === DEFAULT_POOL) return void 0;
     return group;
   }
   /**
@@ -37661,8 +36839,7 @@ class ThreadsData {
     const target = group ?? DEFAULT_POOL;
     let count = 0;
     for (const value of this._threadGroup.values()) {
-      if (value === target)
-        count++;
+      if (value === target) count++;
     }
     return count;
   }
@@ -37701,8 +36878,7 @@ class ThreadsData {
     let lessBusyThread = null;
     let modelAmount = Number.MAX_VALUE;
     for (const [thread2, amount] of this._threadsModelAmount) {
-      if (this._threadGroup.get(thread2) !== target)
-        continue;
+      if (this._threadGroup.get(thread2) !== target) continue;
       if (amount < modelAmount) {
         modelAmount = amount;
         lessBusyThread = thread2;
@@ -37735,17 +36911,31 @@ class ThreadsData {
   }
 }
 class FragmentsConnection extends Connection {
+  _data;
+  _classicWorker;
+  _maxWorkers;
+  _threadGroups;
+  _defaultCap;
+  get maxWorkers() {
+    return this._maxWorkers;
+  }
+  get threadGroups() {
+    return Object.fromEntries(this._threadGroups);
+  }
+  /**
+   * Number of workers currently hosting at least one model. Used to
+   * split the global graphic-memory budget evenly between workers
+   * (each worker tracks its tile-cache consumption independently).
+   */
+  get activeThreadCount() {
+    return this._data.getThreadAmount();
+  }
   constructor(handleInput, threadPath, options) {
     super(handleInput);
-    __publicField(this, "_data");
-    __publicField(this, "_classicWorker");
-    __publicField(this, "_maxWorkers");
-    __publicField(this, "_threadGroups");
-    __publicField(this, "_defaultCap");
-    this._classicWorker = (options == null ? void 0 : options.classicWorker) ?? false;
+    this._classicWorker = options?.classicWorker ?? false;
     this._data = new ThreadsData(threadPath);
-    this._maxWorkers = MultithreadingHelper.getMaxWorkers(options == null ? void 0 : options.maxWorkers);
-    const declared = (options == null ? void 0 : options.threadGroups) ?? {};
+    this._maxWorkers = MultithreadingHelper.getMaxWorkers(options?.maxWorkers);
+    const declared = options?.threadGroups ?? {};
     let reserved = 0;
     this._threadGroups = /* @__PURE__ */ new Map();
     for (const [name, size] of Object.entries(declared)) {
@@ -37763,20 +36953,6 @@ class FragmentsConnection extends Connection {
       );
     }
     this._defaultCap = this._maxWorkers - reserved;
-  }
-  get maxWorkers() {
-    return this._maxWorkers;
-  }
-  get threadGroups() {
-    return Object.fromEntries(this._threadGroups);
-  }
-  /**
-   * Number of workers currently hosting at least one model. Used to
-   * split the global graphic-memory budget evenly between workers
-   * (each worker tracks its tile-cache consumption independently).
-   */
-  get activeThreadCount() {
-    return this._data.getThreadAmount();
   }
   delete(model) {
     const thread2 = this._data.getThreadSafe(model);
@@ -37879,113 +37055,9 @@ class FragmentsConnection extends Connection {
     return this._data.getPort(newThread);
   }
 }
-const _FragmentsModels = class _FragmentsModels {
-  /**
-   * Creates a new FragmentsModels instance.
-   *
-   * The recommended way to obtain the worker URL is via {@link FragmentsModels.getWorker},
-   * which fetches the version-matched worker from unpkg. See its docs for an example.
-   *
-   * @param workerURL - The URL of the worker script that will handle the fragments processing. If omitted, it falls back to the worker bundled with the package (only works with bundlers that can resolve `new URL("./Worker/worker.mjs", import.meta.url)`).
-   * @param options - Optional configuration.
-   */
-  constructor(workerURL, options) {
-    /**
-     * Event triggered when a model is loaded.
-     * @event
-     * @type {Event<FragmentsModel>}
-     */
-    __publicField(this, "onModelLoaded", new Event());
-    /**
-     * The manager that handles all loaded fragments models.
-     * Provides functionality to:
-     * - Store and retrieve models by ID
-     * - Track model loading/unloading
-     * - Coordinate updates across models
-     * - Handle model disposal
-     */
-    __publicField(this, "models");
-    /** Settings that control the behavior of the FragmentsModels system */
-    __publicField(this, "settings", {
-      /** Whether to automatically coordinate model positions relative to the first loaded model */
-      autoCoordinate: true,
-      /** Maximum rate (in milliseconds) at which visual updates are performed */
-      maxUpdateRate: 100,
-      /** Graphics quality level - 0 is low quality, 1 is high quality */
-      graphicsQuality: 0,
-      /**
-       * @deprecated The polling-based force-flush implementation has
-       * been replaced by a sequence-fence one (`forceUpdateFinish`
-       * resolves the moment a FINISH stamped with the relevant seq
-       * arrives). These knobs are no longer read; kept only to avoid
-       * breaking apps that set them.
-       */
-      forceUpdateRate: 200,
-      /** @deprecated See {@link forceUpdateRate}. */
-      forceUpdateBuffer: 200,
-      /**
-       * Interval in milliseconds to flush queued mesh requests from thread to
-       * main thread. Set this once at FragmentsModels construction; changing
-       * it after a model has been loaded has no effect on already-loaded
-       * models (they keep the value they were created with).
-       *
-       * Default 16 ms (one frame at 60 Hz). The previous 64 ms default
-       * left tile updates sitting in the worker's outflow buffer for up
-       * to ~1 frame longer than necessary; lowering it tightens the
-       * latency between worker work and visible result on every
-       * interaction. Apps with very heavy worker output may want to
-       * raise this to reduce postMessage frequency.
-       */
-      meshConnectionRate: 16,
-      /**
-       * Number of queued mesh requests that triggers an immediate flush.
-       * Same setup-time semantics as {@link meshConnectionRate}. Default
-       * 4 — bursts of work flush within a frame instead of being
-       * pinned to the rate timer.
-       */
-      meshConnectionThreshold: 4,
-      /**
-       * Delay in milliseconds between worker-side update loops when work is
-       * complete. Note: each worker has a single shared update loop, so when
-       * multiple models share a worker (default round-robin pool, or any
-       * `threadGroup`), the most recently loaded model's value applies to
-       * every model on that worker. Set this once at FragmentsModels
-       * construction and treat it as a global tuning knob.
-       *
-       * Default 32 ms (~30 Hz). The previous 128 ms default left the
-       * worker idling for up to ~8 frames between iterations, which on
-       * interactive workloads showed up as visible lag between RPC and
-       * visual settle. Apps with low-end CPUs may want to raise it to
-       * reduce idle-loop overhead.
-       */
-      threadUpdaterDelay: 32
-    });
-    /** Coordinates of the first loaded model, used for coordinate system alignment */
-    __publicField(this, "baseCoordinates", null);
-    /** The editor instance for managing model edits and changes */
-    __publicField(this, "editor");
-    __publicField(this, "_connection");
-    __publicField(this, "_progressCallbacks", /* @__PURE__ */ new Map());
-    __publicField(this, "_isDisposed", false);
-    __publicField(this, "_autoRedrawInterval", null);
-    __publicField(this, "_lastUpdate", 0);
-    __publicField(this, "_pendingForcedUpdate", null);
-    const url = workerURL ?? new URL("./Worker/worker.mjs", typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === "SCRIPT" && _documentCurrentScript.src || new URL("index.cjs", document.baseURI).href).href;
-    const requestEvent = this.newRequestEvent();
-    const updateEvent = this.newUpdateEvent();
-    this._connection = new FragmentsConnection(requestEvent, url, {
-      classicWorker: options == null ? void 0 : options.classicWorker,
-      maxWorkers: options == null ? void 0 : options.maxWorkers,
-      threadGroups: options == null ? void 0 : options.threadGroups
-    });
-    this.editor = new Editor(this, this._connection);
-    this.models = new MeshManager(updateEvent);
-    this.models.list.onItemDeleted.add(() => {
-      if (this.models.list.size !== 0)
-        return;
-      this.baseCoordinates = null;
-    });
-  }
+class FragmentsModels {
+  static _workerURL = null;
+  static _workerPromise = null;
   /**
    * Fetches the fragments worker from unpkg for the exact version of this
    * `@thatopen/fragments` package and returns a blob URL you can pass to the
@@ -38005,11 +37077,9 @@ const _FragmentsModels = class _FragmentsModels {
    * @returns A blob URL pointing to the fragments worker script.
    */
   static async getWorker() {
-    if (_FragmentsModels._workerURL)
-      return _FragmentsModels._workerURL;
-    if (_FragmentsModels._workerPromise)
-      return _FragmentsModels._workerPromise;
-    _FragmentsModels._workerPromise = (async () => {
+    if (FragmentsModels._workerURL) return FragmentsModels._workerURL;
+    if (FragmentsModels._workerPromise) return FragmentsModels._workerPromise;
+    FragmentsModels._workerPromise = (async () => {
       const url = `https://unpkg.com/@thatopen/fragments@${FRAGMENTS_VERSION}/dist/worker/worker.mjs`;
       const response = await fetch(url);
       if (!response.ok) {
@@ -38020,15 +37090,120 @@ const _FragmentsModels = class _FragmentsModels {
       const blob = await response.blob();
       const file = new File([blob], "worker.mjs", { type: "text/javascript" });
       const objectURL = URL.createObjectURL(file);
-      _FragmentsModels._workerURL = objectURL;
+      FragmentsModels._workerURL = objectURL;
       return objectURL;
     })();
     try {
-      return await _FragmentsModels._workerPromise;
+      return await FragmentsModels._workerPromise;
     } catch (error) {
-      _FragmentsModels._workerPromise = null;
+      FragmentsModels._workerPromise = null;
       throw error;
     }
+  }
+  /**
+   * Event triggered when a model is loaded.
+   * @event
+   * @type {Event<FragmentsModel>}
+   */
+  onModelLoaded = new Event();
+  /**
+   * The manager that handles all loaded fragments models.
+   * Provides functionality to:
+   * - Store and retrieve models by ID
+   * - Track model loading/unloading
+   * - Coordinate updates across models
+   * - Handle model disposal
+   */
+  models;
+  /** Settings that control the behavior of the FragmentsModels system */
+  settings = {
+    /** Whether to automatically coordinate model positions relative to the first loaded model */
+    autoCoordinate: true,
+    /** Maximum rate (in milliseconds) at which visual updates are performed */
+    maxUpdateRate: 100,
+    /** Graphics quality level - 0 is low quality, 1 is high quality */
+    graphicsQuality: 0,
+    /**
+     * @deprecated The polling-based force-flush implementation has
+     * been replaced by a sequence-fence one (`forceUpdateFinish`
+     * resolves the moment a FINISH stamped with the relevant seq
+     * arrives). These knobs are no longer read; kept only to avoid
+     * breaking apps that set them.
+     */
+    forceUpdateRate: 200,
+    /** @deprecated See {@link forceUpdateRate}. */
+    forceUpdateBuffer: 200,
+    /**
+     * Interval in milliseconds to flush queued mesh requests from thread to
+     * main thread. Set this once at FragmentsModels construction; changing
+     * it after a model has been loaded has no effect on already-loaded
+     * models (they keep the value they were created with).
+     *
+     * Default 16 ms (one frame at 60 Hz). The previous 64 ms default
+     * left tile updates sitting in the worker's outflow buffer for up
+     * to ~1 frame longer than necessary; lowering it tightens the
+     * latency between worker work and visible result on every
+     * interaction. Apps with very heavy worker output may want to
+     * raise this to reduce postMessage frequency.
+     */
+    meshConnectionRate: 16,
+    /**
+     * Number of queued mesh requests that triggers an immediate flush.
+     * Same setup-time semantics as {@link meshConnectionRate}. Default
+     * 4 — bursts of work flush within a frame instead of being
+     * pinned to the rate timer.
+     */
+    meshConnectionThreshold: 4,
+    /**
+     * Delay in milliseconds between worker-side update loops when work is
+     * complete. Note: each worker has a single shared update loop, so when
+     * multiple models share a worker (default round-robin pool, or any
+     * `threadGroup`), the most recently loaded model's value applies to
+     * every model on that worker. Set this once at FragmentsModels
+     * construction and treat it as a global tuning knob.
+     *
+     * Default 32 ms (~30 Hz). The previous 128 ms default left the
+     * worker idling for up to ~8 frames between iterations, which on
+     * interactive workloads showed up as visible lag between RPC and
+     * visual settle. Apps with low-end CPUs may want to raise it to
+     * reduce idle-loop overhead.
+     */
+    threadUpdaterDelay: 32
+  };
+  /** Coordinates of the first loaded model, used for coordinate system alignment */
+  baseCoordinates = null;
+  /** The editor instance for managing model edits and changes */
+  editor;
+  _connection;
+  _progressCallbacks = /* @__PURE__ */ new Map();
+  _isDisposed = false;
+  _autoRedrawInterval = null;
+  _lastUpdate = 0;
+  _pendingForcedUpdate = null;
+  /**
+   * Creates a new FragmentsModels instance.
+   *
+   * The recommended way to obtain the worker URL is via {@link FragmentsModels.getWorker},
+   * which fetches the version-matched worker from unpkg. See its docs for an example.
+   *
+   * @param workerURL - The URL of the worker script that will handle the fragments processing. If omitted, it falls back to the worker bundled with the package (only works with bundlers that can resolve `new URL("./Worker/worker.mjs", import.meta.url)`).
+   * @param options - Optional configuration.
+   */
+  constructor(workerURL, options) {
+    const url = workerURL ?? new URL("./Worker/worker.mjs", typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === "SCRIPT" && _documentCurrentScript.src || new URL("index.cjs", document.baseURI).href).href;
+    const requestEvent = this.newRequestEvent();
+    const updateEvent = this.newUpdateEvent();
+    this._connection = new FragmentsConnection(requestEvent, url, {
+      classicWorker: options?.classicWorker,
+      maxWorkers: options?.maxWorkers,
+      threadGroups: options?.threadGroups
+    });
+    this.editor = new Editor(this, this._connection);
+    this.models = new MeshManager(updateEvent);
+    this.models.list.onItemDeleted.add(() => {
+      if (this.models.list.size !== 0) return;
+      this.baseCoordinates = null;
+    });
   }
   /**
    * Effective max worker cap for this instance. Surfaces the value derived
@@ -38057,7 +37232,6 @@ const _FragmentsModels = class _FragmentsModels {
    * @returns Promise resolving to the loaded FragmentsModel instance.
    */
   async load(buffer, options) {
-    var _a2;
     this._connection.setModelThreadGroup(options.modelId, options.threadGroup);
     const virtualModelConfig = {
       ...options.virtualModelConfig,
@@ -38065,7 +37239,7 @@ const _FragmentsModels = class _FragmentsModels {
         meshConnectionRate: this.settings.meshConnectionRate,
         meshConnectionThreshold: this.settings.meshConnectionThreshold,
         threadUpdaterDelay: this.settings.threadUpdaterDelay,
-        ...(_a2 = options.virtualModelConfig) == null ? void 0 : _a2.multithreading
+        ...options.virtualModelConfig?.multithreading
       }
     };
     const model = new FragmentsModel(
@@ -38263,35 +37437,34 @@ const _FragmentsModels = class _FragmentsModels {
       this.manageRequest(request);
     };
   }
-};
-__publicField(_FragmentsModels, "_workerURL", null);
-__publicField(_FragmentsModels, "_workerPromise", null);
-let FragmentsModels = _FragmentsModels;
+}
 class IfcPropertyProcessor {
   constructor(_serializer, _builder) {
-    __publicField(this, "_lengthUnitsFactor", 1);
-    __publicField(this, "_attributesOffsets", []);
-    __publicField(this, "_relationsMap", {});
-    // Tracks entities already placed in the spatial structure so an item
-    // reachable by more than one relation (e.g. an alignment aggregated to the
-    // project and also referenced by a bridge) is listed once, not duplicated.
-    __publicField(this, "_spatialVisited", /* @__PURE__ */ new Set());
-    __publicField(this, "_guids", []);
-    __publicField(this, "_guidsItems", []);
-    __publicField(this, "_uniqueAttributes", /* @__PURE__ */ new Set());
-    __publicField(this, "_uniqueRelNames", /* @__PURE__ */ new Set());
-    __publicField(this, "_maxLocalID", 0);
-    __publicField(this, "_ifcApi", null);
-    __publicField(this, "wasm", {
-      path: "/node_modules/web-ifc/",
-      absolute: false
-    });
-    __publicField(this, "webIfcSettings", {});
-    __publicField(this, "expressIDs", []);
-    __publicField(this, "classes", []);
     this._serializer = _serializer;
     this._builder = _builder;
   }
+  _serializer;
+  _builder;
+  _lengthUnitsFactor = 1;
+  _attributesOffsets = [];
+  _relationsMap = {};
+  // Tracks entities already placed in the spatial structure so an item
+  // reachable by more than one relation (e.g. an alignment aggregated to the
+  // project and also referenced by a bridge) is listed once, not duplicated.
+  _spatialVisited = /* @__PURE__ */ new Set();
+  _guids = [];
+  _guidsItems = [];
+  _uniqueAttributes = /* @__PURE__ */ new Set();
+  _uniqueRelNames = /* @__PURE__ */ new Set();
+  _maxLocalID = 0;
+  _ifcApi = null;
+  wasm = {
+    path: "/node_modules/web-ifc/",
+    absolute: false
+  };
+  webIfcSettings = {};
+  expressIDs = [];
+  classes = [];
   async getIfcApi() {
     if (!this._ifcApi) {
       const ifcApi = new WEBIFC__namespace.IfcAPI();
@@ -38329,7 +37502,6 @@ class IfcPropertyProcessor {
     return value;
   }
   async process(data) {
-    var _a2, _b2, _c;
     const ifcApi = await this.getIfcApi();
     this._maxLocalID = data.maxLocalID + 1;
     if (data.readFromCallback && data.readCallback) {
@@ -38351,7 +37523,7 @@ class IfcPropertyProcessor {
     const itemsWithGeom = data.geometryProcessedLocalIDs;
     await this.processItems(itemsWithGeom);
     const visitedItems = new Set(itemsWithGeom);
-    (_a2 = data.progressCallback) == null ? void 0 : _a2.call(data, 0.6, {
+    data.progressCallback?.(0.6, {
       process: "attributes",
       state: "start",
       entitiesProcessed: itemsWithGeom.length
@@ -38364,19 +37536,16 @@ class IfcPropertyProcessor {
     const categoryPercentage = 0.15 / toProcess.length;
     for (const [index, entityClass] of toProcess.entries()) {
       const classEntities = ifcApi.GetLineIDsWithType(0, entityClass);
-      if (classEntities.size() === 0)
-        continue;
+      if (classEntities.size() === 0) continue;
       const items = [];
       for (let index2 = 0; index2 < classEntities.size(); index2++) {
         const id = classEntities.get(index2);
-        if (visitedItems.has(id))
-          continue;
+        if (visitedItems.has(id)) continue;
         items.push(id);
       }
-      if (items.length === 0)
-        continue;
+      if (items.length === 0) continue;
       await this.processItems(items);
-      (_b2 = data.progressCallback) == null ? void 0 : _b2.call(data, categoryPercentage * (index + 1) + 0.6, {
+      data.progressCallback?.(categoryPercentage * (index + 1) + 0.6, {
         process: "attributes",
         state: index + 1 === toProcess.length ? "finish" : "inProgress",
         class: ifcCategoryMap[entityClass],
@@ -38396,14 +37565,12 @@ class IfcPropertyProcessor {
     const relsPercentage = 0.15 / relsToProcess.length;
     for (const [index, rel] of relsToProcess.entries()) {
       const state = (() => {
-        if (index === 0)
-          return "start";
-        if (index + 1 === relsToProcess.length)
-          return "finish";
+        if (index === 0) return "start";
+        if (index + 1 === relsToProcess.length) return "finish";
         return "inProgress";
       })();
       await this.processRelations([rel]);
-      (_c = data.progressCallback) == null ? void 0 : _c.call(data, relsPercentage * (index + 1) + 0.75, {
+      data.progressCallback?.(relsPercentage * (index + 1) + 0.75, {
         process: "relations",
         state,
         class: ifcCategoryMap[rel]
@@ -38443,8 +37610,7 @@ class IfcPropertyProcessor {
       const expressID = items[index];
       try {
         const attrs = ifcApi.GetLine(0, expressID);
-        if (!attrs)
-          continue;
+        if (!attrs) continue;
         const className = ifcCategoryMap[attrs.type];
         this.classes.push(className);
         this.expressIDs.push(expressID);
@@ -38508,8 +37674,7 @@ class IfcPropertyProcessor {
     }
   }
   addRelation(expressID, relName, ids) {
-    if (!this._relationsMap[expressID])
-      this._relationsMap[expressID] = {};
+    if (!this._relationsMap[expressID]) this._relationsMap[expressID] = {};
     if (!this._relationsMap[expressID][relName])
       this._relationsMap[expressID][relName] = [];
     for (const id of ids) {
@@ -38523,20 +37688,20 @@ class IfcPropertyProcessor {
     const ifcApi = await this.getIfcApi();
     const localPlacementAttrs = ifcApi.GetLine(0, placement);
     let relPlacementAttrs;
-    if ((localPlacementAttrs == null ? void 0 : localPlacementAttrs.RelativePlacement) && "value" in localPlacementAttrs.RelativePlacement && typeof localPlacementAttrs.RelativePlacement.value === "number") {
+    if (localPlacementAttrs?.RelativePlacement && "value" in localPlacementAttrs.RelativePlacement && typeof localPlacementAttrs.RelativePlacement.value === "number") {
       relPlacementAttrs = ifcApi.GetLine(
         0,
         localPlacementAttrs.RelativePlacement.value
       );
     }
     let locationAttrs;
-    if ((relPlacementAttrs == null ? void 0 : relPlacementAttrs.Location) && "value" in relPlacementAttrs.Location && typeof relPlacementAttrs.Location.value === "number") {
+    if (relPlacementAttrs?.Location && "value" in relPlacementAttrs.Location && typeof relPlacementAttrs.Location.value === "number") {
       locationAttrs = ifcApi.GetLine(0, relPlacementAttrs.Location.value);
     }
-    if ((locationAttrs == null ? void 0 : locationAttrs.Coordinates) && Array.isArray(locationAttrs.Coordinates) && "value" in locationAttrs.Coordinates[2] && typeof locationAttrs.Coordinates[2].value === "number") {
+    if (locationAttrs?.Coordinates && Array.isArray(locationAttrs.Coordinates) && "value" in locationAttrs.Coordinates[2] && typeof locationAttrs.Coordinates[2].value === "number") {
       height.value += locationAttrs.Coordinates[2].value;
     }
-    if ((localPlacementAttrs == null ? void 0 : localPlacementAttrs.PlacementRelTo) && "value" in localPlacementAttrs.PlacementRelTo && typeof localPlacementAttrs.PlacementRelTo.value === "number") {
+    if (localPlacementAttrs?.PlacementRelTo && "value" in localPlacementAttrs.PlacementRelTo && typeof localPlacementAttrs.PlacementRelTo.value === "number") {
       await this.getAbsoluteElevation(
         localPlacementAttrs.PlacementRelTo.value,
         height
@@ -38601,8 +37766,7 @@ class IfcPropertyProcessor {
         type = void 0;
       }
       if (type === 5) {
-        if (typeof value !== "number")
-          continue;
+        if (typeof value !== "number") continue;
         this.addRelation(expressID, attrName, [value]);
       } else {
         const unwrappedValue = this.unwrapValue(value);
@@ -38699,18 +37863,15 @@ class IfcPropertyProcessor {
     const ifcApi = await this.getIfcApi();
     for (const entityClass of rels) {
       const relNames = this._serializer.relations.get(entityClass);
-      if (!relNames)
-        continue;
+      if (!relNames) continue;
       const { forRelating, forRelated } = relNames;
       const classEntities = ifcApi.GetLineIDsWithType(0, entityClass);
-      if (classEntities.size() === 0)
-        continue;
+      if (classEntities.size() === 0) continue;
       for (let index = 0; index < classEntities.size(); index++) {
         const expressID = classEntities.get(index);
         try {
           const attrs = ifcApi.GetLine(0, expressID);
-          if (!attrs)
-            continue;
+          if (!attrs) continue;
           const attrKeys = Object.keys(attrs);
           const relatingKey = attrKeys.find(
             (attr) => attr.startsWith("Relating")
@@ -38718,8 +37879,7 @@ class IfcPropertyProcessor {
           const relatedKey = attrKeys.find(
             (attr) => attr.startsWith("Related")
           );
-          if (!(relatingKey && relatedKey))
-            continue;
+          if (!(relatingKey && relatedKey)) continue;
           const relatingAttr = attrs[relatingKey];
           if (!relatingAttr || relatingAttr.value === void 0 || relatingAttr.value === null) {
             continue;
@@ -38734,8 +37894,7 @@ class IfcPropertyProcessor {
           } else if (rawRelatedIDs && rawRelatedIDs.value !== void 0 && rawRelatedIDs.value !== null) {
             relatedIDs = [rawRelatedIDs.value];
           }
-          if (relatedIDs.length === 0)
-            continue;
+          if (relatedIDs.length === 0) continue;
           this.addRelation(relatingID, forRelating, relatedIDs);
           for (const relatedID of relatedIDs) {
             this.addRelation(relatedID, forRelated, [relatingID]);
@@ -38752,22 +37911,19 @@ class IfcPropertyProcessor {
     const rels = [];
     const ids = [];
     for (const [expressID, entityRels] of Object.entries(this._relationsMap)) {
-      if (clean && !this.expressIDs.includes(Number(expressID)))
-        continue;
+      if (clean && !this.expressIDs.includes(Number(expressID))) continue;
       const definitions = [];
       for (const [attrName, _rels] of Object.entries(entityRels)) {
         let rels2 = _rels;
         if (clean) {
           rels2 = _rels.filter((id) => this.expressIDs.includes(id));
-          if (rels2.length === 0)
-            continue;
+          if (rels2.length === 0) continue;
         }
         const hash = JSON.stringify([attrName, ...rels2]);
         const offset = this._builder.createSharedString(hash);
         definitions.push(offset);
       }
-      if (clean && definitions.length === 0)
-        continue;
+      if (clean && definitions.length === 0) continue;
       ids.push(Number(expressID));
       const dataVector = Relation.createDataVector(
         this._builder,
@@ -38886,8 +38042,7 @@ class IfcPropertyProcessor {
   }
   getMetadataRecursively(source, target) {
     for (const item of source) {
-      if (item === null || item === void 0)
-        continue;
+      if (item === null || item === void 0) continue;
       if (Array.isArray(item)) {
         this.getMetadataRecursively(item, target);
       }
@@ -38897,25 +38052,19 @@ class IfcPropertyProcessor {
     }
   }
   getEntityDecomposition(expressID, inverseAttributes) {
-    var _a2;
     const offsets = [];
     for (const attrName of inverseAttributes) {
-      const relations = (_a2 = this._relationsMap[expressID]) == null ? void 0 : _a2[attrName];
-      if (!relations)
-        continue;
+      const relations = this._relationsMap[expressID]?.[attrName];
+      if (!relations) continue;
       const entityGroups = {};
       for (const relatedID of relations) {
-        if (this._spatialVisited.has(relatedID))
-          continue;
+        if (this._spatialVisited.has(relatedID)) continue;
         const entityIndex = this.expressIDs.indexOf(relatedID);
-        if (entityIndex === -1)
-          continue;
+        if (entityIndex === -1) continue;
         const entityClass = this.classes[entityIndex];
-        if (!entityClass)
-          continue;
+        if (!entityClass) continue;
         this._spatialVisited.add(relatedID);
-        if (!entityGroups[entityClass])
-          entityGroups[entityClass] = [];
+        if (!entityGroups[entityClass]) entityGroups[entityClass] = [];
         entityGroups[entityClass].push(relatedID);
       }
       for (const category in entityGroups) {
@@ -38981,8 +38130,7 @@ class IfcPropertyProcessor {
     return offset;
   }
   clean() {
-    var _a2;
-    (_a2 = this._ifcApi) == null ? void 0 : _a2.Dispose();
+    this._ifcApi?.Dispose();
     this._ifcApi = null;
     this._guids = [];
     this._guidsItems = [];
@@ -38996,7 +38144,6 @@ class IfcPropertyProcessor {
 }
 class CivilReader {
   read(webIfc) {
-    var _a2;
     try {
       const alignments = webIfc.GetAllAlignments(0);
       const allAlignments = [];
@@ -39014,7 +38161,7 @@ class CivilReader {
           worldMatrix.fromArray(alignment.FlattenedWorldTransformMatrix);
         }
         let pointsCounter = 0;
-        const points3d = (_a2 = alignment.curve3D[0]) == null ? void 0 : _a2.points;
+        const points3d = alignment.curve3D[0]?.points;
         for (let i = 0; i < alignment.horizontal.length; i++) {
           const curveHorizontal = alignment.horizontal[i];
           const result3d = [];
@@ -39026,11 +38173,10 @@ class CivilReader {
           for (const point of curveHorizontal.points) {
             if (noVertical) {
               tempVec.set(point.x, point.y, 0);
-              if (worldMatrix)
-                tempVec.applyMatrix4(worldMatrix);
+              if (worldMatrix) tempVec.applyMatrix4(worldMatrix);
               points3DReversed.push([tempVec.x, tempVec.z, -tempVec.y]);
             } else {
-              const point3d = points3d == null ? void 0 : points3d[pointsCounter++];
+              const point3d = points3d?.[pointsCounter++];
               if (point3d) {
                 points3DReversed.push([point3d.x, point3d.y, point3d.z]);
               } else {
@@ -39123,6 +38269,11 @@ class GridReader {
           const unsupportedAxes = [];
           const data = {
             id,
+            // This runs inside the per-grid catch, so an unguarded read would
+            // drop the whole grid. An unset GlobalId reads back as null, which
+            // `guid?: string` does not admit, so normalise it to undefined and
+            // let it drop out of the serialized data.
+            guid: grid.GlobalId?.value ?? void 0,
             transform: transform.elements,
             // prettier-ignore
             uAxes: this.getGridAxes(grid, webIfc, units, "UAxes", unsupportedAxes),
@@ -39153,7 +38304,6 @@ class GridReader {
     }
   }
   getGridAxes(ifcGrid, webIfc, units, ifcKey, unsupportedAxes) {
-    var _a2, _b2;
     if (!ifcGrid[ifcKey]) {
       return [];
     }
@@ -39166,14 +38316,13 @@ class GridReader {
         // AxisTag is an optional IfcLabel. web-ifc returns it as null when the
         // IFC omits it (IFCGRIDAXIS($,...)), so read it defensively; otherwise
         // a single tagless axis threw and the outer catch dropped every grid.
-        tag: ((_a2 = axisCurve.AxisTag) == null ? void 0 : _a2.value) ?? "",
+        tag: axisCurve.AxisTag?.value ?? "",
         curve: []
       };
       const pushPoint = (coords) => {
-        var _a3, _b3, _c;
-        const x = (((_a3 = coords[0]) == null ? void 0 : _a3.value) ?? 0) * units;
-        const y = (((_b3 = coords[1]) == null ? void 0 : _b3.value) ?? 0) * units;
-        const z = (((_c = coords[2]) == null ? void 0 : _c.value) ?? 0) * units;
+        const x = (coords[0]?.value ?? 0) * units;
+        const y = (coords[1]?.value ?? 0) * units;
+        const z = (coords[2]?.value ?? 0) * units;
         axisData.curve.push(x, y, z);
       };
       if (curve.type === WEBIFC__namespace.IFCPOLYLINE && curve.Points) {
@@ -39183,7 +38332,7 @@ class GridReader {
             pushPoint(ifcPoints.Coordinates);
           }
         }
-      } else if ((_b2 = curve.Points) == null ? void 0 : _b2.value) {
+      } else if (curve.Points?.value) {
         const ifcPoints = webIfc.GetLine(0, curve.Points.value);
         if (ifcPoints.CoordList) {
           for (const coordinates of ifcPoints.CoordList) {
@@ -39205,8 +38354,7 @@ class GridReader {
   getCurveTypeName(webIfc, curve) {
     try {
       const name = webIfc.GetNameFromTypeCode(curve.type);
-      if (name)
-        return name.toUpperCase();
+      if (name) return name.toUpperCase();
     } catch {
     }
     return `IFC type ${curve.type}`;
@@ -39371,7 +38519,7 @@ class SpaceBoundaryReader {
 }
 const t = new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 48, 8, 96, 3, 127, 127, 127, 1, 127, 96, 3, 127, 127, 127, 0, 96, 2, 127, 127, 0, 96, 1, 127, 1, 127, 96, 3, 127, 127, 126, 1, 126, 96, 3, 126, 127, 127, 1, 126, 96, 2, 127, 126, 0, 96, 1, 127, 1, 126, 3, 11, 10, 0, 0, 2, 1, 3, 4, 5, 6, 1, 7, 5, 3, 1, 0, 1, 7, 85, 9, 3, 109, 101, 109, 2, 0, 5, 120, 120, 104, 51, 50, 0, 0, 6, 105, 110, 105, 116, 51, 50, 0, 2, 8, 117, 112, 100, 97, 116, 101, 51, 50, 0, 3, 8, 100, 105, 103, 101, 115, 116, 51, 50, 0, 4, 5, 120, 120, 104, 54, 52, 0, 5, 6, 105, 110, 105, 116, 54, 52, 0, 7, 8, 117, 112, 100, 97, 116, 101, 54, 52, 0, 8, 8, 100, 105, 103, 101, 115, 116, 54, 52, 0, 9, 10, 251, 22, 10, 242, 1, 1, 4, 127, 32, 0, 32, 1, 106, 33, 3, 32, 1, 65, 16, 79, 4, 127, 32, 3, 65, 16, 107, 33, 6, 32, 2, 65, 168, 136, 141, 161, 2, 106, 33, 3, 32, 2, 65, 137, 235, 208, 208, 7, 107, 33, 4, 32, 2, 65, 207, 140, 162, 142, 6, 106, 33, 5, 3, 64, 32, 3, 32, 0, 40, 2, 0, 65, 247, 148, 175, 175, 120, 108, 106, 65, 13, 119, 65, 177, 243, 221, 241, 121, 108, 33, 3, 32, 4, 32, 0, 65, 4, 106, 34, 0, 40, 2, 0, 65, 247, 148, 175, 175, 120, 108, 106, 65, 13, 119, 65, 177, 243, 221, 241, 121, 108, 33, 4, 32, 2, 32, 0, 65, 4, 106, 34, 0, 40, 2, 0, 65, 247, 148, 175, 175, 120, 108, 106, 65, 13, 119, 65, 177, 243, 221, 241, 121, 108, 33, 2, 32, 5, 32, 0, 65, 4, 106, 34, 0, 40, 2, 0, 65, 247, 148, 175, 175, 120, 108, 106, 65, 13, 119, 65, 177, 243, 221, 241, 121, 108, 33, 5, 32, 6, 32, 0, 65, 4, 106, 34, 0, 79, 13, 0, 11, 32, 2, 65, 12, 119, 32, 5, 65, 18, 119, 106, 32, 4, 65, 7, 119, 106, 32, 3, 65, 1, 119, 106, 5, 32, 2, 65, 177, 207, 217, 178, 1, 106, 11, 32, 1, 106, 32, 0, 32, 1, 65, 15, 113, 16, 1, 11, 146, 1, 0, 32, 1, 32, 2, 106, 33, 2, 3, 64, 32, 1, 65, 4, 106, 32, 2, 75, 69, 4, 64, 32, 0, 32, 1, 40, 2, 0, 65, 189, 220, 202, 149, 124, 108, 106, 65, 17, 119, 65, 175, 214, 211, 190, 2, 108, 33, 0, 32, 1, 65, 4, 106, 33, 1, 12, 1, 11, 11, 3, 64, 32, 1, 32, 2, 79, 69, 4, 64, 32, 0, 32, 1, 45, 0, 0, 65, 177, 207, 217, 178, 1, 108, 106, 65, 11, 119, 65, 177, 243, 221, 241, 121, 108, 33, 0, 32, 1, 65, 1, 106, 33, 1, 12, 1, 11, 11, 32, 0, 32, 0, 65, 15, 118, 115, 65, 247, 148, 175, 175, 120, 108, 34, 0, 65, 13, 118, 32, 0, 115, 65, 189, 220, 202, 149, 124, 108, 34, 0, 65, 16, 118, 32, 0, 115, 11, 63, 0, 32, 0, 65, 8, 106, 32, 1, 65, 168, 136, 141, 161, 2, 106, 54, 2, 0, 32, 0, 65, 12, 106, 32, 1, 65, 137, 235, 208, 208, 7, 107, 54, 2, 0, 32, 0, 65, 16, 106, 32, 1, 54, 2, 0, 32, 0, 65, 20, 106, 32, 1, 65, 207, 140, 162, 142, 6, 106, 54, 2, 0, 11, 195, 4, 1, 6, 127, 32, 1, 32, 2, 106, 33, 6, 32, 0, 65, 24, 106, 33, 4, 32, 0, 65, 40, 106, 40, 2, 0, 33, 3, 32, 0, 32, 0, 40, 2, 0, 32, 2, 106, 54, 2, 0, 32, 0, 65, 4, 106, 34, 5, 32, 5, 40, 2, 0, 32, 2, 65, 16, 79, 32, 0, 40, 2, 0, 65, 16, 79, 114, 114, 54, 2, 0, 32, 2, 32, 3, 106, 65, 16, 73, 4, 64, 32, 3, 32, 4, 106, 32, 1, 32, 2, 252, 10, 0, 0, 32, 0, 65, 40, 106, 32, 2, 32, 3, 106, 54, 2, 0, 15, 11, 32, 3, 4, 64, 32, 3, 32, 4, 106, 32, 1, 65, 16, 32, 3, 107, 34, 2, 252, 10, 0, 0, 32, 0, 65, 8, 106, 34, 3, 32, 3, 40, 2, 0, 32, 4, 40, 2, 0, 65, 247, 148, 175, 175, 120, 108, 106, 65, 13, 119, 65, 177, 243, 221, 241, 121, 108, 54, 2, 0, 32, 0, 65, 12, 106, 34, 3, 32, 3, 40, 2, 0, 32, 4, 65, 4, 106, 40, 2, 0, 65, 247, 148, 175, 175, 120, 108, 106, 65, 13, 119, 65, 177, 243, 221, 241, 121, 108, 54, 2, 0, 32, 0, 65, 16, 106, 34, 3, 32, 3, 40, 2, 0, 32, 4, 65, 8, 106, 40, 2, 0, 65, 247, 148, 175, 175, 120, 108, 106, 65, 13, 119, 65, 177, 243, 221, 241, 121, 108, 54, 2, 0, 32, 0, 65, 20, 106, 34, 3, 32, 3, 40, 2, 0, 32, 4, 65, 12, 106, 40, 2, 0, 65, 247, 148, 175, 175, 120, 108, 106, 65, 13, 119, 65, 177, 243, 221, 241, 121, 108, 54, 2, 0, 32, 0, 65, 40, 106, 65, 0, 54, 2, 0, 32, 1, 32, 2, 106, 33, 1, 11, 32, 1, 32, 6, 65, 16, 107, 77, 4, 64, 32, 6, 65, 16, 107, 33, 8, 32, 0, 65, 8, 106, 40, 2, 0, 33, 2, 32, 0, 65, 12, 106, 40, 2, 0, 33, 3, 32, 0, 65, 16, 106, 40, 2, 0, 33, 5, 32, 0, 65, 20, 106, 40, 2, 0, 33, 7, 3, 64, 32, 2, 32, 1, 40, 2, 0, 65, 247, 148, 175, 175, 120, 108, 106, 65, 13, 119, 65, 177, 243, 221, 241, 121, 108, 33, 2, 32, 3, 32, 1, 65, 4, 106, 34, 1, 40, 2, 0, 65, 247, 148, 175, 175, 120, 108, 106, 65, 13, 119, 65, 177, 243, 221, 241, 121, 108, 33, 3, 32, 5, 32, 1, 65, 4, 106, 34, 1, 40, 2, 0, 65, 247, 148, 175, 175, 120, 108, 106, 65, 13, 119, 65, 177, 243, 221, 241, 121, 108, 33, 5, 32, 7, 32, 1, 65, 4, 106, 34, 1, 40, 2, 0, 65, 247, 148, 175, 175, 120, 108, 106, 65, 13, 119, 65, 177, 243, 221, 241, 121, 108, 33, 7, 32, 8, 32, 1, 65, 4, 106, 34, 1, 79, 13, 0, 11, 32, 0, 65, 8, 106, 32, 2, 54, 2, 0, 32, 0, 65, 12, 106, 32, 3, 54, 2, 0, 32, 0, 65, 16, 106, 32, 5, 54, 2, 0, 32, 0, 65, 20, 106, 32, 7, 54, 2, 0, 11, 32, 1, 32, 6, 73, 4, 64, 32, 4, 32, 1, 32, 6, 32, 1, 107, 34, 1, 252, 10, 0, 0, 32, 0, 65, 40, 106, 32, 1, 54, 2, 0, 11, 11, 97, 1, 1, 127, 32, 0, 65, 16, 106, 40, 2, 0, 33, 1, 32, 0, 65, 4, 106, 40, 2, 0, 4, 127, 32, 1, 65, 12, 119, 32, 0, 65, 20, 106, 40, 2, 0, 65, 18, 119, 106, 32, 0, 65, 12, 106, 40, 2, 0, 65, 7, 119, 106, 32, 0, 65, 8, 106, 40, 2, 0, 65, 1, 119, 106, 5, 32, 1, 65, 177, 207, 217, 178, 1, 106, 11, 32, 0, 40, 2, 0, 106, 32, 0, 65, 24, 106, 32, 0, 65, 40, 106, 40, 2, 0, 16, 1, 11, 255, 3, 2, 3, 126, 1, 127, 32, 0, 32, 1, 106, 33, 6, 32, 1, 65, 32, 79, 4, 126, 32, 6, 65, 32, 107, 33, 6, 32, 2, 66, 214, 235, 130, 238, 234, 253, 137, 245, 224, 0, 124, 33, 3, 32, 2, 66, 177, 169, 172, 193, 173, 184, 212, 166, 61, 125, 33, 4, 32, 2, 66, 249, 234, 208, 208, 231, 201, 161, 228, 225, 0, 124, 33, 5, 3, 64, 32, 3, 32, 0, 41, 3, 0, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 124, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 33, 3, 32, 4, 32, 0, 65, 8, 106, 34, 0, 41, 3, 0, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 124, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 33, 4, 32, 2, 32, 0, 65, 8, 106, 34, 0, 41, 3, 0, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 124, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 33, 2, 32, 5, 32, 0, 65, 8, 106, 34, 0, 41, 3, 0, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 124, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 33, 5, 32, 6, 32, 0, 65, 8, 106, 34, 0, 79, 13, 0, 11, 32, 2, 66, 12, 137, 32, 5, 66, 18, 137, 124, 32, 4, 66, 7, 137, 124, 32, 3, 66, 1, 137, 124, 32, 3, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 133, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 66, 157, 163, 181, 234, 131, 177, 141, 138, 250, 0, 125, 32, 4, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 133, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 66, 157, 163, 181, 234, 131, 177, 141, 138, 250, 0, 125, 32, 2, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 133, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 66, 157, 163, 181, 234, 131, 177, 141, 138, 250, 0, 125, 32, 5, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 133, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 66, 157, 163, 181, 234, 131, 177, 141, 138, 250, 0, 125, 5, 32, 2, 66, 197, 207, 217, 178, 241, 229, 186, 234, 39, 124, 11, 32, 1, 173, 124, 32, 0, 32, 1, 65, 31, 113, 16, 6, 11, 134, 2, 0, 32, 1, 32, 2, 106, 33, 2, 3, 64, 32, 2, 32, 1, 65, 8, 106, 79, 4, 64, 32, 1, 41, 3, 0, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 32, 0, 133, 66, 27, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 66, 157, 163, 181, 234, 131, 177, 141, 138, 250, 0, 125, 33, 0, 32, 1, 65, 8, 106, 33, 1, 12, 1, 11, 11, 32, 1, 65, 4, 106, 32, 2, 77, 4, 64, 32, 0, 32, 1, 53, 2, 0, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 133, 66, 23, 137, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 66, 249, 243, 221, 241, 153, 246, 153, 171, 22, 124, 33, 0, 32, 1, 65, 4, 106, 33, 1, 11, 3, 64, 32, 1, 32, 2, 73, 4, 64, 32, 0, 32, 1, 49, 0, 0, 66, 197, 207, 217, 178, 241, 229, 186, 234, 39, 126, 133, 66, 11, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 33, 0, 32, 1, 65, 1, 106, 33, 1, 12, 1, 11, 11, 32, 0, 32, 0, 66, 33, 136, 133, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 34, 0, 32, 0, 66, 29, 136, 133, 66, 249, 243, 221, 241, 153, 246, 153, 171, 22, 126, 34, 0, 32, 0, 66, 32, 136, 133, 11, 77, 0, 32, 0, 65, 8, 106, 32, 1, 66, 214, 235, 130, 238, 234, 253, 137, 245, 224, 0, 124, 55, 3, 0, 32, 0, 65, 16, 106, 32, 1, 66, 177, 169, 172, 193, 173, 184, 212, 166, 61, 125, 55, 3, 0, 32, 0, 65, 24, 106, 32, 1, 55, 3, 0, 32, 0, 65, 32, 106, 32, 1, 66, 249, 234, 208, 208, 231, 201, 161, 228, 225, 0, 124, 55, 3, 0, 11, 244, 4, 2, 3, 127, 4, 126, 32, 1, 32, 2, 106, 33, 5, 32, 0, 65, 40, 106, 33, 4, 32, 0, 65, 200, 0, 106, 40, 2, 0, 33, 3, 32, 0, 32, 0, 41, 3, 0, 32, 2, 173, 124, 55, 3, 0, 32, 2, 32, 3, 106, 65, 32, 73, 4, 64, 32, 3, 32, 4, 106, 32, 1, 32, 2, 252, 10, 0, 0, 32, 0, 65, 200, 0, 106, 32, 2, 32, 3, 106, 54, 2, 0, 15, 11, 32, 3, 4, 64, 32, 3, 32, 4, 106, 32, 1, 65, 32, 32, 3, 107, 34, 2, 252, 10, 0, 0, 32, 0, 65, 8, 106, 34, 3, 32, 3, 41, 3, 0, 32, 4, 41, 3, 0, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 124, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 55, 3, 0, 32, 0, 65, 16, 106, 34, 3, 32, 3, 41, 3, 0, 32, 4, 65, 8, 106, 41, 3, 0, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 124, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 55, 3, 0, 32, 0, 65, 24, 106, 34, 3, 32, 3, 41, 3, 0, 32, 4, 65, 16, 106, 41, 3, 0, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 124, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 55, 3, 0, 32, 0, 65, 32, 106, 34, 3, 32, 3, 41, 3, 0, 32, 4, 65, 24, 106, 41, 3, 0, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 124, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 55, 3, 0, 32, 0, 65, 200, 0, 106, 65, 0, 54, 2, 0, 32, 1, 32, 2, 106, 33, 1, 11, 32, 1, 65, 32, 106, 32, 5, 77, 4, 64, 32, 5, 65, 32, 107, 33, 2, 32, 0, 65, 8, 106, 41, 3, 0, 33, 6, 32, 0, 65, 16, 106, 41, 3, 0, 33, 7, 32, 0, 65, 24, 106, 41, 3, 0, 33, 8, 32, 0, 65, 32, 106, 41, 3, 0, 33, 9, 3, 64, 32, 6, 32, 1, 41, 3, 0, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 124, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 33, 6, 32, 7, 32, 1, 65, 8, 106, 34, 1, 41, 3, 0, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 124, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 33, 7, 32, 8, 32, 1, 65, 8, 106, 34, 1, 41, 3, 0, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 124, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 33, 8, 32, 9, 32, 1, 65, 8, 106, 34, 1, 41, 3, 0, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 124, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 33, 9, 32, 2, 32, 1, 65, 8, 106, 34, 1, 79, 13, 0, 11, 32, 0, 65, 8, 106, 32, 6, 55, 3, 0, 32, 0, 65, 16, 106, 32, 7, 55, 3, 0, 32, 0, 65, 24, 106, 32, 8, 55, 3, 0, 32, 0, 65, 32, 106, 32, 9, 55, 3, 0, 11, 32, 1, 32, 5, 73, 4, 64, 32, 4, 32, 1, 32, 5, 32, 1, 107, 34, 1, 252, 10, 0, 0, 32, 0, 65, 200, 0, 106, 32, 1, 54, 2, 0, 11, 11, 188, 2, 1, 5, 126, 32, 0, 65, 24, 106, 41, 3, 0, 33, 1, 32, 0, 41, 3, 0, 34, 2, 66, 32, 90, 4, 126, 32, 0, 65, 8, 106, 41, 3, 0, 34, 3, 66, 1, 137, 32, 0, 65, 16, 106, 41, 3, 0, 34, 4, 66, 7, 137, 124, 32, 1, 66, 12, 137, 32, 0, 65, 32, 106, 41, 3, 0, 34, 5, 66, 18, 137, 124, 124, 32, 3, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 133, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 66, 157, 163, 181, 234, 131, 177, 141, 138, 250, 0, 125, 32, 4, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 133, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 66, 157, 163, 181, 234, 131, 177, 141, 138, 250, 0, 125, 32, 1, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 133, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 66, 157, 163, 181, 234, 131, 177, 141, 138, 250, 0, 125, 32, 5, 66, 207, 214, 211, 190, 210, 199, 171, 217, 66, 126, 66, 31, 137, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 133, 66, 135, 149, 175, 175, 152, 182, 222, 155, 158, 127, 126, 66, 157, 163, 181, 234, 131, 177, 141, 138, 250, 0, 125, 5, 32, 1, 66, 197, 207, 217, 178, 241, 229, 186, 234, 39, 124, 11, 32, 2, 124, 32, 0, 65, 40, 106, 32, 2, 66, 31, 131, 167, 16, 6, 11]);
 async function e() {
-  return function(t2) {
+  return (function(t2) {
     const { exports: { mem: e2, xxh32: n, xxh64: r, init32: i, update32: a, digest32: o, init64: s, update64: u, digest64: c } } = t2;
     let h = new Uint8Array(e2.buffer);
     function g(t3, n2) {
@@ -39403,15 +38551,15 @@ async function e() {
       return g(3 * t3.length, 0), d(r(0, w.encodeInto(t3, h).written, e3));
     }
     return { h32: x, h32ToString: (t3, e3 = l) => x(t3, e3).toString(16).padStart(8, "0"), h32Raw: (t3, e3 = l) => (g(t3.byteLength, 0), h.set(t3), y(n(0, t3.byteLength, e3))), create32: (t3 = l) => f(48, t3, i, a, o, y), h64: L, h64ToString: (t3, e3 = p) => L(t3, e3).toString(16).padStart(16, "0"), h64Raw: (t3, e3 = p) => (g(t3.byteLength, 0), h.set(t3), d(r(0, t3.byteLength, e3))), create64: (t3 = p) => f(88, t3, s, u, c, d) };
-  }((await WebAssembly.instantiate(t)).instance);
+  })((await WebAssembly.instantiate(t)).instance);
 }
 class Hasher {
-  constructor(hasher) {
-    __publicField(this, "hasher");
-    this.hasher = hasher;
-  }
   static async init() {
     return new this(await e());
+  }
+  hasher;
+  constructor(hasher) {
+    this.hasher = hasher;
   }
   /**
    * Folds a buffer of coordinates into a single 64-bit key, so that geometry
@@ -39442,52 +38590,52 @@ class Hasher {
 }
 class IfcFileReader {
   constructor(_serializer) {
-    __publicField(this, "_ifcAPI", null);
-    __publicField(this, "_hasher", null);
-    __publicField(this, "wasm", {
-      path: "../../../../node_modules/web-ifc/",
-      absolute: false
-    });
-    __publicField(this, "webIfcSettings", {});
-    __publicField(this, "_tempObject1", new THREE__namespace.Object3D());
-    __publicField(this, "_tempObject2", new THREE__namespace.Object3D());
-    __publicField(this, "_tempMatrix1", new THREE__namespace.Matrix4());
-    __publicField(this, "_previousGeometries", /* @__PURE__ */ new Map());
-    __publicField(this, "_previousGeometriesIDs", /* @__PURE__ */ new Map());
-    __publicField(this, "_previousGeometriesScales", /* @__PURE__ */ new Map());
-    __publicField(this, "_previousLocalTransforms", /* @__PURE__ */ new Map());
-    __publicField(this, "_problematicGeometries", /* @__PURE__ */ new Set());
-    __publicField(this, "_problematicGeometriesHashes", /* @__PURE__ */ new Set());
-    __publicField(this, "_coordinatesInitialized", false);
-    __publicField(this, "_civilReader", new CivilReader());
-    __publicField(this, "_gridReader", new GridReader());
-    __publicField(this, "_spaceBoundaryReader", new SpaceBoundaryReader());
-    __publicField(this, "_nextId", 0);
-    __publicField(this, "_rawCategories", /* @__PURE__ */ new Set([
-      WEBIFC__namespace.IFCEARTHWORKSFILL,
-      WEBIFC__namespace.IFCEARTHWORKSCUT
-    ]));
-    __publicField(this, "scene", null);
-    __publicField(this, "isolatedMeshes", null);
-    __publicField(this, "onElementLoaded", () => {
-    });
-    __publicField(this, "onGeometryLoaded", () => {
-    });
-    __publicField(this, "onLocalTransformLoaded", () => {
-    });
-    __publicField(this, "onNextIdFound", () => {
-    });
-    __publicField(this, "onCoordinatesLoaded", () => {
-    });
-    __publicField(this, "onAlignmentsLoaded", () => {
-    });
-    __publicField(this, "onGridsLoaded", () => {
-    });
     this._serializer = _serializer;
   }
+  _serializer;
+  _ifcAPI = null;
+  _hasher = null;
+  wasm = {
+    path: "../../../../node_modules/web-ifc/",
+    absolute: false
+  };
+  webIfcSettings = {};
+  _tempObject1 = new THREE__namespace.Object3D();
+  _tempObject2 = new THREE__namespace.Object3D();
+  _tempMatrix1 = new THREE__namespace.Matrix4();
+  _previousGeometries = /* @__PURE__ */ new Map();
+  _previousGeometriesIDs = /* @__PURE__ */ new Map();
+  _previousGeometriesScales = /* @__PURE__ */ new Map();
+  _previousLocalTransforms = /* @__PURE__ */ new Map();
+  _problematicGeometries = /* @__PURE__ */ new Set();
+  _problematicGeometriesHashes = /* @__PURE__ */ new Set();
+  _coordinatesInitialized = false;
+  _civilReader = new CivilReader();
+  _gridReader = new GridReader();
+  _spaceBoundaryReader = new SpaceBoundaryReader();
+  _nextId = 0;
+  _rawCategories = /* @__PURE__ */ new Set([
+    WEBIFC__namespace.IFCEARTHWORKSFILL,
+    WEBIFC__namespace.IFCEARTHWORKSCUT
+  ]);
+  scene = null;
+  isolatedMeshes = null;
+  onElementLoaded = () => {
+  };
+  onGeometryLoaded = () => {
+  };
+  onLocalTransformLoaded = () => {
+  };
+  onNextIdFound = () => {
+  };
+  onCoordinatesLoaded = () => {
+  };
+  onAlignmentsLoaded = () => {
+  };
+  onGridsLoaded = () => {
+  };
   async load(data) {
-    var _a2, _b2, _c;
-    (_a2 = data.progressCallback) == null ? void 0 : _a2.call(data, 0, {
+    data.progressCallback?.(0, {
       process: "conversion",
       state: "start"
     });
@@ -39586,7 +38734,7 @@ class IfcFileReader {
         });
       }
     };
-    if ((_b2 = this.isolatedMeshes) == null ? void 0 : _b2.size) {
+    if (this.isolatedMeshes?.size) {
       this._ifcAPI.StreamMeshes(
         modelID,
         Array.from(this.isolatedMeshes),
@@ -39605,10 +38753,8 @@ class IfcFileReader {
       for (const [index, category] of toProcess.entries()) {
         currentCategory = category;
         const state = (() => {
-          if (index === 0)
-            return "start";
-          if (index + 1 === toProcess.length)
-            return "finish";
+          if (index === 0) return "start";
+          if (index + 1 === toProcess.length) return "finish";
           return "inProgress";
         })();
         const idsVector = this._ifcAPI.GetLineIDsWithType(modelID, category);
@@ -39618,7 +38764,7 @@ class IfcFileReader {
         }
         if (ids.length > 0) {
           this._ifcAPI.StreamMeshes(modelID, ids, callback);
-          (_c = data.progressCallback) == null ? void 0 : _c.call(data, categoryPercentage * (index + 1), {
+          data.progressCallback?.(categoryPercentage * (index + 1), {
             process: "geometries",
             state,
             class: ifcCategoryMap[category],
@@ -40212,32 +39358,29 @@ class IfcFileReader {
   }
   hasSweptDiskDirectrix(modelID, mesh, geometryIndex) {
     try {
-      if (!this._ifcAPI)
-        return false;
+      if (!this._ifcAPI) return false;
       const geometryRef = mesh.geometries.get(geometryIndex);
-      if (!geometryRef)
-        return false;
+      if (!geometryRef) return false;
       const geometry = this._ifcAPI.GetGeometry(
         modelID,
         geometryRef.geometryExpressID
       );
-      if (!(geometry == null ? void 0 : geometry.GetSweptDiskSolid))
-        return false;
+      if (!geometry?.GetSweptDiskSolid) return false;
       const swept = geometry.GetSweptDiskSolid();
-      return !!(swept == null ? void 0 : swept.axis) && swept.axis.size() > 0;
+      return !!swept?.axis && swept.axis.size() > 0;
     } catch {
       return false;
     }
   }
 }
 class IfcGeometryProcessor {
+  wasm = {
+    path: "../../../../node_modules/web-ifc/",
+    absolute: false
+  };
+  webIfcSettings = {};
+  _serializer;
   constructor(_serializer) {
-    __publicField(this, "wasm", {
-      path: "../../../../node_modules/web-ifc/",
-      absolute: false
-    });
-    __publicField(this, "webIfcSettings", {});
-    __publicField(this, "_serializer");
     this._serializer = _serializer;
   }
   async process(data) {
@@ -41041,145 +40184,143 @@ const ifcClasses = {
   ])
 };
 class IfcImporter {
-  constructor() {
-    __publicField(this, "_builder", null);
-    /** Configuration for the web-ifc WASM module
-     * @property {string} path - The path to the web-ifc WASM files
-     * @property {boolean} absolute - Whether the path is absolute or relative
-     */
-    __publicField(this, "wasm", {
-      path: "/node_modules/web-ifc/",
-      absolute: false
-    });
-    __publicField(this, "webIfcSettings", {
-      COORDINATE_TO_ORIGIN: true
-    });
-    /** A set of attribute names to exclude from serialization.
-     */
-    __publicField(this, "attributesToExclude", /* @__PURE__ */ new Set([
-      "Representation",
-      "ObjectPlacement",
-      "CompositionType",
-      "OwnerHistory"
-    ]));
-    __publicField(this, "geometryProcessSettings", {
-      // TODO: Test to see if this is the correct threshold
-      // if not applied, some geometries take too long to process
-      threshold: 3e3,
-      precision: 1e6,
-      normalPrecision: 1e7,
-      planePrecision: 1e3,
-      faceThreshold: 0.6,
-      forceTransparentSpaces: true
-    });
-    /**
-     * @summary Defines the relationships between IFC entities.
-     * @description This map defines the relationships between IFC entities, specifying the relationship type,
-     * and the properties that define the relationship in both directions.
-     *
-     * The keys of the map are IFC relationship types (e.g., `IFCRELDEFINESBYPROPERTIES`).
-     * The values are objects that define the properties for relating and related entities.
-     *
-     * - `forRelating`: The property name on the relating entity.
-     * - `forRelated`: The property name on the related entity.
-     */
-    __publicField(this, "relations", /* @__PURE__ */ new Map([
-      [
-        WEBIFC__namespace.IFCRELDEFINESBYPROPERTIES,
-        { forRelating: "DefinesOccurrence", forRelated: "IsDefinedBy" }
-      ],
-      [
-        WEBIFC__namespace.IFCRELDEFINESBYTYPE,
-        { forRelating: "ObjectTypeOf", forRelated: "IsDefinedBy" }
-      ],
-      [
-        WEBIFC__namespace.IFCRELASSOCIATESMATERIAL,
-        { forRelated: "HasAssociations", forRelating: "AssociatedTo" }
-      ],
-      [
-        WEBIFC__namespace.IFCRELAGGREGATES,
-        { forRelated: "Decomposes", forRelating: "IsDecomposedBy" }
-      ],
-      [
-        WEBIFC__namespace.IFCRELCONTAINEDINSPATIALSTRUCTURE,
-        { forRelated: "ContainedInStructure", forRelating: "ContainsElements" }
-      ],
-      // Needed for the spatial structure to include IFC4x3 alignment layouts:
-      // alignments attach to the spatial element by reference (not containment)
-      // and nest their horizontal/vertical/referent children via IfcRelNests
-      // (issue #743).
-      [
-        WEBIFC__namespace.IFCRELREFERENCEDINSPATIALSTRUCTURE,
-        { forRelated: "ReferencedInStructures", forRelating: "ReferencesElements" }
-      ],
-      [
-        WEBIFC__namespace.IFCRELNESTS,
-        { forRelated: "Nests", forRelating: "IsNestedBy" }
-      ]
-    ]));
-    /**
-     * @summary A map containing sets of IFC classes, categorized into 'elements' and 'abstract'.
-     * @remarks The 'elements' category contains a set of IFC classes representing physical elements.
-     * The 'abstract' category contains a set of abstract IFC classes, including materials, properties, classifications, etc.
-     */
-    __publicField(this, "classes", {
-      elements: new DataSet([...ifcClasses.elements]),
-      abstract: new DataSet([
-        ...ifcClasses.base,
-        ...ifcClasses.materials,
-        ...ifcClasses.properties,
-        ...ifcClasses.units,
-        ...ifcClasses.types
-      ])
-    });
-    /**
-     * Whether to include unique attributes from the imported IFC data.
-     */
-    __publicField(this, "includeUniqueAttributes", false);
-    /**
-     * Whether to include relation names from the imported IFC data.
-     */
-    __publicField(this, "includeRelationNames", false);
-    /**
-     * Whether to replace the IfcBuildingStorey.Elevation with the absolute storey elevation.
-     * @remarks The value is calculated taking into consideration the relative positions between entities
-     * and it is always given in meters.
-     */
-    __publicField(this, "replaceStoreyElevation", true);
-    /**
-     * Whether to replace the IfcSite.RefElevation with the absolute site elevation.
-     * @remarks The value is calculated taking into consideration the relative positions between entities
-     * and it is always given in meters.
-     */
-    __publicField(this, "replaceSiteElevation", true);
-    /**
-     * Whether the generated materials should render both faces (double-sided)
-     * instead of just the front face.
-     * @remarks Some exporters (e.g. certain Revit pipelines) produce geometry
-     * whose winding is not consistent, so front-face-only rendering can hide
-     * those faces. Enable this to render both sides. Defaults to false
-     * (front-face only) to match the previous behavior.
-     */
-    __publicField(this, "doubleSidedMaterials", false);
-    /**
-     * Whether to import each material's own property sets (`IfcMaterialProperties`
-     * in IFC4, `IfcExtendedMaterialProperties` in IFC2X3).
-     * @remarks Off by default to keep the output lean. These entities link to
-     * their material through a direct `Material` attribute rather than an
-     * `IfcRel*`, so when enabled the importer also synthesizes the inverse
-     * `HasProperties` relation on the material, making the properties reachable as
-     * element -> material -> material properties. See issue #249.
-     */
-    __publicField(this, "includeMaterialProperties", false);
-    /**
-     * If set, ignores the items that are further away to the origin than this value.
-     * Keep in mind that if your IFC is correctly georreferenced, this value should never
-     * be too high. If it's too high, it's either because your file uses absolute coordinates,
-     * (which is a very bad idea, and usually due to a poor IFC export) or because there are
-     * objects that are very, very far away (very unlikely).
-     */
-    __publicField(this, "distanceThreshold", 1e5);
-  }
+  _builder = null;
+  /** Configuration for the web-ifc WASM module
+   * @property {string} path - The path to the web-ifc WASM files
+   * @property {boolean} absolute - Whether the path is absolute or relative
+   */
+  wasm = {
+    path: "/node_modules/web-ifc/",
+    absolute: false
+  };
+  webIfcSettings = {
+    COORDINATE_TO_ORIGIN: true
+  };
+  /** A set of attribute names to exclude from serialization.
+   */
+  attributesToExclude = /* @__PURE__ */ new Set([
+    "Representation",
+    "ObjectPlacement",
+    "CompositionType",
+    "OwnerHistory"
+  ]);
+  geometryProcessSettings = {
+    // TODO: Test to see if this is the correct threshold
+    // if not applied, some geometries take too long to process
+    threshold: 3e3,
+    precision: 1e6,
+    normalPrecision: 1e7,
+    planePrecision: 1e3,
+    faceThreshold: 0.6,
+    forceTransparentSpaces: true
+  };
+  /**
+   * @summary Defines the relationships between IFC entities.
+   * @description This map defines the relationships between IFC entities, specifying the relationship type,
+   * and the properties that define the relationship in both directions.
+   *
+   * The keys of the map are IFC relationship types (e.g., `IFCRELDEFINESBYPROPERTIES`).
+   * The values are objects that define the properties for relating and related entities.
+   *
+   * - `forRelating`: The property name on the relating entity.
+   * - `forRelated`: The property name on the related entity.
+   */
+  relations = /* @__PURE__ */ new Map([
+    [
+      WEBIFC__namespace.IFCRELDEFINESBYPROPERTIES,
+      { forRelating: "DefinesOccurrence", forRelated: "IsDefinedBy" }
+    ],
+    [
+      WEBIFC__namespace.IFCRELDEFINESBYTYPE,
+      { forRelating: "ObjectTypeOf", forRelated: "IsDefinedBy" }
+    ],
+    [
+      WEBIFC__namespace.IFCRELASSOCIATESMATERIAL,
+      { forRelated: "HasAssociations", forRelating: "AssociatedTo" }
+    ],
+    [
+      WEBIFC__namespace.IFCRELAGGREGATES,
+      { forRelated: "Decomposes", forRelating: "IsDecomposedBy" }
+    ],
+    [
+      WEBIFC__namespace.IFCRELCONTAINEDINSPATIALSTRUCTURE,
+      { forRelated: "ContainedInStructure", forRelating: "ContainsElements" }
+    ],
+    // Needed for the spatial structure to include IFC4x3 alignment layouts:
+    // alignments attach to the spatial element by reference (not containment)
+    // and nest their horizontal/vertical/referent children via IfcRelNests
+    // (issue #743).
+    [
+      WEBIFC__namespace.IFCRELREFERENCEDINSPATIALSTRUCTURE,
+      { forRelated: "ReferencedInStructures", forRelating: "ReferencesElements" }
+    ],
+    [
+      WEBIFC__namespace.IFCRELNESTS,
+      { forRelated: "Nests", forRelating: "IsNestedBy" }
+    ]
+  ]);
+  /**
+   * @summary A map containing sets of IFC classes, categorized into 'elements' and 'abstract'.
+   * @remarks The 'elements' category contains a set of IFC classes representing physical elements.
+   * The 'abstract' category contains a set of abstract IFC classes, including materials, properties, classifications, etc.
+   */
+  classes = {
+    elements: new DataSet([...ifcClasses.elements]),
+    abstract: new DataSet([
+      ...ifcClasses.base,
+      ...ifcClasses.materials,
+      ...ifcClasses.properties,
+      ...ifcClasses.units,
+      ...ifcClasses.types
+    ])
+  };
+  /**
+   * Whether to include unique attributes from the imported IFC data.
+   */
+  includeUniqueAttributes = false;
+  /**
+   * Whether to include relation names from the imported IFC data.
+   */
+  includeRelationNames = false;
+  /**
+   * Whether to replace the IfcBuildingStorey.Elevation with the absolute storey elevation.
+   * @remarks The value is calculated taking into consideration the relative positions between entities
+   * and it is always given in meters.
+   */
+  replaceStoreyElevation = true;
+  /**
+   * Whether to replace the IfcSite.RefElevation with the absolute site elevation.
+   * @remarks The value is calculated taking into consideration the relative positions between entities
+   * and it is always given in meters.
+   */
+  replaceSiteElevation = true;
+  /**
+   * Whether the generated materials should render both faces (double-sided)
+   * instead of just the front face.
+   * @remarks Some exporters (e.g. certain Revit pipelines) produce geometry
+   * whose winding is not consistent, so front-face-only rendering can hide
+   * those faces. Enable this to render both sides. Defaults to false
+   * (front-face only) to match the previous behavior.
+   */
+  doubleSidedMaterials = false;
+  /**
+   * Whether to import each material's own property sets (`IfcMaterialProperties`
+   * in IFC4, `IfcExtendedMaterialProperties` in IFC2X3).
+   * @remarks Off by default to keep the output lean. These entities link to
+   * their material through a direct `Material` attribute rather than an
+   * `IfcRel*`, so when enabled the importer also synthesizes the inverse
+   * `HasProperties` relation on the material, making the properties reachable as
+   * element -> material -> material properties. See issue #249.
+   */
+  includeMaterialProperties = false;
+  /**
+   * If set, ignores the items that are further away to the origin than this value.
+   * Keep in mind that if your IFC is correctly georreferenced, this value should never
+   * be too high. If it's too high, it's either because your file uses absolute coordinates,
+   * (which is a very bad idea, and usually due to a poor IFC export) or because there are
+   * objects that are very, very far away (very unlikely).
+   */
+  distanceThreshold = 1e5;
   get builder() {
     if (!this._builder) {
       throw new Error("Fragments: Builder not initialized");
@@ -41195,7 +40336,6 @@ class IfcImporter {
    * @param data.readCallback Callback function to read IFC data. Useful for node.js.
    */
   async process(data) {
-    var _a2;
     this._builder = new Builder(1024);
     if (this.includeMaterialProperties) {
       for (const materialPropertyClass of ifcClasses.materialProperties) {
@@ -41255,7 +40395,7 @@ class IfcImporter {
     const outBytes = this.builder.asUint8Array();
     this.clean();
     const content = data.raw ? outBytes : pako.deflate(outBytes);
-    (_a2 = data.progressCallback) == null ? void 0 : _a2.call(data, 1, {
+    data.progressCallback?.(1, {
       process: "conversion",
       state: "finish"
     });
@@ -41281,14 +40421,13 @@ class IfcImporter {
     this.relations = new Map(ifcRelationsMap);
   }
   clean() {
-    var _a2;
-    (_a2 = this._builder) == null ? void 0 : _a2.clear();
+    this._builder?.clear();
     this._builder = null;
   }
 }
 class Extrusion {
+  core;
   constructor(api) {
-    __publicField(this, "core");
     this.core = api.CreateExtrusion();
   }
   get(api, data) {
@@ -41357,8 +40496,35 @@ var ProfileType = /* @__PURE__ */ ((ProfileType2) => {
   return ProfileType2;
 })(ProfileType || {});
 class Profile2 {
+  core;
+  static map = /* @__PURE__ */ new Map([
+    [
+      "H",
+      0
+      /* H */
+    ],
+    [
+      "C",
+      1
+      /* C */
+    ],
+    [
+      "Z",
+      2
+      /* Z */
+    ],
+    [
+      "T",
+      3
+      /* T */
+    ],
+    [
+      "L",
+      4
+      /* L */
+    ]
+  ]);
   constructor(api) {
-    __publicField(this, "core");
     this.core = api.CreateProfile();
   }
   get(api, data) {
@@ -41395,36 +40561,9 @@ class Profile2 {
     return core.GetBuffers();
   }
 }
-__publicField(Profile2, "map", /* @__PURE__ */ new Map([
-  [
-    "H",
-    0
-    /* H */
-  ],
-  [
-    "C",
-    1
-    /* C */
-  ],
-  [
-    "Z",
-    2
-    /* Z */
-  ],
-  [
-    "T",
-    3
-    /* T */
-  ],
-  [
-    "L",
-    4
-    /* L */
-  ]
-]));
 class BooleanOperation {
+  core;
   constructor(api) {
-    __publicField(this, "core");
     this.core = api.CreateBooleanOperator();
   }
   get(api, data) {
@@ -41497,8 +40636,8 @@ class BooleanOperation {
   }
 }
 class Arc {
+  core;
   constructor(api) {
-    __publicField(this, "core");
     this.core = api.CreateArc();
   }
   get(api, data) {
@@ -41528,8 +40667,8 @@ class Arc {
   }
 }
 class Bbox {
+  core;
   constructor(api) {
-    __publicField(this, "core");
     this.core = api.CreateAABB();
   }
   get(data) {
@@ -41542,8 +40681,8 @@ class Bbox {
   }
 }
 class CircularSweep {
+  core;
   constructor(api) {
-    __publicField(this, "core");
     this.core = api.CreateCircularSweep();
   }
   get(api, data) {
@@ -41579,8 +40718,8 @@ class CircularSweep {
   }
 }
 class CylindricalRevolve {
+  core;
   constructor(api) {
-    __publicField(this, "core");
     this.core = api.CreateCylindricalRevolution();
   }
   get(api, data) {
@@ -41608,8 +40747,8 @@ class CylindricalRevolve {
   }
 }
 class Parabola {
+  core;
   constructor(api) {
-    __publicField(this, "core");
     this.core = api.CreateParabola();
   }
   get(data) {
@@ -41633,8 +40772,8 @@ class Parabola {
   }
 }
 class Revolve {
+  core;
   constructor(api) {
-    __publicField(this, "core");
     this.core = api.CreateRevolution();
   }
   get(api, data) {
@@ -41656,8 +40795,8 @@ class Revolve {
   }
 }
 class Sweep {
+  core;
   constructor(api) {
-    __publicField(this, "core");
     this.core = api.CreateSweep();
   }
   get(api, data) {
@@ -41694,8 +40833,8 @@ class Sweep {
   }
 }
 class Wall {
+  core;
   constructor(api) {
-    __publicField(this, "core");
     this.core = api.CreateExtrusion();
   }
   get(api, data) {
@@ -41762,8 +40901,8 @@ class Wall {
   }
 }
 class Clothoid {
+  core;
   constructor(api) {
-    __publicField(this, "core");
     this.core = api.CreateClothoid();
   }
   get(data) {
@@ -41789,26 +40928,26 @@ class Clothoid {
 }
 class GeometryEngine {
   /**
+   * The WebIFC API instance that contains the geometry engine.
+   */
+  api;
+  _arc;
+  _parabola;
+  _extrusion;
+  _profile;
+  _booleanOperation;
+  _bbox;
+  _circularSweep;
+  _clothoid;
+  _cylindricalRevolve;
+  _revolve;
+  _sweep;
+  _wall;
+  /**
    * Creates a new geometry engine instance.
    * @param api - The WebIFC API instance that contains the geometry engine.
    */
   constructor(api) {
-    /**
-     * The WebIFC API instance that contains the geometry engine.
-     */
-    __publicField(this, "api");
-    __publicField(this, "_arc");
-    __publicField(this, "_parabola");
-    __publicField(this, "_extrusion");
-    __publicField(this, "_profile");
-    __publicField(this, "_booleanOperation");
-    __publicField(this, "_bbox");
-    __publicField(this, "_circularSweep");
-    __publicField(this, "_clothoid");
-    __publicField(this, "_cylindricalRevolve");
-    __publicField(this, "_revolve");
-    __publicField(this, "_sweep");
-    __publicField(this, "_wall");
     this.api = api;
     this._extrusion = new Extrusion(api);
     this._profile = new Profile2(api);

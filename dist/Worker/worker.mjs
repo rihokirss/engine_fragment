@@ -1,45 +1,6 @@
-var __defProp = Object.defineProperty;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __publicField = (obj, key, value) => {
-  __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
-  return value;
-};
-var __accessCheck = (obj, member, msg) => {
-  if (!member.has(obj))
-    throw TypeError("Cannot " + msg);
-};
-var __privateGet = (obj, member, getter) => {
-  __accessCheck(obj, member, "read from private field");
-  return getter ? getter.call(obj) : member.get(obj);
-};
-var __privateAdd = (obj, member, value) => {
-  if (member.has(obj))
-    throw TypeError("Cannot add the same private member more than once");
-  member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
-};
-var __privateSet = (obj, member, value, setter) => {
-  __accessCheck(obj, member, "write to private field");
-  setter ? setter.call(obj, value) : member.set(obj, value);
-  return value;
-};
-var __privateWrapper = (obj, member, setter, getter) => ({
-  set _(value) {
-    __privateSet(obj, member, value, setter);
-  },
-  get _() {
-    return __privateGet(obj, member, getter);
-  }
-});
-var __privateMethod = (obj, member, method) => {
-  __accessCheck(obj, member, "access private method");
-  return method;
-};
-var _a, _constructing, _max, _maxSize, _dispose, _onInsert, _disposeAfter, _fetchMethod, _memoMethod, _size, _calculatedSize, _keyMap, _keyList, _valList, _next, _prev, _head, _tail, _free, _disposed, _sizes, _starts, _ttls, _hasDispose, _hasFetchMethod, _hasDisposeAfter, _hasOnInsert, _initializeTTLTracking, initializeTTLTracking_fn, _updateItemAge, _statusTTL, _setItemTTL, _isStale, _initializeSizeTracking, initializeSizeTracking_fn, _removeItemSize, _addItemSize, _requireSize, _indexes, indexes_fn, _rindexes, rindexes_fn, _isValidIndex, isValidIndex_fn, _b, _evict, evict_fn, _backgroundFetch, backgroundFetch_fn, _isBackgroundFetch, isBackgroundFetch_fn, _connect, connect_fn, _moveToTail, moveToTail_fn, _delete, delete_fn, _clear, clear_fn, _c;
 class ConnectionHandlers {
-  constructor() {
-    __publicField(this, "_list", /* @__PURE__ */ new Map());
-    __publicField(this, "_communicationKey", 0);
-  }
+  _list = /* @__PURE__ */ new Map();
+  _communicationKey = 0;
   setupInput(input) {
     input.requestId = this._communicationKey++;
   }
@@ -63,11 +24,6 @@ class ConnectionHandlers {
     };
   }
 }
-/**
- * @license
- * Copyright 2010-2025 Three.js Authors
- * SPDX-License-Identifier: MIT
- */
 const REVISION = "182";
 const FrontSide = 0;
 const BackSide = 1;
@@ -103,8 +59,7 @@ const WebGLCoordinateSystem = 2e3;
 const WebGPUCoordinateSystem = 2001;
 function arrayNeedsUint32(array) {
   for (let i = array.length - 1; i >= 0; --i) {
-    if (array[i] >= 65535)
-      return true;
+    if (array[i] >= 65535) return true;
   }
   return false;
 }
@@ -126,8 +81,7 @@ function error(...params) {
 }
 function warnOnce(...params) {
   const message = params.join(" ");
-  if (message in _cache)
-    return;
+  if (message in _cache) return;
   _cache[message] = true;
   warn(...params);
 }
@@ -139,8 +93,7 @@ class EventDispatcher {
    * @param {Function} listener - The function that gets called when the event is fired.
    */
   addEventListener(type, listener) {
-    if (this._listeners === void 0)
-      this._listeners = {};
+    if (this._listeners === void 0) this._listeners = {};
     const listeners = this._listeners;
     if (listeners[type] === void 0) {
       listeners[type] = [];
@@ -158,8 +111,7 @@ class EventDispatcher {
    */
   hasEventListener(type, listener) {
     const listeners = this._listeners;
-    if (listeners === void 0)
-      return false;
+    if (listeners === void 0) return false;
     return listeners[type] !== void 0 && listeners[type].indexOf(listener) !== -1;
   }
   /**
@@ -170,8 +122,7 @@ class EventDispatcher {
    */
   removeEventListener(type, listener) {
     const listeners = this._listeners;
-    if (listeners === void 0)
-      return;
+    if (listeners === void 0) return;
     const listenerArray = listeners[type];
     if (listenerArray !== void 0) {
       const index = listenerArray.indexOf(listener);
@@ -187,8 +138,7 @@ class EventDispatcher {
    */
   dispatchEvent(event) {
     const listeners = this._listeners;
-    if (listeners === void 0)
-      return;
+    if (listeners === void 0) return;
     const listenerArray = listeners[event.type];
     if (listenerArray !== void 0) {
       event.target = this;
@@ -238,18 +188,14 @@ function pingpong(x, length = 1) {
   return length - Math.abs(euclideanModulo(x, length * 2) - length);
 }
 function smoothstep(x, min, max) {
-  if (x <= min)
-    return 0;
-  if (x >= max)
-    return 1;
+  if (x <= min) return 0;
+  if (x >= max) return 1;
   x = (x - min) / (max - min);
   return x * x * (3 - 2 * x);
 }
 function smootherstep(x, min, max) {
-  if (x <= min)
-    return 0;
-  if (x >= max)
-    return 1;
+  if (x <= min) return 0;
+  if (x >= max) return 1;
   x = (x - min) / (max - min);
   return x * x * x * (x * (x * 6 - 15) + 10);
 }
@@ -263,8 +209,7 @@ function randFloatSpread(range) {
   return range * (0.5 - Math.random());
 }
 function seededRandom(s) {
-  if (s !== void 0)
-    _seed = s;
+  if (s !== void 0) _seed = s;
   let t = _seed += 1831565813;
   t = Math.imul(t ^ t >>> 15, t | 1);
   t ^= t + Math.imul(t ^ t >>> 7, t | 61);
@@ -1060,8 +1005,7 @@ class Vector2 {
    */
   angleTo(v) {
     const denominator = Math.sqrt(this.lengthSq() * v.lengthSq());
-    if (denominator === 0)
-      return Math.PI / 2;
+    if (denominator === 0) return Math.PI / 2;
     const theta = this.dot(v) / denominator;
     return Math.acos(clamp(theta, -1, 1));
   }
@@ -1471,8 +1415,7 @@ class Quaternion {
       default:
         warn("Quaternion: .setFromEuler() encountered an unknown order: " + order);
     }
-    if (update === true)
-      this._onChangeCallback();
+    if (update === true) this._onChangeCallback();
     return this;
   }
   /**
@@ -1577,8 +1520,7 @@ class Quaternion {
    */
   rotateTowards(q, step) {
     const angle = this.angleTo(q);
-    if (angle === 0)
-      return this;
+    if (angle === 0) return this;
     const t = Math.min(1, step / angle);
     this.slerp(q, t);
     return this;
@@ -1710,10 +1652,8 @@ class Quaternion {
    * @return {Quaternion} A reference to this quaternion.
    */
   slerp(qb, t) {
-    if (t <= 0)
-      return this;
-    if (t >= 1)
-      return this.copy(qb);
+    if (t <= 0) return this;
+    if (t >= 1) return this.copy(qb);
     let x = qb._x, y = qb._y, z = qb._z, w = qb._w;
     let dot = this.dot(qb);
     if (dot < 0) {
@@ -1872,8 +1812,7 @@ class Vector3 {
    * @return {Vector3} A reference to this vector.
    */
   set(x, y, z) {
-    if (z === void 0)
-      z = this.z;
+    if (z === void 0) z = this.z;
     this.x = x;
     this.y = y;
     this.z = z;
@@ -2484,8 +2423,7 @@ class Vector3 {
    */
   projectOnVector(v) {
     const denominator = v.lengthSq();
-    if (denominator === 0)
-      return this.set(0, 0, 0);
+    if (denominator === 0) return this.set(0, 0, 0);
     const scalar = v.dot(this) / denominator;
     return this.copy(v).multiplyScalar(scalar);
   }
@@ -2517,8 +2455,7 @@ class Vector3 {
    */
   angleTo(v) {
     const denominator = Math.sqrt(this.lengthSq() * v.lengthSq());
-    if (denominator === 0)
-      return Math.PI / 2;
+    if (denominator === 0) return Math.PI / 2;
     const theta = this.dot(v) / denominator;
     return Math.acos(clamp(theta, -1, 1));
   }
@@ -2978,8 +2915,7 @@ class Matrix3 {
    */
   invert() {
     const te = this.elements, n11 = te[0], n21 = te[1], n31 = te[2], n12 = te[3], n22 = te[4], n32 = te[5], n13 = te[6], n23 = te[7], n33 = te[8], t11 = n33 * n22 - n32 * n23, t12 = n32 * n13 - n33 * n12, t13 = n23 * n12 - n22 * n13, det = n11 * t11 + n21 * t12 + n31 * t13;
-    if (det === 0)
-      return this.set(0, 0, 0, 0, 0, 0, 0, 0, 0);
+    if (det === 0) return this.set(0, 0, 0, 0, 0, 0, 0, 0, 0);
     const detInv = 1 / det;
     te[0] = t11 * detInv;
     te[1] = (n31 * n23 - n33 * n21) * detInv;
@@ -3189,8 +3125,7 @@ class Matrix3 {
     const te = this.elements;
     const me = matrix.elements;
     for (let i = 0; i < 9; i++) {
-      if (te[i] !== me[i])
-        return false;
+      if (te[i] !== me[i]) return false;
     }
     return true;
   }
@@ -3313,8 +3248,7 @@ function createColorManagement() {
       return this.spaces[colorSpace].primaries;
     },
     getTransfer: function(colorSpace) {
-      if (colorSpace === NoColorSpace)
-        return LinearTransfer;
+      if (colorSpace === NoColorSpace) return LinearTransfer;
       return this.spaces[colorSpace].transfer;
     },
     getToneMappingMode: function(colorSpace) {
@@ -3399,8 +3333,7 @@ class ImageUtils {
     if (image instanceof HTMLCanvasElement) {
       canvas = image;
     } else {
-      if (_canvas === void 0)
-        _canvas = createElementNS("canvas");
+      if (_canvas === void 0) _canvas = createElementNS("canvas");
       _canvas.width = image.width;
       _canvas.height = image.height;
       const context = _canvas.getContext("2d");
@@ -3497,8 +3430,7 @@ class Source {
    * @param {boolean} value
    */
   set needsUpdate(value) {
-    if (value === true)
-      this.version++;
+    if (value === true) this.version++;
   }
   /**
    * Serializes the source into JSON.
@@ -3775,8 +3707,7 @@ class Texture extends EventDispatcher {
       premultiplyAlpha: this.premultiplyAlpha,
       unpackAlignment: this.unpackAlignment
     };
-    if (Object.keys(this.userData).length > 0)
-      output.userData = this.userData;
+    if (Object.keys(this.userData).length > 0) output.userData = this.userData;
     if (!isRootObject) {
       meta.textures[this.uuid] = output;
     }
@@ -3798,8 +3729,7 @@ class Texture extends EventDispatcher {
    * @return {Vector2} The transformed uv vector.
    */
   transformUv(uv) {
-    if (this.mapping !== UVMapping)
-      return uv;
+    if (this.mapping !== UVMapping) return uv;
     uv.applyMatrix3(this.matrix);
     if (uv.x < 0 || uv.x > 1) {
       switch (this.wrapS) {
@@ -4283,8 +4213,7 @@ class Vector4 {
       return this;
     }
     let s = Math.sqrt((m32 - m23) * (m32 - m23) + (m13 - m31) * (m13 - m31) + (m21 - m12) * (m21 - m12));
-    if (Math.abs(s) < 1e-3)
-      s = 1;
+    if (Math.abs(s) < 1e-3) s = 1;
     this.x = (m32 - m23) / s;
     this.y = (m13 - m31) / s;
     this.z = (m21 - m12) / s;
@@ -5029,8 +4958,7 @@ class Box3 {
   intersect(box) {
     this.min.max(box.min);
     this.max.min(box.max);
-    if (this.isEmpty())
-      this.makeEmpty();
+    if (this.isEmpty()) this.makeEmpty();
     return this;
   }
   /**
@@ -5053,8 +4981,7 @@ class Box3 {
    * @return {Box3} A reference to this bounding box.
    */
   applyMatrix4(matrix) {
-    if (this.isEmpty())
-      return this;
+    if (this.isEmpty()) return this;
     _points[0].set(this.min.x, this.min.y, this.min.z).applyMatrix4(matrix);
     _points[1].set(this.min.x, this.min.y, this.max.z).applyMatrix4(matrix);
     _points[2].set(this.min.x, this.max.y, this.min.z).applyMatrix4(matrix);
@@ -5607,15 +5534,12 @@ class Ray {
     const tca = _vector$a.dot(this.direction);
     const d2 = _vector$a.dot(_vector$a) - tca * tca;
     const radius2 = sphere.radius * sphere.radius;
-    if (d2 > radius2)
-      return null;
+    if (d2 > radius2) return null;
     const thc = Math.sqrt(radius2 - d2);
     const t0 = tca - thc;
     const t1 = tca + thc;
-    if (t1 < 0)
-      return null;
-    if (t0 < 0)
-      return this.at(t1, target);
+    if (t1 < 0) return null;
+    if (t0 < 0) return this.at(t1, target);
     return this.at(t0, target);
   }
   /**
@@ -5625,8 +5549,7 @@ class Ray {
    * @return {boolean} Whether this ray intersects with the given sphere or not.
    */
   intersectsSphere(sphere) {
-    if (sphere.radius < 0)
-      return false;
+    if (sphere.radius < 0) return false;
     return this.distanceSqToPoint(sphere.center) <= sphere.radius * sphere.radius;
   }
   /**
@@ -5705,12 +5628,9 @@ class Ray {
       tymin = (box.max.y - origin.y) * invdiry;
       tymax = (box.min.y - origin.y) * invdiry;
     }
-    if (tmin > tymax || tymin > tmax)
-      return null;
-    if (tymin > tmin || isNaN(tmin))
-      tmin = tymin;
-    if (tymax < tmax || isNaN(tmax))
-      tmax = tymax;
+    if (tmin > tymax || tymin > tmax) return null;
+    if (tymin > tmin || isNaN(tmin)) tmin = tymin;
+    if (tymax < tmax || isNaN(tmax)) tmax = tymax;
     if (invdirz >= 0) {
       tzmin = (box.min.z - origin.z) * invdirz;
       tzmax = (box.max.z - origin.z) * invdirz;
@@ -5718,14 +5638,10 @@ class Ray {
       tzmin = (box.max.z - origin.z) * invdirz;
       tzmax = (box.min.z - origin.z) * invdirz;
     }
-    if (tmin > tzmax || tzmin > tmax)
-      return null;
-    if (tzmin > tmin || tmin !== tmin)
-      tmin = tzmin;
-    if (tzmax < tmax || tmax !== tmax)
-      tmax = tzmax;
-    if (tmax < 0)
-      return null;
+    if (tmin > tzmax || tzmin > tmax) return null;
+    if (tzmin > tmin || tmin !== tmin) tmin = tzmin;
+    if (tzmax < tmax || tmax !== tmax) tmax = tzmax;
+    if (tmax < 0) return null;
     return this.at(tmin >= 0 ? tmin : tmax, target);
   }
   /**
@@ -5755,8 +5671,7 @@ class Ray {
     let DdN = this.direction.dot(_normal$1);
     let sign2;
     if (DdN > 0) {
-      if (backfaceCulling)
-        return null;
+      if (backfaceCulling) return null;
       sign2 = 1;
     } else if (DdN < 0) {
       sign2 = -1;
@@ -6393,8 +6308,7 @@ class Matrix4 {
   invert() {
     const te = this.elements, n11 = te[0], n21 = te[1], n31 = te[2], n41 = te[3], n12 = te[4], n22 = te[5], n32 = te[6], n42 = te[7], n13 = te[8], n23 = te[9], n33 = te[10], n43 = te[11], n14 = te[12], n24 = te[13], n34 = te[14], n44 = te[15], t11 = n23 * n34 * n42 - n24 * n33 * n42 + n24 * n32 * n43 - n22 * n34 * n43 - n23 * n32 * n44 + n22 * n33 * n44, t12 = n14 * n33 * n42 - n13 * n34 * n42 - n14 * n32 * n43 + n12 * n34 * n43 + n13 * n32 * n44 - n12 * n33 * n44, t13 = n13 * n24 * n42 - n14 * n23 * n42 + n14 * n22 * n43 - n12 * n24 * n43 - n13 * n22 * n44 + n12 * n23 * n44, t14 = n14 * n23 * n32 - n13 * n24 * n32 - n14 * n22 * n33 + n12 * n24 * n33 + n13 * n22 * n34 - n12 * n23 * n34;
     const det = n11 * t11 + n21 * t12 + n31 * t13 + n41 * t14;
-    if (det === 0)
-      return this.set(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    if (det === 0) return this.set(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     const detInv = 1 / det;
     te[0] = t11 * detInv;
     te[1] = (n24 * n33 * n41 - n23 * n34 * n41 - n24 * n31 * n43 + n21 * n34 * n43 + n23 * n31 * n44 - n21 * n33 * n44) * detInv;
@@ -6746,8 +6660,7 @@ class Matrix4 {
     const sy = _v1$5.set(te[4], te[5], te[6]).length();
     const sz = _v1$5.set(te[8], te[9], te[10]).length();
     const det = this.determinant();
-    if (det < 0)
-      sx = -sx;
+    if (det < 0) sx = -sx;
     _m1$2.copy(this);
     const invSX = 1 / sx;
     const invSY = 1 / sy;
@@ -6883,8 +6796,7 @@ class Matrix4 {
     const te = this.elements;
     const me = matrix.elements;
     for (let i = 0; i < 16; i++) {
-      if (te[i] !== me[i])
-        return false;
+      if (te[i] !== me[i]) return false;
     }
     return true;
   }
@@ -7124,8 +7036,7 @@ class Euler {
         warn("Euler: .setFromRotationMatrix() encountered an unknown order: " + order);
     }
     this._order = order;
-    if (update === true)
-      this._onChangeCallback();
+    if (update === true) this._onChangeCallback();
     return this;
   }
   /**
@@ -7185,8 +7096,7 @@ class Euler {
     this._x = array[0];
     this._y = array[1];
     this._z = array[2];
-    if (array[3] !== void 0)
-      this._order = array[3];
+    if (array[3] !== void 0) this._order = array[3];
     this._onChangeCallback();
     return this;
   }
@@ -7472,8 +7382,7 @@ class Object3D extends EventDispatcher {
    * @param {Matrix4} matrix - The transformation matrix.
    */
   applyMatrix4(matrix) {
-    if (this.matrixAutoUpdate)
-      this.updateMatrix();
+    if (this.matrixAutoUpdate) this.updateMatrix();
     this.matrix.premultiply(matrix);
     this.matrix.decompose(this.position, this.quaternion, this.scale);
   }
@@ -7802,8 +7711,7 @@ class Object3D extends EventDispatcher {
    * @return {Object3D|undefined} The found 3D object. Returns `undefined` if no 3D object has been found.
    */
   getObjectByProperty(name, value) {
-    if (this[name] === value)
-      return this;
+    if (this[name] === value) return this;
     for (let i = 0, l = this.children.length; i < l; i++) {
       const child = this.children[i];
       const object = child.getObjectByProperty(name, value);
@@ -7823,8 +7731,7 @@ class Object3D extends EventDispatcher {
    * @return {Array<Object3D>} The found 3D objects.
    */
   getObjectsByProperty(name, value, result = []) {
-    if (this[name] === value)
-      result.push(this);
+    if (this[name] === value) result.push(this);
     const children = this.children;
     for (let i = 0, l = children.length; i < l; i++) {
       children[i].getObjectsByProperty(name, value, result);
@@ -7908,8 +7815,7 @@ class Object3D extends EventDispatcher {
    * @param {Function} callback - A callback function that allows to process the current 3D object.
    */
   traverseVisible(callback) {
-    if (this.visible === false)
-      return;
+    if (this.visible === false) return;
     callback(this);
     const children = this.children;
     for (let i = 0, l = children.length; i < l; i++) {
@@ -7950,8 +7856,7 @@ class Object3D extends EventDispatcher {
    * when {@link Object3D#matrixWorldAutoUpdate} is set to `false`.
    */
   updateMatrixWorld(force) {
-    if (this.matrixAutoUpdate)
-      this.updateMatrix();
+    if (this.matrixAutoUpdate) this.updateMatrix();
     if (this.matrixWorldNeedsUpdate || force) {
       if (this.matrixWorldAutoUpdate === true) {
         if (this.parent === null) {
@@ -7981,8 +7886,7 @@ class Object3D extends EventDispatcher {
     if (updateParents === true && parent !== null) {
       parent.updateWorldMatrix(true, false);
     }
-    if (this.matrixAutoUpdate)
-      this.updateMatrix();
+    if (this.matrixAutoUpdate) this.updateMatrix();
     if (this.matrixWorldAutoUpdate === true) {
       if (this.parent === null) {
         this.matrixWorld.copy(this.matrix);
@@ -8028,31 +7932,22 @@ class Object3D extends EventDispatcher {
     const object = {};
     object.uuid = this.uuid;
     object.type = this.type;
-    if (this.name !== "")
-      object.name = this.name;
-    if (this.castShadow === true)
-      object.castShadow = true;
-    if (this.receiveShadow === true)
-      object.receiveShadow = true;
-    if (this.visible === false)
-      object.visible = false;
-    if (this.frustumCulled === false)
-      object.frustumCulled = false;
-    if (this.renderOrder !== 0)
-      object.renderOrder = this.renderOrder;
-    if (Object.keys(this.userData).length > 0)
-      object.userData = this.userData;
+    if (this.name !== "") object.name = this.name;
+    if (this.castShadow === true) object.castShadow = true;
+    if (this.receiveShadow === true) object.receiveShadow = true;
+    if (this.visible === false) object.visible = false;
+    if (this.frustumCulled === false) object.frustumCulled = false;
+    if (this.renderOrder !== 0) object.renderOrder = this.renderOrder;
+    if (Object.keys(this.userData).length > 0) object.userData = this.userData;
     object.layers = this.layers.mask;
     object.matrix = this.matrix.toArray();
     object.up = this.up.toArray();
-    if (this.matrixAutoUpdate === false)
-      object.matrixAutoUpdate = false;
+    if (this.matrixAutoUpdate === false) object.matrixAutoUpdate = false;
     if (this.isInstancedMesh) {
       object.type = "InstancedMesh";
       object.count = this.count;
       object.instanceMatrix = this.instanceMatrix.toJSON();
-      if (this.instanceColor !== null)
-        object.instanceColor = this.instanceColor.toJSON();
+      if (this.instanceColor !== null) object.instanceColor = this.instanceColor.toJSON();
     }
     if (this.isBatchedMesh) {
       object.type = "BatchedMesh";
@@ -8160,22 +8055,14 @@ class Object3D extends EventDispatcher {
       const skeletons = extractFromCache(meta.skeletons);
       const animations = extractFromCache(meta.animations);
       const nodes = extractFromCache(meta.nodes);
-      if (geometries.length > 0)
-        output.geometries = geometries;
-      if (materials.length > 0)
-        output.materials = materials;
-      if (textures.length > 0)
-        output.textures = textures;
-      if (images.length > 0)
-        output.images = images;
-      if (shapes.length > 0)
-        output.shapes = shapes;
-      if (skeletons.length > 0)
-        output.skeletons = skeletons;
-      if (animations.length > 0)
-        output.animations = animations;
-      if (nodes.length > 0)
-        output.nodes = nodes;
+      if (geometries.length > 0) output.geometries = geometries;
+      if (materials.length > 0) output.materials = materials;
+      if (textures.length > 0) output.textures = textures;
+      if (images.length > 0) output.images = images;
+      if (shapes.length > 0) output.shapes = shapes;
+      if (skeletons.length > 0) output.skeletons = skeletons;
+      if (animations.length > 0) output.animations = animations;
+      if (nodes.length > 0) output.nodes = nodes;
     }
     output.object = object;
     return output;
@@ -8347,10 +8234,8 @@ class Triangle {
     if (this.getBarycoord(point, p1, p2, p3, _v3$2) === null) {
       target.x = 0;
       target.y = 0;
-      if ("z" in target)
-        target.z = 0;
-      if ("w" in target)
-        target.w = 0;
+      if ("z" in target) target.z = 0;
+      if ("w" in target) target.w = 0;
       return null;
     }
     target.setScalar(0);
@@ -8766,16 +8651,11 @@ const _colorKeywords = {
 const _hslA = { h: 0, s: 0, l: 0 };
 const _hslB = { h: 0, s: 0, l: 0 };
 function hue2rgb(p, q, t) {
-  if (t < 0)
-    t += 1;
-  if (t > 1)
-    t -= 1;
-  if (t < 1 / 6)
-    return p + (q - p) * 6 * t;
-  if (t < 1 / 2)
-    return q;
-  if (t < 2 / 3)
-    return p + (q - p) * 6 * (2 / 3 - t);
+  if (t < 0) t += 1;
+  if (t > 1) t -= 1;
+  if (t < 1 / 6) return p + (q - p) * 6 * t;
+  if (t < 1 / 2) return q;
+  if (t < 2 / 3) return p + (q - p) * 6 * (2 / 3 - t);
   return p;
 }
 class Color {
@@ -8901,8 +8781,7 @@ class Color {
    */
   setStyle(style, colorSpace = SRGBColorSpace) {
     function handleAlpha(string) {
-      if (string === void 0)
-        return;
+      if (string === void 0) return;
       if (parseFloat(string) < 1) {
         warn("Color: Alpha component of " + style + " will be ignored.");
       }
@@ -9493,8 +9372,7 @@ let Material$1 = class Material extends EventDispatcher {
    * @param {Object} [values] - The material values to set.
    */
   setValues(values) {
-    if (values === void 0)
-      return;
+    if (values === void 0) return;
     for (const key in values) {
       const newValue = values[key];
       if (newValue === void 0) {
@@ -9539,36 +9417,21 @@ let Material$1 = class Material extends EventDispatcher {
     };
     data.uuid = this.uuid;
     data.type = this.type;
-    if (this.name !== "")
-      data.name = this.name;
-    if (this.color && this.color.isColor)
-      data.color = this.color.getHex();
-    if (this.roughness !== void 0)
-      data.roughness = this.roughness;
-    if (this.metalness !== void 0)
-      data.metalness = this.metalness;
-    if (this.sheen !== void 0)
-      data.sheen = this.sheen;
-    if (this.sheenColor && this.sheenColor.isColor)
-      data.sheenColor = this.sheenColor.getHex();
-    if (this.sheenRoughness !== void 0)
-      data.sheenRoughness = this.sheenRoughness;
-    if (this.emissive && this.emissive.isColor)
-      data.emissive = this.emissive.getHex();
-    if (this.emissiveIntensity !== void 0 && this.emissiveIntensity !== 1)
-      data.emissiveIntensity = this.emissiveIntensity;
-    if (this.specular && this.specular.isColor)
-      data.specular = this.specular.getHex();
-    if (this.specularIntensity !== void 0)
-      data.specularIntensity = this.specularIntensity;
-    if (this.specularColor && this.specularColor.isColor)
-      data.specularColor = this.specularColor.getHex();
-    if (this.shininess !== void 0)
-      data.shininess = this.shininess;
-    if (this.clearcoat !== void 0)
-      data.clearcoat = this.clearcoat;
-    if (this.clearcoatRoughness !== void 0)
-      data.clearcoatRoughness = this.clearcoatRoughness;
+    if (this.name !== "") data.name = this.name;
+    if (this.color && this.color.isColor) data.color = this.color.getHex();
+    if (this.roughness !== void 0) data.roughness = this.roughness;
+    if (this.metalness !== void 0) data.metalness = this.metalness;
+    if (this.sheen !== void 0) data.sheen = this.sheen;
+    if (this.sheenColor && this.sheenColor.isColor) data.sheenColor = this.sheenColor.getHex();
+    if (this.sheenRoughness !== void 0) data.sheenRoughness = this.sheenRoughness;
+    if (this.emissive && this.emissive.isColor) data.emissive = this.emissive.getHex();
+    if (this.emissiveIntensity !== void 0 && this.emissiveIntensity !== 1) data.emissiveIntensity = this.emissiveIntensity;
+    if (this.specular && this.specular.isColor) data.specular = this.specular.getHex();
+    if (this.specularIntensity !== void 0) data.specularIntensity = this.specularIntensity;
+    if (this.specularColor && this.specularColor.isColor) data.specularColor = this.specularColor.getHex();
+    if (this.shininess !== void 0) data.shininess = this.shininess;
+    if (this.clearcoat !== void 0) data.clearcoat = this.clearcoat;
+    if (this.clearcoatRoughness !== void 0) data.clearcoatRoughness = this.clearcoatRoughness;
     if (this.clearcoatMap && this.clearcoatMap.isTexture) {
       data.clearcoatMap = this.clearcoatMap.toJSON(meta).uuid;
     }
@@ -9585,33 +9448,24 @@ let Material$1 = class Material extends EventDispatcher {
     if (this.sheenRoughnessMap && this.sheenRoughnessMap.isTexture) {
       data.sheenRoughnessMap = this.sheenRoughnessMap.toJSON(meta).uuid;
     }
-    if (this.dispersion !== void 0)
-      data.dispersion = this.dispersion;
-    if (this.iridescence !== void 0)
-      data.iridescence = this.iridescence;
-    if (this.iridescenceIOR !== void 0)
-      data.iridescenceIOR = this.iridescenceIOR;
-    if (this.iridescenceThicknessRange !== void 0)
-      data.iridescenceThicknessRange = this.iridescenceThicknessRange;
+    if (this.dispersion !== void 0) data.dispersion = this.dispersion;
+    if (this.iridescence !== void 0) data.iridescence = this.iridescence;
+    if (this.iridescenceIOR !== void 0) data.iridescenceIOR = this.iridescenceIOR;
+    if (this.iridescenceThicknessRange !== void 0) data.iridescenceThicknessRange = this.iridescenceThicknessRange;
     if (this.iridescenceMap && this.iridescenceMap.isTexture) {
       data.iridescenceMap = this.iridescenceMap.toJSON(meta).uuid;
     }
     if (this.iridescenceThicknessMap && this.iridescenceThicknessMap.isTexture) {
       data.iridescenceThicknessMap = this.iridescenceThicknessMap.toJSON(meta).uuid;
     }
-    if (this.anisotropy !== void 0)
-      data.anisotropy = this.anisotropy;
-    if (this.anisotropyRotation !== void 0)
-      data.anisotropyRotation = this.anisotropyRotation;
+    if (this.anisotropy !== void 0) data.anisotropy = this.anisotropy;
+    if (this.anisotropyRotation !== void 0) data.anisotropyRotation = this.anisotropyRotation;
     if (this.anisotropyMap && this.anisotropyMap.isTexture) {
       data.anisotropyMap = this.anisotropyMap.toJSON(meta).uuid;
     }
-    if (this.map && this.map.isTexture)
-      data.map = this.map.toJSON(meta).uuid;
-    if (this.matcap && this.matcap.isTexture)
-      data.matcap = this.matcap.toJSON(meta).uuid;
-    if (this.alphaMap && this.alphaMap.isTexture)
-      data.alphaMap = this.alphaMap.toJSON(meta).uuid;
+    if (this.map && this.map.isTexture) data.map = this.map.toJSON(meta).uuid;
+    if (this.matcap && this.matcap.isTexture) data.matcap = this.matcap.toJSON(meta).uuid;
+    if (this.alphaMap && this.alphaMap.isTexture) data.alphaMap = this.alphaMap.toJSON(meta).uuid;
     if (this.lightMap && this.lightMap.isTexture) {
       data.lightMap = this.lightMap.toJSON(meta).uuid;
       data.lightMapIntensity = this.lightMapIntensity;
@@ -9634,150 +9488,81 @@ let Material$1 = class Material extends EventDispatcher {
       data.displacementScale = this.displacementScale;
       data.displacementBias = this.displacementBias;
     }
-    if (this.roughnessMap && this.roughnessMap.isTexture)
-      data.roughnessMap = this.roughnessMap.toJSON(meta).uuid;
-    if (this.metalnessMap && this.metalnessMap.isTexture)
-      data.metalnessMap = this.metalnessMap.toJSON(meta).uuid;
-    if (this.emissiveMap && this.emissiveMap.isTexture)
-      data.emissiveMap = this.emissiveMap.toJSON(meta).uuid;
-    if (this.specularMap && this.specularMap.isTexture)
-      data.specularMap = this.specularMap.toJSON(meta).uuid;
-    if (this.specularIntensityMap && this.specularIntensityMap.isTexture)
-      data.specularIntensityMap = this.specularIntensityMap.toJSON(meta).uuid;
-    if (this.specularColorMap && this.specularColorMap.isTexture)
-      data.specularColorMap = this.specularColorMap.toJSON(meta).uuid;
+    if (this.roughnessMap && this.roughnessMap.isTexture) data.roughnessMap = this.roughnessMap.toJSON(meta).uuid;
+    if (this.metalnessMap && this.metalnessMap.isTexture) data.metalnessMap = this.metalnessMap.toJSON(meta).uuid;
+    if (this.emissiveMap && this.emissiveMap.isTexture) data.emissiveMap = this.emissiveMap.toJSON(meta).uuid;
+    if (this.specularMap && this.specularMap.isTexture) data.specularMap = this.specularMap.toJSON(meta).uuid;
+    if (this.specularIntensityMap && this.specularIntensityMap.isTexture) data.specularIntensityMap = this.specularIntensityMap.toJSON(meta).uuid;
+    if (this.specularColorMap && this.specularColorMap.isTexture) data.specularColorMap = this.specularColorMap.toJSON(meta).uuid;
     if (this.envMap && this.envMap.isTexture) {
       data.envMap = this.envMap.toJSON(meta).uuid;
-      if (this.combine !== void 0)
-        data.combine = this.combine;
+      if (this.combine !== void 0) data.combine = this.combine;
     }
-    if (this.envMapRotation !== void 0)
-      data.envMapRotation = this.envMapRotation.toArray();
-    if (this.envMapIntensity !== void 0)
-      data.envMapIntensity = this.envMapIntensity;
-    if (this.reflectivity !== void 0)
-      data.reflectivity = this.reflectivity;
-    if (this.refractionRatio !== void 0)
-      data.refractionRatio = this.refractionRatio;
+    if (this.envMapRotation !== void 0) data.envMapRotation = this.envMapRotation.toArray();
+    if (this.envMapIntensity !== void 0) data.envMapIntensity = this.envMapIntensity;
+    if (this.reflectivity !== void 0) data.reflectivity = this.reflectivity;
+    if (this.refractionRatio !== void 0) data.refractionRatio = this.refractionRatio;
     if (this.gradientMap && this.gradientMap.isTexture) {
       data.gradientMap = this.gradientMap.toJSON(meta).uuid;
     }
-    if (this.transmission !== void 0)
-      data.transmission = this.transmission;
-    if (this.transmissionMap && this.transmissionMap.isTexture)
-      data.transmissionMap = this.transmissionMap.toJSON(meta).uuid;
-    if (this.thickness !== void 0)
-      data.thickness = this.thickness;
-    if (this.thicknessMap && this.thicknessMap.isTexture)
-      data.thicknessMap = this.thicknessMap.toJSON(meta).uuid;
-    if (this.attenuationDistance !== void 0 && this.attenuationDistance !== Infinity)
-      data.attenuationDistance = this.attenuationDistance;
-    if (this.attenuationColor !== void 0)
-      data.attenuationColor = this.attenuationColor.getHex();
-    if (this.size !== void 0)
-      data.size = this.size;
-    if (this.shadowSide !== null)
-      data.shadowSide = this.shadowSide;
-    if (this.sizeAttenuation !== void 0)
-      data.sizeAttenuation = this.sizeAttenuation;
-    if (this.blending !== NormalBlending)
-      data.blending = this.blending;
-    if (this.side !== FrontSide)
-      data.side = this.side;
-    if (this.vertexColors === true)
-      data.vertexColors = true;
-    if (this.opacity < 1)
-      data.opacity = this.opacity;
-    if (this.transparent === true)
-      data.transparent = true;
-    if (this.blendSrc !== SrcAlphaFactor)
-      data.blendSrc = this.blendSrc;
-    if (this.blendDst !== OneMinusSrcAlphaFactor)
-      data.blendDst = this.blendDst;
-    if (this.blendEquation !== AddEquation)
-      data.blendEquation = this.blendEquation;
-    if (this.blendSrcAlpha !== null)
-      data.blendSrcAlpha = this.blendSrcAlpha;
-    if (this.blendDstAlpha !== null)
-      data.blendDstAlpha = this.blendDstAlpha;
-    if (this.blendEquationAlpha !== null)
-      data.blendEquationAlpha = this.blendEquationAlpha;
-    if (this.blendColor && this.blendColor.isColor)
-      data.blendColor = this.blendColor.getHex();
-    if (this.blendAlpha !== 0)
-      data.blendAlpha = this.blendAlpha;
-    if (this.depthFunc !== LessEqualDepth)
-      data.depthFunc = this.depthFunc;
-    if (this.depthTest === false)
-      data.depthTest = this.depthTest;
-    if (this.depthWrite === false)
-      data.depthWrite = this.depthWrite;
-    if (this.colorWrite === false)
-      data.colorWrite = this.colorWrite;
-    if (this.stencilWriteMask !== 255)
-      data.stencilWriteMask = this.stencilWriteMask;
-    if (this.stencilFunc !== AlwaysStencilFunc)
-      data.stencilFunc = this.stencilFunc;
-    if (this.stencilRef !== 0)
-      data.stencilRef = this.stencilRef;
-    if (this.stencilFuncMask !== 255)
-      data.stencilFuncMask = this.stencilFuncMask;
-    if (this.stencilFail !== KeepStencilOp)
-      data.stencilFail = this.stencilFail;
-    if (this.stencilZFail !== KeepStencilOp)
-      data.stencilZFail = this.stencilZFail;
-    if (this.stencilZPass !== KeepStencilOp)
-      data.stencilZPass = this.stencilZPass;
-    if (this.stencilWrite === true)
-      data.stencilWrite = this.stencilWrite;
-    if (this.rotation !== void 0 && this.rotation !== 0)
-      data.rotation = this.rotation;
-    if (this.polygonOffset === true)
-      data.polygonOffset = true;
-    if (this.polygonOffsetFactor !== 0)
-      data.polygonOffsetFactor = this.polygonOffsetFactor;
-    if (this.polygonOffsetUnits !== 0)
-      data.polygonOffsetUnits = this.polygonOffsetUnits;
-    if (this.linewidth !== void 0 && this.linewidth !== 1)
-      data.linewidth = this.linewidth;
-    if (this.dashSize !== void 0)
-      data.dashSize = this.dashSize;
-    if (this.gapSize !== void 0)
-      data.gapSize = this.gapSize;
-    if (this.scale !== void 0)
-      data.scale = this.scale;
-    if (this.dithering === true)
-      data.dithering = true;
-    if (this.alphaTest > 0)
-      data.alphaTest = this.alphaTest;
-    if (this.alphaHash === true)
-      data.alphaHash = true;
-    if (this.alphaToCoverage === true)
-      data.alphaToCoverage = true;
-    if (this.premultipliedAlpha === true)
-      data.premultipliedAlpha = true;
-    if (this.forceSinglePass === true)
-      data.forceSinglePass = true;
-    if (this.allowOverride === false)
-      data.allowOverride = false;
-    if (this.wireframe === true)
-      data.wireframe = true;
-    if (this.wireframeLinewidth > 1)
-      data.wireframeLinewidth = this.wireframeLinewidth;
-    if (this.wireframeLinecap !== "round")
-      data.wireframeLinecap = this.wireframeLinecap;
-    if (this.wireframeLinejoin !== "round")
-      data.wireframeLinejoin = this.wireframeLinejoin;
-    if (this.flatShading === true)
-      data.flatShading = true;
-    if (this.visible === false)
-      data.visible = false;
-    if (this.toneMapped === false)
-      data.toneMapped = false;
-    if (this.fog === false)
-      data.fog = false;
-    if (Object.keys(this.userData).length > 0)
-      data.userData = this.userData;
+    if (this.transmission !== void 0) data.transmission = this.transmission;
+    if (this.transmissionMap && this.transmissionMap.isTexture) data.transmissionMap = this.transmissionMap.toJSON(meta).uuid;
+    if (this.thickness !== void 0) data.thickness = this.thickness;
+    if (this.thicknessMap && this.thicknessMap.isTexture) data.thicknessMap = this.thicknessMap.toJSON(meta).uuid;
+    if (this.attenuationDistance !== void 0 && this.attenuationDistance !== Infinity) data.attenuationDistance = this.attenuationDistance;
+    if (this.attenuationColor !== void 0) data.attenuationColor = this.attenuationColor.getHex();
+    if (this.size !== void 0) data.size = this.size;
+    if (this.shadowSide !== null) data.shadowSide = this.shadowSide;
+    if (this.sizeAttenuation !== void 0) data.sizeAttenuation = this.sizeAttenuation;
+    if (this.blending !== NormalBlending) data.blending = this.blending;
+    if (this.side !== FrontSide) data.side = this.side;
+    if (this.vertexColors === true) data.vertexColors = true;
+    if (this.opacity < 1) data.opacity = this.opacity;
+    if (this.transparent === true) data.transparent = true;
+    if (this.blendSrc !== SrcAlphaFactor) data.blendSrc = this.blendSrc;
+    if (this.blendDst !== OneMinusSrcAlphaFactor) data.blendDst = this.blendDst;
+    if (this.blendEquation !== AddEquation) data.blendEquation = this.blendEquation;
+    if (this.blendSrcAlpha !== null) data.blendSrcAlpha = this.blendSrcAlpha;
+    if (this.blendDstAlpha !== null) data.blendDstAlpha = this.blendDstAlpha;
+    if (this.blendEquationAlpha !== null) data.blendEquationAlpha = this.blendEquationAlpha;
+    if (this.blendColor && this.blendColor.isColor) data.blendColor = this.blendColor.getHex();
+    if (this.blendAlpha !== 0) data.blendAlpha = this.blendAlpha;
+    if (this.depthFunc !== LessEqualDepth) data.depthFunc = this.depthFunc;
+    if (this.depthTest === false) data.depthTest = this.depthTest;
+    if (this.depthWrite === false) data.depthWrite = this.depthWrite;
+    if (this.colorWrite === false) data.colorWrite = this.colorWrite;
+    if (this.stencilWriteMask !== 255) data.stencilWriteMask = this.stencilWriteMask;
+    if (this.stencilFunc !== AlwaysStencilFunc) data.stencilFunc = this.stencilFunc;
+    if (this.stencilRef !== 0) data.stencilRef = this.stencilRef;
+    if (this.stencilFuncMask !== 255) data.stencilFuncMask = this.stencilFuncMask;
+    if (this.stencilFail !== KeepStencilOp) data.stencilFail = this.stencilFail;
+    if (this.stencilZFail !== KeepStencilOp) data.stencilZFail = this.stencilZFail;
+    if (this.stencilZPass !== KeepStencilOp) data.stencilZPass = this.stencilZPass;
+    if (this.stencilWrite === true) data.stencilWrite = this.stencilWrite;
+    if (this.rotation !== void 0 && this.rotation !== 0) data.rotation = this.rotation;
+    if (this.polygonOffset === true) data.polygonOffset = true;
+    if (this.polygonOffsetFactor !== 0) data.polygonOffsetFactor = this.polygonOffsetFactor;
+    if (this.polygonOffsetUnits !== 0) data.polygonOffsetUnits = this.polygonOffsetUnits;
+    if (this.linewidth !== void 0 && this.linewidth !== 1) data.linewidth = this.linewidth;
+    if (this.dashSize !== void 0) data.dashSize = this.dashSize;
+    if (this.gapSize !== void 0) data.gapSize = this.gapSize;
+    if (this.scale !== void 0) data.scale = this.scale;
+    if (this.dithering === true) data.dithering = true;
+    if (this.alphaTest > 0) data.alphaTest = this.alphaTest;
+    if (this.alphaHash === true) data.alphaHash = true;
+    if (this.alphaToCoverage === true) data.alphaToCoverage = true;
+    if (this.premultipliedAlpha === true) data.premultipliedAlpha = true;
+    if (this.forceSinglePass === true) data.forceSinglePass = true;
+    if (this.allowOverride === false) data.allowOverride = false;
+    if (this.wireframe === true) data.wireframe = true;
+    if (this.wireframeLinewidth > 1) data.wireframeLinewidth = this.wireframeLinewidth;
+    if (this.wireframeLinecap !== "round") data.wireframeLinecap = this.wireframeLinecap;
+    if (this.wireframeLinejoin !== "round") data.wireframeLinejoin = this.wireframeLinejoin;
+    if (this.flatShading === true) data.flatShading = true;
+    if (this.visible === false) data.visible = false;
+    if (this.toneMapped === false) data.toneMapped = false;
+    if (this.fog === false) data.fog = false;
+    if (Object.keys(this.userData).length > 0) data.userData = this.userData;
     function extractFromCache(cache) {
       const values = [];
       for (const key in cache) {
@@ -9790,10 +9575,8 @@ let Material$1 = class Material extends EventDispatcher {
     if (isRootObject) {
       const textures = extractFromCache(meta.textures);
       const images = extractFromCache(meta.images);
-      if (textures.length > 0)
-        data.textures = textures;
-      if (images.length > 0)
-        data.images = images;
+      if (textures.length > 0) data.textures = textures;
+      if (images.length > 0) data.images = images;
     }
     return data;
   }
@@ -9885,8 +9668,7 @@ let Material$1 = class Material extends EventDispatcher {
    * @param {boolean} value
    */
   set needsUpdate(value) {
-    if (value === true)
-      this.version++;
+    if (value === true) this.version++;
   }
 };
 class MeshBasicMaterial extends Material$1 {
@@ -9988,8 +9770,7 @@ class BufferAttribute {
    * @param {boolean} value
    */
   set needsUpdate(value) {
-    if (value === true)
-      this.version++;
+    if (value === true) this.version++;
   }
   /**
    * Sets the usage of this buffer attribute.
@@ -10148,8 +9929,7 @@ class BufferAttribute {
    */
   getComponent(index, component) {
     let value = this.array[index * this.itemSize + component];
-    if (this.normalized)
-      value = denormalize(value, this.array);
+    if (this.normalized) value = denormalize(value, this.array);
     return value;
   }
   /**
@@ -10161,8 +9941,7 @@ class BufferAttribute {
    * @return {BufferAttribute} A reference to this instance.
    */
   setComponent(index, component, value) {
-    if (this.normalized)
-      value = normalize(value, this.array);
+    if (this.normalized) value = normalize(value, this.array);
     this.array[index * this.itemSize + component] = value;
     return this;
   }
@@ -10174,8 +9953,7 @@ class BufferAttribute {
    */
   getX(index) {
     let x = this.array[index * this.itemSize];
-    if (this.normalized)
-      x = denormalize(x, this.array);
+    if (this.normalized) x = denormalize(x, this.array);
     return x;
   }
   /**
@@ -10186,8 +9964,7 @@ class BufferAttribute {
    * @return {BufferAttribute} A reference to this instance.
    */
   setX(index, x) {
-    if (this.normalized)
-      x = normalize(x, this.array);
+    if (this.normalized) x = normalize(x, this.array);
     this.array[index * this.itemSize] = x;
     return this;
   }
@@ -10199,8 +9976,7 @@ class BufferAttribute {
    */
   getY(index) {
     let y = this.array[index * this.itemSize + 1];
-    if (this.normalized)
-      y = denormalize(y, this.array);
+    if (this.normalized) y = denormalize(y, this.array);
     return y;
   }
   /**
@@ -10211,8 +9987,7 @@ class BufferAttribute {
    * @return {BufferAttribute} A reference to this instance.
    */
   setY(index, y) {
-    if (this.normalized)
-      y = normalize(y, this.array);
+    if (this.normalized) y = normalize(y, this.array);
     this.array[index * this.itemSize + 1] = y;
     return this;
   }
@@ -10224,8 +9999,7 @@ class BufferAttribute {
    */
   getZ(index) {
     let z = this.array[index * this.itemSize + 2];
-    if (this.normalized)
-      z = denormalize(z, this.array);
+    if (this.normalized) z = denormalize(z, this.array);
     return z;
   }
   /**
@@ -10236,8 +10010,7 @@ class BufferAttribute {
    * @return {BufferAttribute} A reference to this instance.
    */
   setZ(index, z) {
-    if (this.normalized)
-      z = normalize(z, this.array);
+    if (this.normalized) z = normalize(z, this.array);
     this.array[index * this.itemSize + 2] = z;
     return this;
   }
@@ -10249,8 +10022,7 @@ class BufferAttribute {
    */
   getW(index) {
     let w = this.array[index * this.itemSize + 3];
-    if (this.normalized)
-      w = denormalize(w, this.array);
+    if (this.normalized) w = denormalize(w, this.array);
     return w;
   }
   /**
@@ -10261,8 +10033,7 @@ class BufferAttribute {
    * @return {BufferAttribute} A reference to this instance.
    */
   setW(index, w) {
-    if (this.normalized)
-      w = normalize(w, this.array);
+    if (this.normalized) w = normalize(w, this.array);
     this.array[index * this.itemSize + 3] = w;
     return this;
   }
@@ -10361,10 +10132,8 @@ class BufferAttribute {
       array: Array.from(this.array),
       normalized: this.normalized
     };
-    if (this.name !== "")
-      data.name = this.name;
-    if (this.usage !== StaticDrawUsage)
-      data.usage = this.usage;
+    if (this.name !== "") data.name = this.name;
+    if (this.usage !== StaticDrawUsage) data.usage = this.usage;
     return data;
   }
 }
@@ -10859,8 +10628,7 @@ class BufferGeometry extends EventDispatcher {
       uvB.sub(uvA);
       uvC.sub(uvA);
       const r = 1 / (uvB.x * uvC.y - uvC.x * uvB.y);
-      if (!isFinite(r))
-        return;
+      if (!isFinite(r)) return;
       sdir.copy(vB).multiplyScalar(uvC.y).addScaledVector(vC, -uvB.y).multiplyScalar(r);
       tdir.copy(vC).multiplyScalar(uvB.x).addScaledVector(vB, -uvC.x).multiplyScalar(r);
       tan1[a].add(sdir);
@@ -11056,15 +10824,12 @@ class BufferGeometry extends EventDispatcher {
     };
     data.uuid = this.uuid;
     data.type = this.type;
-    if (this.name !== "")
-      data.name = this.name;
-    if (Object.keys(this.userData).length > 0)
-      data.userData = this.userData;
+    if (this.name !== "") data.name = this.name;
+    if (Object.keys(this.userData).length > 0) data.userData = this.userData;
     if (this.parameters !== void 0) {
       const parameters = this.parameters;
       for (const key in parameters) {
-        if (parameters[key] !== void 0)
-          data[key] = parameters[key];
+        if (parameters[key] !== void 0) data[key] = parameters[key];
       }
       return data;
     }
@@ -11261,8 +11026,7 @@ class Mesh extends Object3D {
       for (let i = 0, il = morphPosition.length; i < il; i++) {
         const influence = morphInfluences[i];
         const morphAttribute = morphPosition[i];
-        if (influence === 0)
-          continue;
+        if (influence === 0) continue;
         _tempA.fromBufferAttribute(morphAttribute, index);
         if (morphTargetsRelative) {
           _morphA.addScaledVector(_tempA, influence);
@@ -11284,24 +11048,19 @@ class Mesh extends Object3D {
     const geometry = this.geometry;
     const material = this.material;
     const matrixWorld = this.matrixWorld;
-    if (material === void 0)
-      return;
-    if (geometry.boundingSphere === null)
-      geometry.computeBoundingSphere();
+    if (material === void 0) return;
+    if (geometry.boundingSphere === null) geometry.computeBoundingSphere();
     _sphere$6.copy(geometry.boundingSphere);
     _sphere$6.applyMatrix4(matrixWorld);
     _ray$3.copy(raycaster.ray).recast(raycaster.near);
     if (_sphere$6.containsPoint(_ray$3.origin) === false) {
-      if (_ray$3.intersectSphere(_sphere$6, _sphereHitAt) === null)
-        return;
-      if (_ray$3.origin.distanceToSquared(_sphereHitAt) > (raycaster.far - raycaster.near) ** 2)
-        return;
+      if (_ray$3.intersectSphere(_sphere$6, _sphereHitAt) === null) return;
+      if (_ray$3.origin.distanceToSquared(_sphereHitAt) > (raycaster.far - raycaster.near) ** 2) return;
     }
     _inverseMatrix$3.copy(matrixWorld).invert();
     _ray$3.copy(raycaster.ray).applyMatrix4(_inverseMatrix$3);
     if (geometry.boundingBox !== null) {
-      if (_ray$3.intersectsBox(geometry.boundingBox) === false)
-        return;
+      if (_ray$3.intersectsBox(geometry.boundingBox) === false) return;
     }
     this._computeIntersections(raycaster, intersects2, _ray$3);
   }
@@ -11392,13 +11151,11 @@ function checkIntersection$1(object, material, raycaster, ray, pA, pB, pC, point
   } else {
     intersect = ray.intersectTriangle(pA, pB, pC, material.side === FrontSide, point);
   }
-  if (intersect === null)
-    return null;
+  if (intersect === null) return null;
   _intersectionPointWorld.copy(point);
   _intersectionPointWorld.applyMatrix4(object.matrixWorld);
   const distance = raycaster.ray.origin.distanceTo(_intersectionPointWorld);
-  if (distance < raycaster.near || distance > raycaster.far)
-    return null;
+  if (distance < raycaster.near || distance > raycaster.far) return null;
   return {
     distance,
     point: _intersectionPointWorld.clone(),
@@ -11563,15 +11320,11 @@ class InstancedMesh extends Mesh {
   copy(source, recursive) {
     super.copy(source, recursive);
     this.instanceMatrix.copy(source.instanceMatrix);
-    if (source.morphTexture !== null)
-      this.morphTexture = source.morphTexture.clone();
-    if (source.instanceColor !== null)
-      this.instanceColor = source.instanceColor.clone();
+    if (source.morphTexture !== null) this.morphTexture = source.morphTexture.clone();
+    if (source.instanceColor !== null) this.instanceColor = source.instanceColor.clone();
     this.count = source.count;
-    if (source.boundingBox !== null)
-      this.boundingBox = source.boundingBox.clone();
-    if (source.boundingSphere !== null)
-      this.boundingSphere = source.boundingSphere.clone();
+    if (source.boundingBox !== null) this.boundingBox = source.boundingBox.clone();
+    if (source.boundingSphere !== null) this.boundingSphere = source.boundingSphere.clone();
     return this;
   }
   /**
@@ -11612,14 +11365,11 @@ class InstancedMesh extends Mesh {
     const raycastTimes = this.count;
     _mesh$1.geometry = this.geometry;
     _mesh$1.material = this.material;
-    if (_mesh$1.material === void 0)
-      return;
-    if (this.boundingSphere === null)
-      this.computeBoundingSphere();
+    if (_mesh$1.material === void 0) return;
+    if (this.boundingSphere === null) this.computeBoundingSphere();
     _sphere$4.copy(this.boundingSphere);
     _sphere$4.applyMatrix4(matrixWorld);
-    if (raycaster.ray.intersectsSphere(_sphere$4) === false)
-      return;
+    if (raycaster.ray.intersectsSphere(_sphere$4) === false) return;
     for (let instanceId = 0; instanceId < raycastTimes; instanceId++) {
       this.getMatrixAt(instanceId, _instanceLocalMatrix);
       _instanceWorldMatrix.multiplyMatrices(matrixWorld, _instanceLocalMatrix);
@@ -12031,13 +11781,11 @@ class Frustum {
    */
   intersectsObject(object) {
     if (object.boundingSphere !== void 0) {
-      if (object.boundingSphere === null)
-        object.computeBoundingSphere();
+      if (object.boundingSphere === null) object.computeBoundingSphere();
       _sphere$3.copy(object.boundingSphere).applyMatrix4(object.matrixWorld);
     } else {
       const geometry = object.geometry;
-      if (geometry.boundingSphere === null)
-        geometry.computeBoundingSphere();
+      if (geometry.boundingSphere === null) geometry.computeBoundingSphere();
       _sphere$3.copy(geometry.boundingSphere).applyMatrix4(object.matrixWorld);
     }
     return this.intersectsSphere(_sphere$3);
@@ -12536,8 +12284,7 @@ class BatchedMesh extends Mesh {
     const instanceInfo = this._instanceInfo;
     boundingBox2.makeEmpty();
     for (let i = 0, l = instanceInfo.length; i < l; i++) {
-      if (instanceInfo[i].active === false)
-        continue;
+      if (instanceInfo[i].active === false) continue;
       const geometryId = instanceInfo[i].geometryIndex;
       this.getMatrixAt(i, _matrix$1);
       this.getBoundingBoxAt(geometryId, _box$1).applyMatrix4(_matrix$1);
@@ -12557,8 +12304,7 @@ class BatchedMesh extends Mesh {
     const instanceInfo = this._instanceInfo;
     boundingSphere.makeEmpty();
     for (let i = 0, l = instanceInfo.length; i < l; i++) {
-      if (instanceInfo[i].active === false)
-        continue;
+      if (instanceInfo[i].active === false) continue;
       const geometryId = instanceInfo[i].geometryIndex;
       this.getMatrixAt(i, _matrix$1);
       this.getBoundingSphereAt(geometryId, _sphere$2).applyMatrix4(_matrix$1);
@@ -13359,13 +13105,11 @@ class Line extends Object3D {
     const matrixWorld = this.matrixWorld;
     const threshold = raycaster.params.Line.threshold;
     const drawRange = geometry.drawRange;
-    if (geometry.boundingSphere === null)
-      geometry.computeBoundingSphere();
+    if (geometry.boundingSphere === null) geometry.computeBoundingSphere();
     _sphere$1.copy(geometry.boundingSphere);
     _sphere$1.applyMatrix4(matrixWorld);
     _sphere$1.radius += threshold;
-    if (raycaster.ray.intersectsSphere(_sphere$1) === false)
-      return;
+    if (raycaster.ray.intersectsSphere(_sphere$1) === false) return;
     _inverseMatrix$1.copy(matrixWorld).invert();
     _ray$1.copy(raycaster.ray).applyMatrix4(_inverseMatrix$1);
     const localThreshold = threshold / ((this.scale.x + this.scale.y + this.scale.z) / 3);
@@ -13437,12 +13181,10 @@ function checkIntersection$2(object, raycaster, ray, thresholdSq, a, b, i) {
   _vStart.fromBufferAttribute(positionAttribute, a);
   _vEnd.fromBufferAttribute(positionAttribute, b);
   const distSq = ray.distanceSqToSegment(_vStart, _vEnd, _intersectPointOnRay, _intersectPointOnSegment);
-  if (distSq > thresholdSq)
-    return;
+  if (distSq > thresholdSq) return;
   _intersectPointOnRay.applyMatrix4(object.matrixWorld);
   const distance = raycaster.ray.origin.distanceTo(_intersectPointOnRay);
-  if (distance < raycaster.near || distance > raycaster.far)
-    return;
+  if (distance < raycaster.near || distance > raycaster.far) return;
   return {
     distance,
     // What do we want? intersection point on the ray or on the segment??
@@ -13571,13 +13313,11 @@ class Points extends Object3D {
     const matrixWorld = this.matrixWorld;
     const threshold = raycaster.params.Points.threshold;
     const drawRange = geometry.drawRange;
-    if (geometry.boundingSphere === null)
-      geometry.computeBoundingSphere();
+    if (geometry.boundingSphere === null) geometry.computeBoundingSphere();
     _sphere.copy(geometry.boundingSphere);
     _sphere.applyMatrix4(matrixWorld);
     _sphere.radius += threshold;
-    if (raycaster.ray.intersectsSphere(_sphere) === false)
-      return;
+    if (raycaster.ray.intersectsSphere(_sphere) === false) return;
     _inverseMatrix$2.copy(matrixWorld).invert();
     _ray$2.copy(raycaster.ray).applyMatrix4(_inverseMatrix$2);
     const localThreshold = threshold / ((this.scale.x + this.scale.y + this.scale.z) / 3);
@@ -13631,8 +13371,7 @@ function testPoint(point, index, localThresholdSq, matrixWorld, raycaster, inter
     _ray$2.closestPointToPoint(point, intersectPoint);
     intersectPoint.applyMatrix4(matrixWorld);
     const distance = raycaster.ray.origin.distanceTo(intersectPoint);
-    if (distance < raycaster.near || distance > raycaster.far)
-      return;
+    if (distance < raycaster.near || distance > raycaster.far) return;
     intersects2.push({
       distance,
       distanceToRay: Math.sqrt(rayPointDistanceSq),
@@ -13917,7 +13656,7 @@ var LodMode = /* @__PURE__ */ ((LodMode2) => {
   LodMode2[LodMode2["ALL_GEOMETRY"] = 2] = "ALL_GEOMETRY";
   return LodMode2;
 })(LodMode || {});
-const _MultithreadingHelper = class _MultithreadingHelper {
+class MultithreadingHelper {
   static newThread(url, classic) {
     return classic ? new Worker(url) : new Worker(url, { type: "module" });
   }
@@ -13939,50 +13678,63 @@ const _MultithreadingHelper = class _MultithreadingHelper {
     return planeSet;
   }
   static data(data) {
-    var _a2, _b2;
-    const isTransform = (data == null ? void 0 : data.elements) !== void 0;
+    const isTransform = data?.elements !== void 0;
     if (isTransform) {
-      return _MultithreadingHelper.transform(data);
+      return MultithreadingHelper.transform(data);
     }
-    const isBeam = (data == null ? void 0 : data.origin) !== void 0 && (data == null ? void 0 : data.direction) !== void 0;
+    const isBeam = data?.origin !== void 0 && data?.direction !== void 0;
     if (isBeam) {
-      return _MultithreadingHelper.beam(data);
+      return MultithreadingHelper.beam(data);
     }
-    const isFrustum = (data == null ? void 0 : data.planes) !== void 0;
+    const isFrustum = data?.planes !== void 0;
     if (isFrustum) {
-      return _MultithreadingHelper.frustum(data);
+      return MultithreadingHelper.frustum(data);
     }
-    const hasNormal = (data == null ? void 0 : data.normal) !== void 0;
-    const hasConstant = (data == null ? void 0 : data.constant) !== void 0;
+    const hasNormal = data?.normal !== void 0;
+    const hasConstant = data?.constant !== void 0;
     const isPlane = hasNormal && hasConstant;
     if (isPlane) {
-      return _MultithreadingHelper.plane(data);
+      return MultithreadingHelper.plane(data);
     }
-    const hasNormalSet = ((_a2 = data[0]) == null ? void 0 : _a2.normal) !== void 0;
-    const hasConstantSet = ((_b2 = data[0]) == null ? void 0 : _b2.constant) !== void 0;
+    const hasNormalSet = data[0]?.normal !== void 0;
+    const hasConstantSet = data[0]?.constant !== void 0;
     const isPlaneSet = hasNormalSet && hasConstantSet;
     if (isPlaneSet) {
-      return _MultithreadingHelper.planeSet(data);
+      return MultithreadingHelper.planeSet(data);
     }
-    const hasX = (data == null ? void 0 : data.x) !== void 0;
-    const hasY = (data == null ? void 0 : data.y) !== void 0;
-    const hasZ = (data == null ? void 0 : data.z) !== void 0;
+    const hasX = data?.x !== void 0;
+    const hasY = data?.y !== void 0;
+    const hasZ = data?.z !== void 0;
     const isArray = hasX && hasY && hasZ;
     if (isArray) {
-      return _MultithreadingHelper.array(data);
+      return MultithreadingHelper.array(data);
     }
     return data;
   }
+  /**
+   * Monotonic sequence counter for RPC fence tracking. Every EXECUTE
+   * request gets a fresh seq; the worker tags emitted FINISH tile
+   * requests with the highest seq it has processed since the previous
+   * FINISH, and main uses that to resolve `forceUpdateFinish` waiters
+   * without polling.
+   *
+   * Module-level rather than per-FragmentsModels because the seq
+   * space only needs to be unique across messages a single main
+   * thread is sending; multiple FragmentsModels in the same window
+   * would race on a shared counter regardless. This is simpler and
+   * avoids threading through the helper's API.
+   */
+  static _seq = 0;
   /**
    * Last seq dispatched. Snapshot at `forceUpdateFinish` call time
    * to know which seq must settle before we can resolve.
    */
   static get lastDispatchedSeq() {
-    return _MultithreadingHelper._seq;
+    return MultithreadingHelper._seq;
   }
   static nextSeq() {
-    _MultithreadingHelper._seq += 1;
-    return _MultithreadingHelper._seq;
+    MultithreadingHelper._seq += 1;
+    return MultithreadingHelper._seq;
   }
   static getExecuteRequest(modelId, method, args) {
     const parameters = Array.from(args);
@@ -13998,8 +13750,8 @@ const _MultithreadingHelper = class _MultithreadingHelper {
   static getRequestContent(input) {
     const content = [];
     for (const request of input.list) {
-      _MultithreadingHelper.setupCreateRequest(request, content);
-      _MultithreadingHelper.setupUpdateRequest(request, content);
+      MultithreadingHelper.setupCreateRequest(request, content);
+      MultithreadingHelper.setupUpdateRequest(request, content);
     }
     return content;
   }
@@ -14010,7 +13762,7 @@ const _MultithreadingHelper = class _MultithreadingHelper {
   }
   static cleanRequests(list) {
     const tasks = [];
-    const helper = _MultithreadingHelper;
+    const helper = MultithreadingHelper;
     for (const request of list) {
       const isFinish = helper.isFinishRequest(request);
       if (!isFinish) {
@@ -14038,7 +13790,7 @@ const _MultithreadingHelper = class _MultithreadingHelper {
     clearInterval(updater);
   }
   static areCoresAvailable(currentThreads) {
-    const capacity = _MultithreadingHelper.getCpuCapacity();
+    const capacity = MultithreadingHelper.getCpuCapacity();
     const availableThreads = Math.max(capacity, 2);
     return currentThreads < availableThreads;
   }
@@ -14057,7 +13809,7 @@ const _MultithreadingHelper = class _MultithreadingHelper {
       }
       return Math.floor(override);
     }
-    const capacity = _MultithreadingHelper.getCpuCapacity();
+    const capacity = MultithreadingHelper.getCpuCapacity();
     return Math.max(capacity, 2);
   }
   static isFinishRequest(request) {
@@ -14069,9 +13821,8 @@ const _MultithreadingHelper = class _MultithreadingHelper {
     }
   }
   static getCpuCapacity() {
-    var _a2;
     const freeCores = 3;
-    if ((_a2 = globalThis.navigator) == null ? void 0 : _a2.hardwareConcurrency) {
+    if (globalThis.navigator?.hardwareConcurrency) {
       return navigator.hardwareConcurrency - freeCores;
     }
     return 0;
@@ -14082,8 +13833,7 @@ const _MultithreadingHelper = class _MultithreadingHelper {
     this.addRequestTileData(request, content, "highlightData", extras);
   }
   static addRequestContent(id, request, content) {
-    if (!request[id])
-      return;
+    if (!request[id]) return;
     const buffer = request[id].buffer;
     content.push(buffer);
   }
@@ -14110,34 +13860,12 @@ const _MultithreadingHelper = class _MultithreadingHelper {
   static getCreateRequestIds() {
     return ["positions", "indices", "normals", "itemIds"];
   }
-};
-/**
- * Monotonic sequence counter for RPC fence tracking. Every EXECUTE
- * request gets a fresh seq; the worker tags emitted FINISH tile
- * requests with the highest seq it has processed since the previous
- * FINISH, and main uses that to resolve `forceUpdateFinish` waiters
- * without polling.
- *
- * Module-level rather than per-FragmentsModels because the seq
- * space only needs to be unique across messages a single main
- * thread is sending; multiple FragmentsModels in the same window
- * would race on a shared counter regardless. This is simpler and
- * avoids threading through the helper's API.
- */
-__publicField(_MultithreadingHelper, "_seq", 0);
-let MultithreadingHelper = _MultithreadingHelper;
+}
 class Connection {
+  _handlers = new ConnectionHandlers();
+  _handleInput;
+  _port;
   constructor(handleInput) {
-    __publicField(this, "_handlers", new ConnectionHandlers());
-    __publicField(this, "_handleInput");
-    __publicField(this, "_port");
-    __publicField(this, "onInput", (input) => {
-      if (input.data.toMainThread) {
-        this._handlers.run(input.data);
-        return;
-      }
-      this.manageInput(input.data);
-    });
     this._handleInput = handleInput;
   }
   fetchMeshCompute(modelId, list) {
@@ -14175,12 +13903,19 @@ class Connection {
     input.toMainThread = true;
     connection.postMessage(input);
   }
+  onInput = (input) => {
+    if (input.data.toMainThread) {
+      this._handlers.run(input.data);
+      return;
+    }
+    this.manageInput(input.data);
+  };
   async manageConnection(input) {
     try {
       await this._handleInput(input);
     } catch (error2) {
       input.errorInfo = error2.toString();
-      if ((error2 == null ? void 0 : error2.name) !== "LoadAbortedError") {
+      if (error2?.name !== "LoadAbortedError") {
         console.error(error2);
       }
     }
@@ -14190,7 +13925,6 @@ class Connection {
     await this.manageOutput(input);
   }
 }
-/*! pako 2.1.0 https://github.com/nodeca/pako @license (MIT AND Zlib) */
 const Z_FIXED$1 = 4;
 const Z_BINARY = 0;
 const Z_TEXT = 1;
@@ -16317,10 +16051,8 @@ Deflate$1.prototype.push = function(data, flush_mode) {
   if (this.ended) {
     return false;
   }
-  if (flush_mode === ~~flush_mode)
-    _flush_mode = flush_mode;
-  else
-    _flush_mode = flush_mode === true ? Z_FINISH$2 : Z_NO_FLUSH$1;
+  if (flush_mode === ~~flush_mode) _flush_mode = flush_mode;
+  else _flush_mode = flush_mode === true ? Z_FINISH$2 : Z_NO_FLUSH$1;
   if (typeof data === "string") {
     strm.input = strings.string2buf(data);
   } else if (toString$1.call(data) === "[object ArrayBuffer]") {
@@ -16360,8 +16092,7 @@ Deflate$1.prototype.push = function(data, flush_mode) {
       strm.avail_out = 0;
       continue;
     }
-    if (strm.avail_in === 0)
-      break;
+    if (strm.avail_in === 0) break;
   }
   return true;
 };
@@ -17312,6 +17043,7 @@ const inflate$2 = (strm, flush) => {
           hold = 0;
           bits = 0;
           state.mode = TIME;
+        /* falls through */
         case TIME:
           while (bits < 32) {
             if (have === 0) {
@@ -17334,6 +17066,7 @@ const inflate$2 = (strm, flush) => {
           hold = 0;
           bits = 0;
           state.mode = OS;
+        /* falls through */
         case OS:
           while (bits < 16) {
             if (have === 0) {
@@ -17355,6 +17088,7 @@ const inflate$2 = (strm, flush) => {
           hold = 0;
           bits = 0;
           state.mode = EXLEN;
+        /* falls through */
         case EXLEN:
           if (state.flags & 1024) {
             while (bits < 16) {
@@ -17380,6 +17114,7 @@ const inflate$2 = (strm, flush) => {
             state.head.extra = null;
           }
           state.mode = EXTRA;
+        /* falls through */
         case EXTRA:
           if (state.flags & 1024) {
             copy = state.length;
@@ -17416,6 +17151,7 @@ const inflate$2 = (strm, flush) => {
           }
           state.length = 0;
           state.mode = NAME;
+        /* falls through */
         case NAME:
           if (state.flags & 2048) {
             if (have === 0) {
@@ -17441,6 +17177,7 @@ const inflate$2 = (strm, flush) => {
           }
           state.length = 0;
           state.mode = COMMENT;
+        /* falls through */
         case COMMENT:
           if (state.flags & 4096) {
             if (have === 0) {
@@ -17465,6 +17202,7 @@ const inflate$2 = (strm, flush) => {
             state.head.comment = null;
           }
           state.mode = HCRC;
+        /* falls through */
         case HCRC:
           if (state.flags & 512) {
             while (bits < 16) {
@@ -17503,6 +17241,7 @@ const inflate$2 = (strm, flush) => {
           hold = 0;
           bits = 0;
           state.mode = DICT;
+        /* falls through */
         case DICT:
           if (state.havedict === 0) {
             strm.next_out = put;
@@ -17515,10 +17254,12 @@ const inflate$2 = (strm, flush) => {
           }
           strm.adler = state.check = 1;
           state.mode = TYPE;
+        /* falls through */
         case TYPE:
           if (flush === Z_BLOCK || flush === Z_TREES) {
             break inf_leave;
           }
+        /* falls through */
         case TYPEDO:
           if (state.last) {
             hold >>>= bits & 7;
@@ -17583,8 +17324,10 @@ const inflate$2 = (strm, flush) => {
           if (flush === Z_TREES) {
             break inf_leave;
           }
+        /* falls through */
         case COPY_:
           state.mode = COPY;
+        /* falls through */
         case COPY:
           copy = state.length;
           if (copy) {
@@ -17632,6 +17375,7 @@ const inflate$2 = (strm, flush) => {
           }
           state.have = 0;
           state.mode = LENLENS;
+        /* falls through */
         case LENLENS:
           while (state.have < state.ncode) {
             while (bits < 3) {
@@ -17661,6 +17405,7 @@ const inflate$2 = (strm, flush) => {
           }
           state.have = 0;
           state.mode = CODELENS;
+        /* falls through */
         case CODELENS:
           while (state.have < state.nlen + state.ndist) {
             for (; ; ) {
@@ -17778,8 +17523,10 @@ const inflate$2 = (strm, flush) => {
           if (flush === Z_TREES) {
             break inf_leave;
           }
+        /* falls through */
         case LEN_:
           state.mode = LEN;
+        /* falls through */
         case LEN:
           if (have >= 6 && left >= 258) {
             strm.next_out = put;
@@ -17861,6 +17608,7 @@ const inflate$2 = (strm, flush) => {
           }
           state.extra = here_op & 15;
           state.mode = LENEXT;
+        /* falls through */
         case LENEXT:
           if (state.extra) {
             n = state.extra;
@@ -17879,6 +17627,7 @@ const inflate$2 = (strm, flush) => {
           }
           state.was = state.length;
           state.mode = DIST;
+        /* falls through */
         case DIST:
           for (; ; ) {
             here = state.distcode[hold & (1 << state.distbits) - 1];
@@ -17929,6 +17678,7 @@ const inflate$2 = (strm, flush) => {
           state.offset = here_val;
           state.extra = here_op & 15;
           state.mode = DISTEXT;
+        /* falls through */
         case DISTEXT:
           if (state.extra) {
             n = state.extra;
@@ -17951,6 +17701,7 @@ const inflate$2 = (strm, flush) => {
             break;
           }
           state.mode = MATCH;
+        /* falls through */
         case MATCH:
           if (left === 0) {
             break inf_leave;
@@ -18027,6 +17778,7 @@ const inflate$2 = (strm, flush) => {
             bits = 0;
           }
           state.mode = LENGTH;
+        /* falls through */
         case LENGTH:
           if (state.wrap && state.flags) {
             while (bits < 32) {
@@ -18046,6 +17798,7 @@ const inflate$2 = (strm, flush) => {
             bits = 0;
           }
           state.mode = DONE;
+        /* falls through */
         case DONE:
           ret = Z_STREAM_END$1;
           break inf_leave;
@@ -18055,6 +17808,7 @@ const inflate$2 = (strm, flush) => {
         case MEM:
           return Z_MEM_ERROR$1;
         case SYNC:
+        /* falls through */
         default:
           return Z_STREAM_ERROR$1;
       }
@@ -18066,8 +17820,7 @@ const inflate$2 = (strm, flush) => {
   state.hold = hold;
   state.bits = bits;
   if (state.wsize || _out !== strm.avail_out && state.mode < BAD && (state.mode < CHECK || flush !== Z_FINISH$1)) {
-    if (updatewindow(strm, strm.output, strm.next_out, _out - strm.avail_out))
-      ;
+    if (updatewindow(strm, strm.output, strm.next_out, _out - strm.avail_out)) ;
   }
   _in -= strm.avail_in;
   _out -= strm.avail_out;
@@ -18235,12 +17988,9 @@ Inflate$1.prototype.push = function(data, flush_mode) {
   const chunkSize = this.options.chunkSize;
   const dictionary = this.options.dictionary;
   let status, _flush_mode, last_avail_out;
-  if (this.ended)
-    return false;
-  if (flush_mode === ~~flush_mode)
-    _flush_mode = flush_mode;
-  else
-    _flush_mode = flush_mode === true ? Z_FINISH : Z_NO_FLUSH;
+  if (this.ended) return false;
+  if (flush_mode === ~~flush_mode) _flush_mode = flush_mode;
+  else _flush_mode = flush_mode === true ? Z_FINISH : Z_NO_FLUSH;
   if (toString.call(data) === "[object ArrayBuffer]") {
     strm.input = new Uint8Array(data);
   } else {
@@ -18285,24 +18035,21 @@ Inflate$1.prototype.push = function(data, flush_mode) {
           let utf8str = strings.buf2string(strm.output, next_out_utf8);
           strm.next_out = tail;
           strm.avail_out = chunkSize - tail;
-          if (tail)
-            strm.output.set(strm.output.subarray(next_out_utf8, next_out_utf8 + tail), 0);
+          if (tail) strm.output.set(strm.output.subarray(next_out_utf8, next_out_utf8 + tail), 0);
           this.onData(utf8str);
         } else {
           this.onData(strm.output.length === strm.next_out ? strm.output : strm.output.subarray(0, strm.next_out));
         }
       }
     }
-    if (status === Z_OK && last_avail_out === 0)
-      continue;
+    if (status === Z_OK && last_avail_out === 0) continue;
     if (status === Z_STREAM_END) {
       status = inflate_1$2.inflateEnd(this.strm);
       this.onEnd(status);
       this.ended = true;
       return true;
     }
-    if (strm.avail_in === 0)
-      break;
+    if (strm.avail_in === 0) break;
   }
   return true;
 };
@@ -18324,8 +18071,7 @@ Inflate$1.prototype.onEnd = function(status) {
 function inflate$1(input, options) {
   const inflator = new Inflate$1(options);
   inflator.push(input);
-  if (inflator.err)
-    throw inflator.msg || messages[inflator.err];
+  if (inflator.err) throw inflator.msg || messages[inflator.err];
   return inflator.result;
 }
 function inflateRaw$1(input, options) {
@@ -18366,9 +18112,9 @@ var pako = {
   constants: constants_1
 };
 class ThreadController {
+  id;
+  thread;
   constructor(thread2) {
-    __publicField(this, "id");
-    __publicField(this, "thread");
     this.id = this.getId();
     this.thread = thread2;
     this.thread.actions[this.id] = (input) => this.execute(input);
@@ -18939,19 +18685,18 @@ class Builder {
     this.addInt16(len);
     let existing_vtable = 0;
     const vt1 = this.space;
-    outer_loop:
-      for (i = 0; i < this.vtables.length; i++) {
-        const vt2 = this.bb.capacity() - this.vtables[i];
-        if (len == this.bb.readInt16(vt2)) {
-          for (let j = SIZEOF_SHORT; j < len; j += SIZEOF_SHORT) {
-            if (this.bb.readInt16(vt1 + j) != this.bb.readInt16(vt2 + j)) {
-              continue outer_loop;
-            }
+    outer_loop: for (i = 0; i < this.vtables.length; i++) {
+      const vt2 = this.bb.capacity() - this.vtables[i];
+      if (len == this.bb.readInt16(vt2)) {
+        for (let j = SIZEOF_SHORT; j < len; j += SIZEOF_SHORT) {
+          if (this.bb.readInt16(vt1 + j) != this.bb.readInt16(vt2 + j)) {
+            continue outer_loop;
           }
-          existing_vtable = this.vtables[i];
-          break;
         }
+        existing_vtable = this.vtables[i];
+        break;
       }
+    }
     if (existing_vtable) {
       this.space = this.bb.capacity() - vtableloc;
       this.bb.writeInt32(this.space, existing_vtable - vtableloc);
@@ -19135,7 +18880,7 @@ const BYTES_PER_NODE = 6 * 4 + 4 + 4;
 const UINT32_PER_NODE = BYTES_PER_NODE / 4;
 const IS_LEAFNODE_FLAG = 65535;
 const FLOAT32_EPSILON = Math.pow(2, -24);
-const SKIP_GENERATION = Symbol("SKIP_GENERATION");
+const SKIP_GENERATION = /* @__PURE__ */ Symbol("SKIP_GENERATION");
 const DEFAULT_OPTIONS = {
   strategy: CENTER,
   maxDepth: 40,
@@ -19245,38 +18990,26 @@ function getBounds(primitiveBounds, offset, count, target, centroidTarget) {
     const hx = primitiveBounds[i + 1];
     const lx = cx - hx;
     const rx = cx + hx;
-    if (lx < minx)
-      minx = lx;
-    if (rx > maxx)
-      maxx = rx;
-    if (cx < cminx)
-      cminx = cx;
-    if (cx > cmaxx)
-      cmaxx = cx;
+    if (lx < minx) minx = lx;
+    if (rx > maxx) maxx = rx;
+    if (cx < cminx) cminx = cx;
+    if (cx > cmaxx) cmaxx = cx;
     const cy = primitiveBounds[i + 2];
     const hy = primitiveBounds[i + 3];
     const ly = cy - hy;
     const ry = cy + hy;
-    if (ly < miny)
-      miny = ly;
-    if (ry > maxy)
-      maxy = ry;
-    if (cy < cminy)
-      cminy = cy;
-    if (cy > cmaxy)
-      cmaxy = cy;
+    if (ly < miny) miny = ly;
+    if (ry > maxy) maxy = ry;
+    if (cy < cminy) cminy = cy;
+    if (cy > cmaxy) cmaxy = cy;
     const cz = primitiveBounds[i + 4];
     const hz = primitiveBounds[i + 5];
     const lz = cz - hz;
     const rz = cz + hz;
-    if (lz < minz)
-      minz = lz;
-    if (rz > maxz)
-      maxz = rz;
-    if (cz < cminz)
-      cminz = cz;
-    if (cz > cmaxz)
-      cmaxz = cz;
+    if (lz < minz) minz = lz;
+    if (rz > maxz) maxz = rz;
+    if (cz < cminz) cminz = cz;
+    if (cz > cmaxz) cmaxz = cz;
   }
   target[0] = minx;
   target[1] = miny;
@@ -19407,8 +19140,7 @@ function getOptimalSplit(nodeBoundingData, centroidBoundingData, primitiveBounds
           const triCenter = primitiveBounds[c + 2 * a];
           const relativeCenter = triCenter - axisLeft;
           let binIndex = ~~(relativeCenter / binWidth);
-          if (binIndex >= BIN_COUNT)
-            binIndex = BIN_COUNT - 1;
+          if (binIndex >= BIN_COUNT) binIndex = BIN_COUNT - 1;
           const bin = sahBins[binIndex];
           bin.count++;
           expandByPrimitiveBounds(c, primitiveBounds, bin.bounds);
@@ -19775,8 +19507,7 @@ function shapecastTraverse(nodeIndex32, geometry, intersectsBoundsFunc, intersec
         depth + 1
       );
     }
-    if (c1StopTraversal)
-      return true;
+    if (c1StopTraversal) return true;
     box2 = _box2;
     arrayToBox(BOUNDING_DATA_INDEX(c2), float32Array2, box2);
     const isC2Leaf = IS_LEAF(c2 * 2, uint16Array2);
@@ -19798,8 +19529,7 @@ function shapecastTraverse(nodeIndex32, geometry, intersectsBoundsFunc, intersec
         depth + 1
       );
     }
-    if (c2StopTraversal)
-      return true;
+    if (c2StopTraversal) return true;
     return false;
   }
 }
@@ -20107,18 +19837,12 @@ class BVH {
     for (let i = offset, end = offset + count; i < end; i++) {
       this.writePrimitiveBounds(i, _tempBuffer, 0);
       const [lx, ly, lz, rx, ry, rz] = _tempBuffer;
-      if (lx < minX)
-        minX = lx;
-      if (rx > maxX)
-        maxX = rx;
-      if (ly < minY)
-        minY = ly;
-      if (ry > maxY)
-        maxY = ry;
-      if (lz < minZ)
-        minZ = lz;
-      if (rz > maxZ)
-        maxZ = rz;
+      if (lx < minX) minX = lx;
+      if (rx > maxX) maxX = rx;
+      if (ly < minY) minY = ly;
+      if (ry > maxY) maxY = ry;
+      if (lz < minZ) minZ = lz;
+      if (rz > maxZ) maxZ = rz;
     }
     targetBuffer[baseIndex + 0] = minX;
     targetBuffer[baseIndex + 1] = minY;
@@ -20490,7 +20214,7 @@ class SeparatingAxisBounds {
     return this.min > other.max || other.min > this.max;
   }
 }
-SeparatingAxisBounds.prototype.setFromBox = /* @__PURE__ */ function() {
+SeparatingAxisBounds.prototype.setFromBox = /* @__PURE__ */ (function() {
   const p = /* @__PURE__ */ new Vector3();
   return function setFromBox(axis, box) {
     const boxMin = box.min;
@@ -20512,8 +20236,8 @@ SeparatingAxisBounds.prototype.setFromBox = /* @__PURE__ */ function() {
     this.min = min;
     this.max = max;
   };
-}();
-const closestPointLineToLine = /* @__PURE__ */ function() {
+})();
+const closestPointLineToLine = /* @__PURE__ */ (function() {
   const dir1 = /* @__PURE__ */ new Vector3();
   const dir2 = /* @__PURE__ */ new Vector3();
   const v02 = /* @__PURE__ */ new Vector3();
@@ -20541,8 +20265,8 @@ const closestPointLineToLine = /* @__PURE__ */ function() {
     result.x = d;
     result.y = d2;
   };
-}();
-const closestPointsSegmentToSegment = /* @__PURE__ */ function() {
+})();
+const closestPointsSegmentToSegment = /* @__PURE__ */ (function() {
   const paramResult = /* @__PURE__ */ new Vector2();
   const temp12 = /* @__PURE__ */ new Vector3();
   const temp22 = /* @__PURE__ */ new Vector3();
@@ -20598,8 +20322,8 @@ const closestPointsSegmentToSegment = /* @__PURE__ */ function() {
       }
     }
   };
-}();
-const sphereIntersectTriangle = /* @__PURE__ */ function() {
+})();
+const sphereIntersectTriangle = /* @__PURE__ */ (function() {
   const closestPointTemp = /* @__PURE__ */ new Vector3();
   const projectedPointTemp = /* @__PURE__ */ new Vector3();
   const planeTemp = /* @__PURE__ */ new Plane();
@@ -20610,29 +20334,25 @@ const sphereIntersectTriangle = /* @__PURE__ */ function() {
     lineTemp.start = a;
     lineTemp.end = b;
     const closestPoint1 = lineTemp.closestPointToPoint(center, true, closestPointTemp);
-    if (closestPoint1.distanceTo(center) <= radius)
-      return true;
+    if (closestPoint1.distanceTo(center) <= radius) return true;
     lineTemp.start = a;
     lineTemp.end = c;
     const closestPoint2 = lineTemp.closestPointToPoint(center, true, closestPointTemp);
-    if (closestPoint2.distanceTo(center) <= radius)
-      return true;
+    if (closestPoint2.distanceTo(center) <= radius) return true;
     lineTemp.start = b;
     lineTemp.end = c;
     const closestPoint3 = lineTemp.closestPointToPoint(center, true, closestPointTemp);
-    if (closestPoint3.distanceTo(center) <= radius)
-      return true;
+    if (closestPoint3.distanceTo(center) <= radius) return true;
     const plane = triangle3.getPlane(planeTemp);
     const dp = Math.abs(plane.distanceToPoint(center));
     if (dp <= radius) {
       const pp = plane.projectPoint(center, projectedPointTemp);
       const cp = triangle3.containsPoint(pp);
-      if (cp)
-        return true;
+      if (cp) return true;
     }
     return false;
   };
-}();
+})();
 const componentKeys = ["x", "y", "z"];
 const ZERO_EPSILON = 1e-15;
 const ZERO_EPSILON_SQR = ZERO_EPSILON * ZERO_EPSILON;
@@ -20708,7 +20428,7 @@ class ExtendedTriangle extends Triangle {
     this.needsUpdate = false;
   }
 }
-ExtendedTriangle.prototype.closestPointToSegment = /* @__PURE__ */ function() {
+ExtendedTriangle.prototype.closestPointToSegment = /* @__PURE__ */ (function() {
   const point1 = /* @__PURE__ */ new Vector3();
   const point2 = /* @__PURE__ */ new Vector3();
   const edge = /* @__PURE__ */ new Line3();
@@ -20725,34 +20445,28 @@ ExtendedTriangle.prototype.closestPointToSegment = /* @__PURE__ */ function() {
       distSq = point1.distanceToSquared(point2);
       if (distSq < closestDistanceSq) {
         closestDistanceSq = distSq;
-        if (target1)
-          target1.copy(point1);
-        if (target2)
-          target2.copy(point2);
+        if (target1) target1.copy(point1);
+        if (target2) target2.copy(point2);
       }
     }
     this.closestPointToPoint(start, point1);
     distSq = start.distanceToSquared(point1);
     if (distSq < closestDistanceSq) {
       closestDistanceSq = distSq;
-      if (target1)
-        target1.copy(point1);
-      if (target2)
-        target2.copy(start);
+      if (target1) target1.copy(point1);
+      if (target2) target2.copy(start);
     }
     this.closestPointToPoint(end, point1);
     distSq = end.distanceToSquared(point1);
     if (distSq < closestDistanceSq) {
       closestDistanceSq = distSq;
-      if (target1)
-        target1.copy(point1);
-      if (target2)
-        target2.copy(end);
+      if (target1) target1.copy(point1);
+      if (target2) target2.copy(end);
     }
     return Math.sqrt(closestDistanceSq);
   };
-}();
-ExtendedTriangle.prototype.intersectsTriangle = /* @__PURE__ */ function() {
+})();
+ExtendedTriangle.prototype.intersectsTriangle = /* @__PURE__ */ (function() {
   const saTri2 = /* @__PURE__ */ new ExtendedTriangle();
   const cachedSatBounds = /* @__PURE__ */ new SeparatingAxisBounds();
   const cachedSatBounds2 = /* @__PURE__ */ new SeparatingAxisBounds();
@@ -20778,13 +20492,11 @@ ExtendedTriangle.prototype.intersectsTriangle = /* @__PURE__ */ function() {
       const sb = satBounds1[i];
       const sa = satAxes1[i];
       cachedSatBounds.setFromPoints(sa, other.points);
-      if (sb.isSeparated(cachedSatBounds))
-        return false;
+      if (sb.isSeparated(cachedSatBounds)) return false;
       tempDir.copy(planeNormal).cross(sa);
       cachedSatBounds.setFromPoints(tempDir, self.points);
       cachedSatBounds2.setFromPoints(tempDir, other.points);
-      if (cachedSatBounds.isSeparated(cachedSatBounds2))
-        return false;
+      if (cachedSatBounds.isSeparated(cachedSatBounds2)) return false;
     }
     const satBounds2 = other.satBounds;
     const satAxes2 = other.satAxes;
@@ -20792,13 +20504,11 @@ ExtendedTriangle.prototype.intersectsTriangle = /* @__PURE__ */ function() {
       const sb = satBounds2[i];
       const sa = satAxes2[i];
       cachedSatBounds.setFromPoints(sa, self.points);
-      if (sb.isSeparated(cachedSatBounds))
-        return false;
+      if (sb.isSeparated(cachedSatBounds)) return false;
       tempDir.crossVectors(planeNormal, sa);
       cachedSatBounds.setFromPoints(tempDir, self.points);
       cachedSatBounds2.setFromPoints(tempDir, other.points);
-      if (cachedSatBounds.isSeparated(cachedSatBounds2))
-        return false;
+      if (cachedSatBounds.isSeparated(cachedSatBounds2)) return false;
     }
     if (target) {
       if (!suppressLog) {
@@ -21055,15 +20765,15 @@ ExtendedTriangle.prototype.intersectsTriangle = /* @__PURE__ */ function() {
     }
     return true;
   };
-}();
-ExtendedTriangle.prototype.distanceToPoint = /* @__PURE__ */ function() {
+})();
+ExtendedTriangle.prototype.distanceToPoint = /* @__PURE__ */ (function() {
   const target = /* @__PURE__ */ new Vector3();
   return function distanceToPoint(point) {
     this.closestPointToPoint(point, target);
     return point.distanceTo(target);
   };
-}();
-ExtendedTriangle.prototype.distanceToTriangle = /* @__PURE__ */ function() {
+})();
+ExtendedTriangle.prototype.distanceToTriangle = /* @__PURE__ */ (function() {
   const point = /* @__PURE__ */ new Vector3();
   const point2 = /* @__PURE__ */ new Vector3();
   const cornerFields = ["a", "b", "c"];
@@ -21073,10 +20783,8 @@ ExtendedTriangle.prototype.distanceToTriangle = /* @__PURE__ */ function() {
     const lineTarget = target1 || target2 ? line1 : null;
     if (this.intersectsTriangle(other, lineTarget)) {
       if (target1 || target2) {
-        if (target1)
-          lineTarget.getCenter(target1);
-        if (target2)
-          lineTarget.getCenter(target2);
+        if (target1) lineTarget.getCenter(target1);
+        if (target2) lineTarget.getCenter(target2);
       }
       return 0;
     }
@@ -21089,20 +20797,16 @@ ExtendedTriangle.prototype.distanceToTriangle = /* @__PURE__ */ function() {
       dist = otherVec.distanceToSquared(point);
       if (dist < closestDistanceSq) {
         closestDistanceSq = dist;
-        if (target1)
-          target1.copy(point);
-        if (target2)
-          target2.copy(otherVec);
+        if (target1) target1.copy(point);
+        if (target2) target2.copy(otherVec);
       }
       const thisVec = this[field];
       other.closestPointToPoint(thisVec, point);
       dist = thisVec.distanceToSquared(point);
       if (dist < closestDistanceSq) {
         closestDistanceSq = dist;
-        if (target1)
-          target1.copy(thisVec);
-        if (target2)
-          target2.copy(point);
+        if (target1) target1.copy(thisVec);
+        if (target2) target2.copy(point);
       }
     }
     for (let i = 0; i < 3; i++) {
@@ -21117,16 +20821,14 @@ ExtendedTriangle.prototype.distanceToTriangle = /* @__PURE__ */ function() {
         const dist = point.distanceToSquared(point2);
         if (dist < closestDistanceSq) {
           closestDistanceSq = dist;
-          if (target1)
-            target1.copy(point);
-          if (target2)
-            target2.copy(point2);
+          if (target1) target1.copy(point);
+          if (target2) target2.copy(point2);
         }
       }
     }
     return Math.sqrt(closestDistanceSq);
   };
-}();
+})();
 class OrientedBox {
   constructor(min, max, matrix) {
     this.isOrientedBox = true;
@@ -21139,12 +20841,9 @@ class OrientedBox {
     this.satBounds = new Array(3).fill().map(() => new SeparatingAxisBounds());
     this.alignedSatBounds = new Array(3).fill().map(() => new SeparatingAxisBounds());
     this.needsUpdate = false;
-    if (min)
-      this.min.copy(min);
-    if (max)
-      this.max.copy(max);
-    if (matrix)
-      this.matrix.copy(matrix);
+    if (min) this.min.copy(min);
+    if (max) this.max.copy(max);
+    if (matrix) this.matrix.copy(matrix);
   }
   set(min, max, matrix) {
     this.min.copy(min);
@@ -21159,7 +20858,7 @@ class OrientedBox {
     this.needsUpdate = true;
   }
 }
-OrientedBox.prototype.update = /* @__PURE__ */ function() {
+OrientedBox.prototype.update = /* @__PURE__ */ (function() {
   return function update() {
     const matrix = this.matrix;
     const min = this.min;
@@ -21195,8 +20894,8 @@ OrientedBox.prototype.update = /* @__PURE__ */ function() {
     this.invMatrix.copy(this.matrix).invert();
     this.needsUpdate = false;
   };
-}();
-OrientedBox.prototype.intersectsBox = /* @__PURE__ */ function() {
+})();
+OrientedBox.prototype.intersectsBox = /* @__PURE__ */ (function() {
   const aabbBounds = /* @__PURE__ */ new SeparatingAxisBounds();
   return function intersectsBox(box) {
     if (this.needsUpdate) {
@@ -21209,27 +20908,23 @@ OrientedBox.prototype.intersectsBox = /* @__PURE__ */ function() {
     const alignedSatBounds = this.alignedSatBounds;
     aabbBounds.min = min.x;
     aabbBounds.max = max.x;
-    if (alignedSatBounds[0].isSeparated(aabbBounds))
-      return false;
+    if (alignedSatBounds[0].isSeparated(aabbBounds)) return false;
     aabbBounds.min = min.y;
     aabbBounds.max = max.y;
-    if (alignedSatBounds[1].isSeparated(aabbBounds))
-      return false;
+    if (alignedSatBounds[1].isSeparated(aabbBounds)) return false;
     aabbBounds.min = min.z;
     aabbBounds.max = max.z;
-    if (alignedSatBounds[2].isSeparated(aabbBounds))
-      return false;
+    if (alignedSatBounds[2].isSeparated(aabbBounds)) return false;
     for (let i = 0; i < 3; i++) {
       const axis = satAxes[i];
       const sb = satBounds[i];
       aabbBounds.setFromBox(axis, box);
-      if (sb.isSeparated(aabbBounds))
-        return false;
+      if (sb.isSeparated(aabbBounds)) return false;
     }
     return true;
   };
-}();
-OrientedBox.prototype.intersectsTriangle = /* @__PURE__ */ function() {
+})();
+OrientedBox.prototype.intersectsTriangle = /* @__PURE__ */ (function() {
   const saTri = /* @__PURE__ */ new ExtendedTriangle();
   const pointsArr = /* @__PURE__ */ new Array(3);
   const cachedSatBounds = /* @__PURE__ */ new SeparatingAxisBounds();
@@ -21255,8 +20950,7 @@ OrientedBox.prototype.intersectsTriangle = /* @__PURE__ */ function() {
       const sb = satBounds[i];
       const sa = satAxes[i];
       cachedSatBounds.setFromPoints(sa, pointsArr);
-      if (sb.isSeparated(cachedSatBounds))
-        return false;
+      if (sb.isSeparated(cachedSatBounds)) return false;
     }
     const triSatBounds = triangle3.satBounds;
     const triSatAxes = triangle3.satAxes;
@@ -21265,8 +20959,7 @@ OrientedBox.prototype.intersectsTriangle = /* @__PURE__ */ function() {
       const sb = triSatBounds[i];
       const sa = triSatAxes[i];
       cachedSatBounds.setFromPoints(sa, points);
-      if (sb.isSeparated(cachedSatBounds))
-        return false;
+      if (sb.isSeparated(cachedSatBounds)) return false;
     }
     for (let i = 0; i < 3; i++) {
       const sa1 = satAxes[i];
@@ -21275,14 +20968,13 @@ OrientedBox.prototype.intersectsTriangle = /* @__PURE__ */ function() {
         cachedAxis.crossVectors(sa1, sa2);
         cachedSatBounds.setFromPoints(cachedAxis, pointsArr);
         cachedSatBounds2.setFromPoints(cachedAxis, points);
-        if (cachedSatBounds.isSeparated(cachedSatBounds2))
-          return false;
+        if (cachedSatBounds.isSeparated(cachedSatBounds2)) return false;
       }
     }
     return true;
   };
-}();
-OrientedBox.prototype.closestPointToPoint = /* @__PURE__ */ function() {
+})();
+OrientedBox.prototype.closestPointToPoint = /* @__PURE__ */ (function() {
   return function closestPointToPoint2(point, target1) {
     if (this.needsUpdate) {
       this.update();
@@ -21290,15 +20982,15 @@ OrientedBox.prototype.closestPointToPoint = /* @__PURE__ */ function() {
     target1.copy(point).applyMatrix4(this.invMatrix).clamp(this.min, this.max).applyMatrix4(this.matrix);
     return target1;
   };
-}();
-OrientedBox.prototype.distanceToPoint = function() {
+})();
+OrientedBox.prototype.distanceToPoint = (function() {
   const target = new Vector3();
   return function distanceToPoint(point) {
     this.closestPointToPoint(point, target);
     return point.distanceTo(target);
   };
-}();
-OrientedBox.prototype.distanceToBox = /* @__PURE__ */ function() {
+})();
+OrientedBox.prototype.distanceToBox = /* @__PURE__ */ (function() {
   const xyzFields = ["x", "y", "z"];
   const segments1 = /* @__PURE__ */ new Array(12).fill().map(() => new Line3());
   const segments2 = /* @__PURE__ */ new Array(12).fill().map(() => new Line3());
@@ -21313,10 +21005,8 @@ OrientedBox.prototype.distanceToBox = /* @__PURE__ */ function() {
         box.getCenter(point2);
         this.closestPointToPoint(point2, point1);
         box.closestPointToPoint(point1, point2);
-        if (target1)
-          target1.copy(point1);
-        if (target2)
-          target2.copy(point2);
+        if (target1) target1.copy(point1);
+        if (target2) target2.copy(point2);
       }
       return 0;
     }
@@ -21331,12 +21021,9 @@ OrientedBox.prototype.distanceToBox = /* @__PURE__ */ function() {
       const dist = p.distanceToSquared(point2);
       if (dist < closestDistanceSq) {
         closestDistanceSq = dist;
-        if (target1)
-          target1.copy(p);
-        if (target2)
-          target2.copy(point2);
-        if (dist < threshold2)
-          return Math.sqrt(dist);
+        if (target1) target1.copy(p);
+        if (target2) target2.copy(point2);
+        if (dist < threshold2) return Math.sqrt(dist);
       }
     }
     let count = 0;
@@ -21377,12 +21064,9 @@ OrientedBox.prototype.distanceToBox = /* @__PURE__ */ function() {
           const dist = point2.distanceToSquared(point1);
           if (dist < closestDistanceSq) {
             closestDistanceSq = dist;
-            if (target1)
-              target1.copy(point1);
-            if (target2)
-              target2.copy(point2);
-            if (dist < threshold2)
-              return Math.sqrt(dist);
+            if (target1) target1.copy(point1);
+            if (target2) target2.copy(point2);
+            if (dist < threshold2) return Math.sqrt(dist);
           }
         }
       }
@@ -21395,18 +21079,15 @@ OrientedBox.prototype.distanceToBox = /* @__PURE__ */ function() {
         const dist = point1.distanceToSquared(point2);
         if (dist < closestDistanceSq) {
           closestDistanceSq = dist;
-          if (target1)
-            target1.copy(point1);
-          if (target2)
-            target2.copy(point2);
-          if (dist < threshold2)
-            return Math.sqrt(dist);
+          if (target1) target1.copy(point1);
+          if (target2) target2.copy(point2);
+          if (dist < threshold2) return Math.sqrt(dist);
         }
       }
     }
     return Math.sqrt(closestDistanceSq);
   };
-}();
+})();
 class ExtendedTrianglePoolBase extends PrimitivePool {
   constructor() {
     super(() => new ExtendedTriangle());
@@ -21445,13 +21126,10 @@ function closestPointToPoint(bvh, point, target = {}, minThreshold = 0, maxThres
       }
     }
   );
-  if (closestDistanceSq === Infinity)
-    return null;
+  if (closestDistanceSq === Infinity) return null;
   const closestDistance = Math.sqrt(closestDistanceSq);
-  if (!target.point)
-    target.point = temp1$2.clone();
-  else
-    target.point.copy(temp1$2);
+  if (!target.point) target.point = temp1$2.clone();
+  else target.point.copy(temp1$2);
   target.distance = closestDistance, target.faceIndex = closestDistanceTriIndex;
   return target;
 }
@@ -21474,11 +21152,9 @@ function checkIntersection(ray, pA, pB, pC, point, side, near, far) {
   } else {
     intersect = ray.intersectTriangle(pA, pB, pC, side !== DoubleSide, point);
   }
-  if (intersect === null)
-    return null;
+  if (intersect === null) return null;
   const distance = ray.origin.distanceTo(point);
-  if (distance < near || distance > far)
-    return null;
+  if (distance < near || distance > far) return null;
   return {
     distance,
     point: point.clone()
@@ -21683,18 +21359,12 @@ function refit(bvh, nodeIndices = null) {
         const x = posAttr.getX(index);
         const y = posAttr.getY(index);
         const z = posAttr.getZ(index);
-        if (x < minx)
-          minx = x;
-        if (x > maxx)
-          maxx = x;
-        if (y < miny)
-          miny = y;
-        if (y > maxy)
-          maxy = y;
-        if (z < minz)
-          minz = z;
-        if (z > maxz)
-          maxz = z;
+        if (x < minx) minx = x;
+        if (x > maxx) maxx = x;
+        if (y < miny) miny = y;
+        if (y > maxy) maxy = y;
+        if (z < minz) minz = z;
+        if (z > maxz) maxz = z;
       }
       if (float32Array2[nodeIndex32 + 0] !== minx || float32Array2[nodeIndex32 + 1] !== miny || float32Array2[nodeIndex32 + 2] !== minz || float32Array2[nodeIndex32 + 3] !== maxx || float32Array2[nodeIndex32 + 4] !== maxy || float32Array2[nodeIndex32 + 5] !== maxz) {
         float32Array2[nodeIndex32 + 0] = minx;
@@ -21778,12 +21448,9 @@ function intersectRay(nodeIndex32, array, ray, near, far) {
     tymin = (maxy - oy) * invdiry;
     tymax = (miny - oy) * invdiry;
   }
-  if (tmin > tymax || tymin > tmax)
-    return false;
-  if (tymin > tmin || isNaN(tmin))
-    tmin = tymin;
-  if (tymax < tmax || isNaN(tmax))
-    tmax = tymax;
+  if (tmin > tymax || tymin > tmax) return false;
+  if (tymin > tmin || isNaN(tmin)) tmin = tymin;
+  if (tymax < tmax || isNaN(tmax)) tmax = tymax;
   if (invdirz >= 0) {
     tzmin = (minz - oz) * invdirz;
     tzmax = (maxz - oz) * invdirz;
@@ -21791,12 +21458,9 @@ function intersectRay(nodeIndex32, array, ray, near, far) {
     tzmin = (maxz - oz) * invdirz;
     tzmax = (minz - oz) * invdirz;
   }
-  if (tmin > tzmax || tzmin > tmax)
-    return false;
-  if (tzmin > tmin || tmin !== tmin)
-    tmin = tzmin;
-  if (tzmax < tmax || tmax !== tmax)
-    tmax = tzmax;
+  if (tmin > tzmax || tzmin > tmax) return false;
+  if (tzmin > tmin || tmin !== tmin) tmin = tzmin;
+  if (tzmax < tmax || tmax !== tmax) tmax = tzmax;
   return tmin <= far && tmax >= near;
 }
 function intersectTris_indirect(bvh, materialOrSide, ray, offset, count, intersections, near, far) {
@@ -21984,12 +21648,10 @@ function _intersectsGeometry$1(nodeIndex32, bvh, otherGeometry, geometryToBvh, c
     const right = RIGHT_NODE(nodeIndex32, uint32Array2);
     arrayToBox(BOUNDING_DATA_INDEX(left), float32Array2, boundingBox$1);
     const leftIntersection = cachedObb.intersectsBox(boundingBox$1) && _intersectsGeometry$1(left, bvh, otherGeometry, geometryToBvh, cachedObb);
-    if (leftIntersection)
-      return true;
+    if (leftIntersection) return true;
     arrayToBox(BOUNDING_DATA_INDEX(right), float32Array2, boundingBox$1);
     const rightIntersection = cachedObb.intersectsBox(boundingBox$1) && _intersectsGeometry$1(right, bvh, otherGeometry, geometryToBvh, cachedObb);
-    if (rightIntersection)
-      return true;
+    if (rightIntersection) return true;
     return false;
   }
 }
@@ -22121,10 +21783,8 @@ function closestPointToGeometry(bvh, otherGeometry, geometryToBvh, target1 = {},
   }
   target1.distance = closestDistance, target1.faceIndex = closestDistanceTriIndex;
   if (target2) {
-    if (!target2.point)
-      target2.point = tempTargetDest2.clone();
-    else
-      target2.point.copy(tempTargetDest2);
+    if (!target2.point) target2.point = tempTargetDest2.clone();
+    else target2.point.copy(tempTargetDest2);
     target2.point.applyMatrix4(tempMatrix$1);
     tempTargetDest1.applyMatrix4(tempMatrix$1);
     target2.distance = tempTargetDest1.sub(target2.point).length();
@@ -22169,18 +21829,12 @@ function refit_indirect(bvh, nodeIndices = null) {
           const x = posAttr.getX(index);
           const y = posAttr.getY(index);
           const z = posAttr.getZ(index);
-          if (x < minx)
-            minx = x;
-          if (x > maxx)
-            maxx = x;
-          if (y < miny)
-            miny = y;
-          if (y > maxy)
-            maxy = y;
-          if (z < minz)
-            minz = z;
-          if (z > maxz)
-            maxz = z;
+          if (x < minx) minx = x;
+          if (x > maxx) maxx = x;
+          if (y < miny) miny = y;
+          if (y > maxy) maxy = y;
+          if (z < minz) minz = z;
+          if (z > maxz) maxz = z;
         }
       }
       if (float32Array2[nodeIndex32 + 0] !== minx || float32Array2[nodeIndex32 + 1] !== miny || float32Array2[nodeIndex32 + 2] !== minz || float32Array2[nodeIndex32 + 3] !== maxx || float32Array2[nodeIndex32 + 4] !== maxy || float32Array2[nodeIndex32 + 5] !== maxz) {
@@ -22389,12 +22043,10 @@ function _intersectsGeometry(nodeIndex32, bvh, otherGeometry, geometryToBvh, cac
     const right = RIGHT_NODE(nodeIndex32, uint32Array2);
     arrayToBox(BOUNDING_DATA_INDEX(left), float32Array2, boundingBox);
     const leftIntersection = cachedObb.intersectsBox(boundingBox) && _intersectsGeometry(left, bvh, otherGeometry, geometryToBvh, cachedObb);
-    if (leftIntersection)
-      return true;
+    if (leftIntersection) return true;
     arrayToBox(BOUNDING_DATA_INDEX(right), float32Array2, boundingBox);
     const rightIntersection = cachedObb.intersectsBox(boundingBox) && _intersectsGeometry(right, bvh, otherGeometry, geometryToBvh, cachedObb);
-    if (rightIntersection)
-      return true;
+    if (rightIntersection) return true;
     return false;
   }
 }
@@ -22529,10 +22181,8 @@ function closestPointToGeometry_indirect(bvh, otherGeometry, geometryToBvh, targ
   }
   target1.distance = closestDistance, target1.faceIndex = closestDistanceTriIndex;
   if (target2) {
-    if (!target2.point)
-      target2.point = tempTargetDest2.clone();
-    else
-      target2.point.copy(tempTargetDest2);
+    if (!target2.point) target2.point = tempTargetDest2.clone();
+    else target2.point.copy(tempTargetDest2);
     target2.point.applyMatrix4(tempMatrix);
     tempTargetDest1.applyMatrix4(tempMatrix);
     target2.distance = tempTargetDest1.sub(target2.point).length();
@@ -22665,15 +22315,11 @@ class MeshBVH extends GeometryBVH {
       const b = posAttr[_getters[el]](bi);
       const c = posAttr[_getters[el]](ci);
       let min = a;
-      if (b < min)
-        min = b;
-      if (c < min)
-        min = c;
+      if (b < min) min = b;
+      if (c < min) min = c;
       let max = a;
-      if (b > max)
-        max = b;
-      if (c > max)
-        max = c;
+      if (b > max) max = b;
+      if (c > max) max = c;
       targetBuffer[baseIndex + el] = min;
       targetBuffer[baseIndex + el + 3] = max;
     }
@@ -22729,15 +22375,11 @@ class MeshBVH extends GeometryBVH {
           c = posArr[ci + el];
         }
         let min = a;
-        if (b < min)
-          min = b;
-        if (c < min)
-          min = c;
+        if (b < min) min = b;
+        if (c < min) min = c;
         let max = a;
-        if (b > max)
-          max = b;
-        if (c > max)
-          max = c;
+        if (b > max) max = b;
+        if (c > max) max = c;
         const halfExtents = (max - min) / 2;
         const el2 = el * 2;
         targetBuffer[boundsIndexOffset + el2 + 0] = min + halfExtents;
@@ -23015,6 +22657,8 @@ function disposeBoundsTree() {
   this.boundsTree = null;
 }
 class PlanesUtils {
+  static tempPoint = new Vector3();
+  static dimensions = ["x", "y", "z"];
   static containedInParallelPlanes(ps, point) {
     let result = true;
     for (const clipPlane of ps) {
@@ -23047,9 +22691,17 @@ class PlanesUtils {
     return plane.distanceToPoint(this.tempPoint);
   }
 }
-__publicField(PlanesUtils, "tempPoint", new Vector3());
-__publicField(PlanesUtils, "dimensions", ["x", "y", "z"]);
 class CameraUtils {
+  static tempSize = new Vector3();
+  /** Axis-aligned inward normals, in THREE's plane order. */
+  static axisNormals = [
+    [1, 0, 0],
+    [-1, 0, 0],
+    [0, 1, 0],
+    [0, -1, 0],
+    [0, 0, 1],
+    [0, 0, -1]
+  ];
   /**
    * A frustum containing all of `box`, used when no camera has been set.
    *
@@ -23114,26 +22766,14 @@ class CameraUtils {
     return PlanesUtils.collides(box, ps, false);
   }
 }
-__publicField(CameraUtils, "tempSize", new Vector3());
-/** Axis-aligned inward normals, in THREE's plane order. */
-__publicField(CameraUtils, "axisNormals", [
-  [1, 0, 0],
-  [-1, 0, 0],
-  [0, 1, 0],
-  [0, -1, 0],
-  [0, 0, 1],
-  [0, 0, -1]
-]);
 function earcut$1(data, holeIndices, dim = 2) {
   const hasHoles = holeIndices && holeIndices.length;
   const outerLen = hasHoles ? holeIndices[0] * dim : data.length;
   let outerNode = linkedList$1(data, 0, outerLen, dim, true);
   const triangles = [];
-  if (!outerNode || outerNode.next === outerNode.prev)
-    return triangles;
+  if (!outerNode || outerNode.next === outerNode.prev) return triangles;
   let minX, minY, invSize;
-  if (hasHoles)
-    outerNode = eliminateHoles$1(data, holeIndices, outerNode, dim);
+  if (hasHoles) outerNode = eliminateHoles$1(data, holeIndices, outerNode, dim);
   if (data.length > 80 * dim) {
     minX = Infinity;
     minY = Infinity;
@@ -23142,14 +22782,10 @@ function earcut$1(data, holeIndices, dim = 2) {
     for (let i = dim; i < outerLen; i += dim) {
       const x = data[i];
       const y = data[i + 1];
-      if (x < minX)
-        minX = x;
-      if (y < minY)
-        minY = y;
-      if (x > maxX)
-        maxX = x;
-      if (y > maxY)
-        maxY = y;
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
     }
     invSize = Math.max(maxX - minX, maxY - minY);
     invSize = invSize !== 0 ? 32767 / invSize : 0;
@@ -23160,11 +22796,9 @@ function earcut$1(data, holeIndices, dim = 2) {
 function linkedList$1(data, start, end, dim, clockwise) {
   let last;
   if (clockwise === signedArea$1(data, start, end, dim) > 0) {
-    for (let i = start; i < end; i += dim)
-      last = insertNode$1(i / dim | 0, data[i], data[i + 1], last);
+    for (let i = start; i < end; i += dim) last = insertNode$1(i / dim | 0, data[i], data[i + 1], last);
   } else {
-    for (let i = end - dim; i >= start; i -= dim)
-      last = insertNode$1(i / dim | 0, data[i], data[i + 1], last);
+    for (let i = end - dim; i >= start; i -= dim) last = insertNode$1(i / dim | 0, data[i], data[i + 1], last);
   }
   if (last && equals$1(last, last.next)) {
     removeNode$1(last);
@@ -23173,18 +22807,15 @@ function linkedList$1(data, start, end, dim, clockwise) {
   return last;
 }
 function filterPoints$1(start, end) {
-  if (!start)
-    return start;
-  if (!end)
-    end = start;
+  if (!start) return start;
+  if (!end) end = start;
   let p = start, again;
   do {
     again = false;
     if (!p.steiner && (equals$1(p, p.next) || area$1(p.prev, p, p.next) === 0)) {
       removeNode$1(p);
       p = end = p.prev;
-      if (p === p.next)
-        break;
+      if (p === p.next) break;
       again = true;
     } else {
       p = p.next;
@@ -23193,10 +22824,8 @@ function filterPoints$1(start, end) {
   return end;
 }
 function earcutLinked$1(ear, triangles, dim, minX, minY, invSize, pass) {
-  if (!ear)
-    return;
-  if (!pass && invSize)
-    indexCurve$1(ear, minX, minY, invSize);
+  if (!ear) return;
+  if (!pass && invSize) indexCurve$1(ear, minX, minY, invSize);
   let stop = ear;
   while (ear.prev !== ear.next) {
     const prev = ear.prev;
@@ -23224,42 +22853,35 @@ function earcutLinked$1(ear, triangles, dim, minX, minY, invSize, pass) {
 }
 function isEar$1(ear) {
   const a = ear.prev, b = ear, c = ear.next;
-  if (area$1(a, b, c) >= 0)
-    return false;
+  if (area$1(a, b, c) >= 0) return false;
   const ax = a.x, bx = b.x, cx = c.x, ay = a.y, by = b.y, cy = c.y;
   const x0 = Math.min(ax, bx, cx), y0 = Math.min(ay, by, cy), x1 = Math.max(ax, bx, cx), y1 = Math.max(ay, by, cy);
   let p = c.next;
   while (p !== a) {
-    if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1 && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, p.x, p.y) && area$1(p.prev, p, p.next) >= 0)
-      return false;
+    if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1 && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, p.x, p.y) && area$1(p.prev, p, p.next) >= 0) return false;
     p = p.next;
   }
   return true;
 }
 function isEarHashed$1(ear, minX, minY, invSize) {
   const a = ear.prev, b = ear, c = ear.next;
-  if (area$1(a, b, c) >= 0)
-    return false;
+  if (area$1(a, b, c) >= 0) return false;
   const ax = a.x, bx = b.x, cx = c.x, ay = a.y, by = b.y, cy = c.y;
   const x0 = Math.min(ax, bx, cx), y0 = Math.min(ay, by, cy), x1 = Math.max(ax, bx, cx), y1 = Math.max(ay, by, cy);
   const minZ = zOrder$1(x0, y0, minX, minY, invSize), maxZ = zOrder$1(x1, y1, minX, minY, invSize);
   let p = ear.prevZ, n = ear.nextZ;
   while (p && p.z >= minZ && n && n.z <= maxZ) {
-    if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1 && p !== a && p !== c && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, p.x, p.y) && area$1(p.prev, p, p.next) >= 0)
-      return false;
+    if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1 && p !== a && p !== c && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, p.x, p.y) && area$1(p.prev, p, p.next) >= 0) return false;
     p = p.prevZ;
-    if (n.x >= x0 && n.x <= x1 && n.y >= y0 && n.y <= y1 && n !== a && n !== c && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, n.x, n.y) && area$1(n.prev, n, n.next) >= 0)
-      return false;
+    if (n.x >= x0 && n.x <= x1 && n.y >= y0 && n.y <= y1 && n !== a && n !== c && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, n.x, n.y) && area$1(n.prev, n, n.next) >= 0) return false;
     n = n.nextZ;
   }
   while (p && p.z >= minZ) {
-    if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1 && p !== a && p !== c && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, p.x, p.y) && area$1(p.prev, p, p.next) >= 0)
-      return false;
+    if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1 && p !== a && p !== c && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, p.x, p.y) && area$1(p.prev, p, p.next) >= 0) return false;
     p = p.prevZ;
   }
   while (n && n.z <= maxZ) {
-    if (n.x >= x0 && n.x <= x1 && n.y >= y0 && n.y <= y1 && n !== a && n !== c && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, n.x, n.y) && area$1(n.prev, n, n.next) >= 0)
-      return false;
+    if (n.x >= x0 && n.x <= x1 && n.y >= y0 && n.y <= y1 && n !== a && n !== c && pointInTriangleExceptFirst(ax, ay, bx, by, cx, cy, n.x, n.y) && area$1(n.prev, n, n.next) >= 0) return false;
     n = n.nextZ;
   }
   return true;
@@ -23302,8 +22924,7 @@ function eliminateHoles$1(data, holeIndices, outerNode, dim) {
     const start = holeIndices[i] * dim;
     const end = i < len - 1 ? holeIndices[i + 1] * dim : data.length;
     const list = linkedList$1(data, start, end, dim, false);
-    if (list === list.next)
-      list.steiner = true;
+    if (list === list.next) list.steiner = true;
     queue.push(getLeftmost$1(list));
   }
   queue.sort(compareXYSlope);
@@ -23339,24 +22960,20 @@ function findHoleBridge$1(hole, outerNode) {
   const hy = hole.y;
   let qx = -Infinity;
   let m;
-  if (equals$1(hole, p))
-    return p;
+  if (equals$1(hole, p)) return p;
   do {
-    if (equals$1(hole, p.next))
-      return p.next;
+    if (equals$1(hole, p.next)) return p.next;
     else if (hy <= p.y && hy >= p.next.y && p.next.y !== p.y) {
       const x = p.x + (hy - p.y) * (p.next.x - p.x) / (p.next.y - p.y);
       if (x <= hx && x > qx) {
         qx = x;
         m = p.x < p.next.x ? p : p.next;
-        if (x === hx)
-          return m;
+        if (x === hx) return m;
       }
     }
     p = p.next;
   } while (p !== outerNode);
-  if (!m)
-    return null;
+  if (!m) return null;
   const stop = m;
   const mx = m.x;
   const my = m.y;
@@ -23380,8 +22997,7 @@ function sectorContainsSector$1(m, p) {
 function indexCurve$1(start, minX, minY, invSize) {
   let p = start;
   do {
-    if (p.z === 0)
-      p.z = zOrder$1(p.x, p.y, minX, minY, invSize);
+    if (p.z === 0) p.z = zOrder$1(p.x, p.y, minX, minY, invSize);
     p.prevZ = p.prev;
     p.nextZ = p.next;
     p = p.next;
@@ -23406,8 +23022,7 @@ function sortLinked$1(list) {
       for (let i = 0; i < inSize; i++) {
         pSize++;
         q = q.nextZ;
-        if (!q)
-          break;
+        if (!q) break;
       }
       let qSize = inSize;
       while (pSize > 0 || qSize > 0 && q) {
@@ -23420,10 +23035,8 @@ function sortLinked$1(list) {
           q = q.nextZ;
           qSize--;
         }
-        if (tail)
-          tail.nextZ = e;
-        else
-          list = e;
+        if (tail) tail.nextZ = e;
+        else list = e;
         e.prevZ = tail;
         tail = e;
       }
@@ -23450,8 +23063,7 @@ function zOrder$1(x, y, minX, minY, invSize) {
 function getLeftmost$1(start) {
   let p = start, leftmost = start;
   do {
-    if (p.x < leftmost.x || p.x === leftmost.x && p.y < leftmost.y)
-      leftmost = p;
+    if (p.x < leftmost.x || p.x === leftmost.x && p.y < leftmost.y) leftmost = p;
     p = p.next;
   } while (p !== start);
   return leftmost;
@@ -23479,16 +23091,11 @@ function intersects$1(p1, q1, p2, q2) {
   const o2 = sign$1(area$1(p1, q1, q2));
   const o3 = sign$1(area$1(p2, q2, p1));
   const o4 = sign$1(area$1(p2, q2, q1));
-  if (o1 !== o2 && o3 !== o4)
-    return true;
-  if (o1 === 0 && onSegment$1(p1, p2, q1))
-    return true;
-  if (o2 === 0 && onSegment$1(p1, q2, q1))
-    return true;
-  if (o3 === 0 && onSegment$1(p2, p1, q2))
-    return true;
-  if (o4 === 0 && onSegment$1(p2, q1, q2))
-    return true;
+  if (o1 !== o2 && o3 !== o4) return true;
+  if (o1 === 0 && onSegment$1(p1, p2, q1)) return true;
+  if (o2 === 0 && onSegment$1(p1, q2, q1)) return true;
+  if (o3 === 0 && onSegment$1(p2, p1, q2)) return true;
+  if (o4 === 0 && onSegment$1(p2, q1, q2)) return true;
   return false;
 }
 function onSegment$1(p, q, r) {
@@ -23500,8 +23107,7 @@ function sign$1(num) {
 function intersectsPolygon$1(a, b) {
   let p = a;
   do {
-    if (p.i !== a.i && p.next.i !== a.i && p.i !== b.i && p.next.i !== b.i && intersects$1(p, p.next, a, b))
-      return true;
+    if (p.i !== a.i && p.next.i !== a.i && p.i !== b.i && p.next.i !== b.i && intersects$1(p, p.next, a, b)) return true;
     p = p.next;
   } while (p !== a);
   return false;
@@ -23549,10 +23155,8 @@ function insertNode$1(i, x, y, last) {
 function removeNode$1(p) {
   p.next.prev = p.prev;
   p.prev.next = p.next;
-  if (p.prevZ)
-    p.prevZ.nextZ = p.nextZ;
-  if (p.nextZ)
-    p.nextZ.prevZ = p.prevZ;
+  if (p.prevZ) p.prevZ.nextZ = p.nextZ;
+  if (p.nextZ) p.nextZ.prevZ = p.prevZ;
 }
 function createNode$1(i, x, y) {
   return {
@@ -23582,15 +23186,13 @@ function signedArea$1(data, start, end, dim) {
   return sum;
 }
 class SectionGenerator {
-  constructor() {
-    __publicField(this, "_inverseMatrix", new Matrix4());
-    __publicField(this, "_localPlane", new Plane());
-    __publicField(this, "_tempLine", new Line3());
-    __publicField(this, "_tempVector", new Vector3());
-    __publicField(this, "_plane");
-    __publicField(this, "_plane2DCoordinateSystem", new Matrix4());
-    __publicField(this, "_precission", 1e4);
-  }
+  _inverseMatrix = new Matrix4();
+  _localPlane = new Plane();
+  _tempLine = new Line3();
+  _tempVector = new Vector3();
+  _plane;
+  _plane2DCoordinateSystem = new Matrix4();
+  _precission = 1e4;
   // Used if the plane is orthogonal to the cartesian planes
   // private _planeAxis?: "x" | "y" | "z";
   get plane() {
@@ -23951,10 +23553,8 @@ class SectionGenerator {
   }
 }
 class Attribute {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -24003,10 +23603,8 @@ class Attribute {
   }
 }
 class FloatVector {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -24045,10 +23643,8 @@ class FloatVector {
   }
 }
 class CircleCurve {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -24100,10 +23696,8 @@ class CircleCurve {
   }
 }
 class Wire {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -24132,10 +23726,8 @@ class Wire {
   }
 }
 class WireSet {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -24176,10 +23768,8 @@ class WireSet {
   }
 }
 class Axis {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -24321,10 +23911,8 @@ var AxisPartClass = /* @__PURE__ */ ((AxisPartClass2) => {
   return AxisPartClass2;
 })(AxisPartClass || {});
 class BigShellHole {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -24393,10 +23981,8 @@ class BigShellHole {
   }
 }
 class BigShellProfile {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -24449,10 +24035,8 @@ class BigShellProfile {
   }
 }
 class BoundingBox {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -24481,10 +24065,8 @@ class BoundingBox {
   }
 }
 class CircleExtrusion {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -24560,10 +24142,8 @@ class CircleExtrusion {
   }
 }
 class DoubleVector {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -24602,10 +24182,8 @@ class DoubleVector {
   }
 }
 class Material2 {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -24668,10 +24246,8 @@ class Material2 {
   }
 }
 class Representation {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -24715,10 +24291,8 @@ class Representation {
   }
 }
 class Sample {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -24765,10 +24339,8 @@ class Sample {
   }
 }
 class ShellHole {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -24837,10 +24409,8 @@ class ShellHole {
   }
 }
 class ShellProfile {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -24898,10 +24468,8 @@ var ShellType = /* @__PURE__ */ ((ShellType2) => {
   return ShellType2;
 })(ShellType || {});
 class Shell {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -25078,10 +24646,8 @@ class Shell {
   }
 }
 class Transform {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -25117,10 +24683,8 @@ class Transform {
   }
 }
 class Meshes {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -25438,10 +25002,8 @@ class Meshes {
   }
 }
 class ModelIndex {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -25623,10 +25185,8 @@ class ModelIndex {
   }
 }
 class Relation {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -25675,10 +25235,8 @@ class Relation {
   }
 }
 class SpatialStructure {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -25751,10 +25309,8 @@ class SpatialStructure {
   }
 }
 class Model {
-  constructor() {
-    __publicField(this, "bb", null);
-    __publicField(this, "bb_pos", 0);
-  }
+  bb = null;
+  bb_pos = 0;
   __init(i, bb) {
     this.bb_pos = i;
     this.bb = bb;
@@ -26067,12 +25623,12 @@ var RepresentationClass = /* @__PURE__ */ ((RepresentationClass2) => {
   return RepresentationClass2;
 })(RepresentationClass || {});
 class CRCData {
+  int;
+  float;
+  buffer;
+  s1 = 4;
+  s2 = 8;
   constructor() {
-    __publicField(this, "int");
-    __publicField(this, "float");
-    __publicField(this, "buffer");
-    __publicField(this, "s1", 4);
-    __publicField(this, "s2", 8);
     const { intBuffer, floatBuffer, buffer } = this.newBuffers();
     this.int = intBuffer;
     this.float = floatBuffer;
@@ -26087,6 +25643,8 @@ class CRCData {
   }
 }
 class IntHelper {
+  static _max = 2147483647;
+  static _min = -2147483648;
   static check(data) {
     const isInteger = Number.isInteger(data);
     const notOverflow = data < this._max;
@@ -26094,8 +25652,6 @@ class IntHelper {
     return isInteger && notOverflow && notUnderflow;
   }
 }
-__publicField(IntHelper, "_max", 2147483647);
-__publicField(IntHelper, "_min", -2147483648);
 class MaterialUtils {
   static isSame(a, b) {
     return this.getKey(a) === this.getKey(b);
@@ -26104,8 +25660,8 @@ class MaterialUtils {
   static getKey(material) {
     const { color, _explicitProps, ...properties } = material;
     if (!material.preserveOriginalMaterial) {
-      properties.opacity ?? (properties.opacity = 1);
-      properties.renderedFaces ?? (properties.renderedFaces = RenderedFaces.ONE);
+      properties.opacity ??= 1;
+      properties.renderedFaces ??= RenderedFaces.ONE;
     }
     return JSON.stringify([
       color && [color.r, color.g, color.b, color.isColor === true],
@@ -26114,46 +25670,16 @@ class MaterialUtils {
     ]);
   }
 }
-const _CRC = class _CRC {
-  constructor() {
-    __publicField(this, "_core", new CRCData());
-    __publicField(this, "_handlers");
-    __publicField(this, "_result", -1);
-    __publicField(this, "handleObject", (input) => {
-      const keys = Object.keys(input);
-      for (const key of keys) {
-        if (!input.hasOwnProperty(key)) {
-          continue;
-        }
-        this.compute(input[key]);
-      }
-    });
-    __publicField(this, "handleString", (input) => {
-      const size = input.length;
-      for (let i = 0; i < size; ++i) {
-        const result = input.codePointAt(i);
-        this._core.int[0] = result;
-        this.update();
-      }
-    });
-    __publicField(this, "handleBoolean", (input) => {
-      if (input) {
-        this._core.int[0] = 1;
-      } else {
-        this._core.int[0] = 0;
-      }
-      this.update();
-    });
-    __publicField(this, "handleNumber", (input) => {
-      const isInt = IntHelper.check(input);
-      const target = isInt ? this._core.int : this._core.float;
-      target[0] = input;
-      this.update();
-    });
-    this._handlers = this.newHandlers();
-  }
+class CRC {
+  static _polynomial = 2197175160;
+  _core = new CRCData();
+  _handlers;
+  _result = -1;
   get value() {
     return ~this._result;
+  }
+  constructor() {
+    this._handlers = this.newHandlers();
   }
   fromMaterialData(data) {
     const {
@@ -26202,24 +25728,56 @@ const _CRC = class _CRC {
       object: this.handleObject
     };
   }
+  handleObject = (input) => {
+    const keys = Object.keys(input);
+    for (const key of keys) {
+      if (!input.hasOwnProperty(key)) {
+        continue;
+      }
+      this.compute(input[key]);
+    }
+  };
+  handleString = (input) => {
+    const size = input.length;
+    for (let i = 0; i < size; ++i) {
+      const result = input.codePointAt(i);
+      this._core.int[0] = result;
+      this.update();
+    }
+  };
+  handleBoolean = (input) => {
+    if (input) {
+      this._core.int[0] = 1;
+    } else {
+      this._core.int[0] = 0;
+    }
+    this.update();
+  };
+  handleNumber = (input) => {
+    const isInt = IntHelper.check(input);
+    const target = isInt ? this._core.int : this._core.float;
+    target[0] = input;
+    this.update();
+  };
   update() {
     for (let i = 0; i < this._core.s1; ++i) {
       this._result ^= this._core.buffer[i];
       for (let j = 0; j < this._core.s2; ++j) {
         if (this._result & 1) {
-          this._result = this._result >> 1 ^ _CRC._polynomial;
+          this._result = this._result >> 1 ^ CRC._polynomial;
         } else {
           this._result >>= 1;
         }
       }
     }
   }
-};
-__publicField(_CRC, "_polynomial", 2197175160);
-let CRC = _CRC;
-const _MultiBufferData = class _MultiBufferData {
+}
+class MultiBufferData {
+  static _stash = [];
+  _first;
+  static _tempData = { position: 0, size: 0 };
+  static _inf = 4294967295;
   constructor(size, firstElement) {
-    __publicField(this, "_first");
     this._first = this.newData(size, firstElement);
   }
   static getComplementary(data, callback) {
@@ -26294,11 +25852,11 @@ const _MultiBufferData = class _MultiBufferData {
     }
   }
   add(position, size, data) {
-    const stashExists = _MultiBufferData._stash.length;
+    const stashExists = MultiBufferData._stash.length;
     if (!stashExists) {
       return this.newData(size, data, position);
     }
-    const stashed = _MultiBufferData._stash.pop();
+    const stashed = MultiBufferData._stash.pop();
     if (!stashed) {
       throw new Error("Fragments: No stash found");
     }
@@ -26311,7 +25869,7 @@ const _MultiBufferData = class _MultiBufferData {
     if (data) {
       data.following = null;
       data.past = null;
-      _MultiBufferData._stash.push(data);
+      MultiBufferData._stash.push(data);
     }
   }
   static getData(data, filter) {
@@ -26376,8 +25934,7 @@ const _MultiBufferData = class _MultiBufferData {
     this.setupMiddleBufferEnd(b);
   }
   setupMiddleBufferEnd(b) {
-    var _a2;
-    if (((_a2 = b.following) == null ? void 0 : _a2.data) === b.data) {
+    if (b.following?.data === b.data) {
       if (!b.following) {
         return;
       }
@@ -26403,8 +25960,7 @@ const _MultiBufferData = class _MultiBufferData {
     }
   }
   setupMiddleBufferStart(b) {
-    var _a2;
-    if (((_a2 = b.past) == null ? void 0 : _a2.data) === b.data) {
+    if (b.past?.data === b.data) {
       if (!b.past) {
         return;
       }
@@ -26478,11 +26034,7 @@ const _MultiBufferData = class _MultiBufferData {
       found = found.following;
     }
   }
-};
-__publicField(_MultiBufferData, "_stash", []);
-__publicField(_MultiBufferData, "_tempData", { position: 0, size: 0 });
-__publicField(_MultiBufferData, "_inf", 4294967295);
-let MultiBufferData = _MultiBufferData;
+}
 class MiscHelper {
   static fixNumber(value) {
     if (Number.isNaN(value)) {
@@ -26529,6 +26081,14 @@ class BitUtils {
   }
 }
 class ParserHelper {
+  static _temp = {
+    position: new Vector3(),
+    xDirection: new Vector3(),
+    yDirection: new Vector3(),
+    zDirection: new Vector3()
+  };
+  static _doubleVector = new DoubleVector();
+  static _floatVector = new FloatVector();
   static parseMaterial(material) {
     const r = material.r() / 255;
     const g = material.g() / 255;
@@ -26607,15 +26167,21 @@ class ParserHelper {
     );
   }
 }
-__publicField(ParserHelper, "_temp", {
-  position: new Vector3(),
-  xDirection: new Vector3(),
-  yDirection: new Vector3(),
-  zDirection: new Vector3()
-});
-__publicField(ParserHelper, "_doubleVector", new DoubleVector());
-__publicField(ParserHelper, "_floatVector", new FloatVector());
-const _TransformHelper = class _TransformHelper {
+class TransformHelper {
+  static _transform = new Transform();
+  static _min = new Vector3();
+  static _max = new Vector3();
+  static _center = new Vector3();
+  static _distance = new Vector3();
+  static _edge = new Line3();
+  static _item = new Matrix4();
+  static _sample = new Matrix4();
+  static _box = new BoundingBox();
+  static _transformers = {
+    x: () => this.setBoxX(),
+    y: () => this.setBoxY(),
+    z: () => this.setBoxZ()
+  };
   static get(sample, meshes, transform) {
     this.fetchSampleTransform(sample, meshes);
     this.fetchItemTransform(sample, meshes);
@@ -26672,23 +26238,11 @@ const _TransformHelper = class _TransformHelper {
     this._min.set(this._min.x, this._center.y, this._center.z);
     this._max.set(this._max.x, this._center.y, this._center.z);
   }
-};
-__publicField(_TransformHelper, "_transform", new Transform());
-__publicField(_TransformHelper, "_min", new Vector3());
-__publicField(_TransformHelper, "_max", new Vector3());
-__publicField(_TransformHelper, "_center", new Vector3());
-__publicField(_TransformHelper, "_distance", new Vector3());
-__publicField(_TransformHelper, "_edge", new Line3());
-__publicField(_TransformHelper, "_item", new Matrix4());
-__publicField(_TransformHelper, "_sample", new Matrix4());
-__publicField(_TransformHelper, "_box", new BoundingBox());
-__publicField(_TransformHelper, "_transformers", {
-  x: () => _TransformHelper.setBoxX(),
-  y: () => _TransformHelper.setBoxY(),
-  z: () => _TransformHelper.setBoxZ()
-});
-let TransformHelper = _TransformHelper;
+}
 class BoxUtils {
+  static _temp = {
+    vector: new Vector3()
+  };
   static getWidth(box) {
     box.getSize(this._temp.vector);
     if (this._temp.vector.x > this._temp.vector.y) {
@@ -26715,9 +26269,6 @@ class BoxUtils {
     return this._temp.vector.y;
   }
 }
-__publicField(BoxUtils, "_temp", {
-  vector: new Vector3()
-});
 class FaceUtils {
   static getEarcutDimensions(normal) {
     const absX = Math.abs(normal.x);
@@ -26750,12 +26301,12 @@ class FaceUtils {
   }
 }
 class VirtualMeshManager {
+  meshes;
+  _templateController = new VirtualTemplateController();
+  _meshIds = /* @__PURE__ */ new Set();
+  _idGenerator = new CRC();
+  _modelCode;
   constructor(modelId, meshes) {
-    __publicField(this, "meshes");
-    __publicField(this, "_templateController", new VirtualTemplateController());
-    __publicField(this, "_meshIds", /* @__PURE__ */ new Set());
-    __publicField(this, "_idGenerator", new CRC());
-    __publicField(this, "_modelCode");
     this.meshes = meshes;
     this._modelCode = this.getModelCode(modelId);
   }
@@ -26795,7 +26346,20 @@ var LodClass = /* @__PURE__ */ ((LodClass2) => {
   LodClass2[LodClass2["CUSTOM"] = 2] = "CUSTOM";
   return LodClass2;
 })(LodClass || {});
-const _ShellUtils = class _ShellUtils {
+class ShellUtils {
+  static _faceThreshold = Math.cos(Math.PI / 8);
+  static _shell = new Shell();
+  static _normalBuffer = new Int16Array();
+  static _tempNormal = new Vector3();
+  static _tempPoint = new FloatVector();
+  static _shellProfile = new ShellProfile();
+  static _bigShellProfile = new BigShellProfile();
+  static _shellHole = new ShellHole();
+  static _bigShellHole = new BigShellHole();
+  static _pointsByProfile = /* @__PURE__ */ new Map();
+  static _v1 = new Vector3();
+  static _v2 = new Vector3();
+  static _v3 = new Vector3();
   static getProfile(shell, id, input) {
     const isBigShell = shell.type() === ShellType.BIG;
     if (isBigShell) {
@@ -26821,7 +26385,7 @@ const _ShellUtils = class _ShellUtils {
     };
     const length = isBigShell ? shell.bigHolesLength() : shell.holesLength();
     const holeId = isBigShell ? "bigHoles" : "holes";
-    const profile = _ShellUtils.getProfile(shell, profileId);
+    const profile = ShellUtils.getProfile(shell, profileId);
     indices.outer = Array.from(profile.indicesArray());
     for (let i = 0; i < length; i++) {
       const hole = shell[holeId](i);
@@ -26864,9 +26428,9 @@ const _ShellUtils = class _ShellUtils {
     result.set(x, y, z);
   }
   static getNormalsOfShellProfile(shell, result) {
-    const count = _ShellUtils.getProfilesLength(shell);
+    const count = ShellUtils.getProfilesLength(shell);
     for (let id = 0; id < count; id++) {
-      const profile = _ShellUtils.getProfile(shell, id);
+      const profile = ShellUtils.getProfile(shell, id);
       const normals = this.fetchNormalsOfProfile(shell, profile);
       result.push(normals);
     }
@@ -26896,7 +26460,7 @@ const _ShellUtils = class _ShellUtils {
   static getPointsShell(shell) {
     this._pointsByProfile.clear();
     this.fetchAllPointsByProfile(shell);
-    _ShellUtils.fetchAllPointsByHole(shell);
+    ShellUtils.fetchAllPointsByHole(shell);
     return this._pointsByProfile;
   }
   static addNormals(pointsByProfile, faceNormals, profileNormal) {
@@ -26904,8 +26468,7 @@ const _ShellUtils = class _ShellUtils {
       const normal = faceNormals[id];
       const dot = profileNormal.dot(normal);
       const isValid = dot > this._faceThreshold;
-      if (!isValid)
-        continue;
+      if (!isValid) continue;
       this._tempNormal.add(normal);
     }
   }
@@ -26926,15 +26489,15 @@ const _ShellUtils = class _ShellUtils {
     return this.computeProfileNormal(length, profile, shell);
   }
   static fetchAllPointsByHole(shell) {
-    const holesCount = _ShellUtils.getHolesLength(shell);
+    const holesCount = ShellUtils.getHolesLength(shell);
     const hole = this.getTempHole(shell);
     for (let holeId = 0; holeId < holesCount; holeId++) {
-      _ShellUtils.getHole(shell, holeId, hole);
+      ShellUtils.getHole(shell, holeId, hole);
       const id = hole.profileId();
       const indicesCount = hole.indicesLength();
       for (let i = 0; i < indicesCount; i++) {
         const index = hole.indices(i);
-        _ShellUtils.savePointByProfile(index, id);
+        ShellUtils.savePointByProfile(index, id);
       }
     }
   }
@@ -26972,7 +26535,7 @@ const _ShellUtils = class _ShellUtils {
       this._tempNormal = faceNormals[first].clone();
       return;
     }
-    _ShellUtils.addNormals(pointsByProfile, faceNormals, profileNormal);
+    ShellUtils.addNormals(pointsByProfile, faceNormals, profileNormal);
   }
   static fetchPointsForNormal(id, length, profile, shell) {
     const next = id + 1;
@@ -26997,11 +26560,11 @@ const _ShellUtils = class _ShellUtils {
     const count = this.getProfilesLength(shell);
     const profile = this.getTempProfile(shell);
     for (let id = 0; id < count; id++) {
-      _ShellUtils.getProfile(shell, id, profile);
+      ShellUtils.getProfile(shell, id, profile);
       const indicesCount = profile.indicesLength();
       for (let i = 0; i < indicesCount; i++) {
         const index = profile.indices(i);
-        _ShellUtils.savePointByProfile(index, id);
+        ShellUtils.savePointByProfile(index, id);
       }
     }
   }
@@ -27022,33 +26585,17 @@ const _ShellUtils = class _ShellUtils {
     }
     return this._shellHole;
   }
-};
-__publicField(_ShellUtils, "_faceThreshold", Math.cos(Math.PI / 8));
-__publicField(_ShellUtils, "_shell", new Shell());
-__publicField(_ShellUtils, "_normalBuffer", new Int16Array());
-__publicField(_ShellUtils, "_tempNormal", new Vector3());
-__publicField(_ShellUtils, "_tempPoint", new FloatVector());
-__publicField(_ShellUtils, "_shellProfile", new ShellProfile());
-__publicField(_ShellUtils, "_bigShellProfile", new BigShellProfile());
-__publicField(_ShellUtils, "_shellHole", new ShellHole());
-__publicField(_ShellUtils, "_bigShellHole", new BigShellHole());
-__publicField(_ShellUtils, "_pointsByProfile", /* @__PURE__ */ new Map());
-__publicField(_ShellUtils, "_v1", new Vector3());
-__publicField(_ShellUtils, "_v2", new Vector3());
-__publicField(_ShellUtils, "_v3", new Vector3());
-let ShellUtils = _ShellUtils;
+}
 class ShellTemplateConstructor {
-  constructor() {
-    __publicField(this, "_shellHole", new ShellHole());
-    __publicField(this, "_bigShellHole", new BigShellHole());
-    __publicField(this, "holePoints", 0);
-    __publicField(this, "profilePoints", 0);
-    __publicField(this, "triangleAmount", 0);
-    __publicField(this, "indexCount", 0);
-    __publicField(this, "meshes", []);
-    __publicField(this, "_shellProfile", new ShellProfile());
-    __publicField(this, "_bigShellProfile", new BigShellProfile());
-  }
+  _shellHole = new ShellHole();
+  _bigShellHole = new BigShellHole();
+  holePoints = 0;
+  profilePoints = 0;
+  triangleAmount = 0;
+  indexCount = 0;
+  meshes = [];
+  _shellProfile = new ShellProfile();
+  _bigShellProfile = new BigShellProfile();
   newMeshTemplate(shell) {
     const isEmpty = this.getIsEmpty(shell);
     if (isEmpty) {
@@ -27075,8 +26622,7 @@ class ShellTemplateConstructor {
     for (let i = 0; i < count; i++) {
       ShellUtils.getHole(shell, i, hole);
       const profileId = hole.profileId();
-      if (profileId !== id)
-        continue;
+      if (profileId !== id) continue;
       this.updateBuffers(shell, shellHolesExist);
       shellHolesExist = true;
     }
@@ -27180,8 +26726,7 @@ function earcut(data, holeIndices, dim, a, b, createGeometry) {
   const hasHoles = holeIndices && holeIndices.length;
   const outerLen = hasHoles ? holeIndices[0] * dim : data.length;
   let outerNode = linkedList(data, 0, outerLen, dim, true, a, b);
-  if (!outerNode || outerNode.next === outerNode.prev)
-    return;
+  if (!outerNode || outerNode.next === outerNode.prev) return;
   let minX;
   let minY;
   let invSize;
@@ -27195,14 +26740,10 @@ function earcut(data, holeIndices, dim, a, b, createGeometry) {
     for (let i = dim; i < outerLen; i += dim) {
       const x = data[i + a];
       const y = data[i + b];
-      if (x < minX)
-        minX = x;
-      if (y < minY)
-        minY = y;
-      if (x > maxX)
-        maxX = x;
-      if (y > maxY)
-        maxY = y;
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
     }
     invSize = Math.max(maxX - minX, maxY - minY);
     invSize = invSize !== 0 ? 1 / invSize : 0;
@@ -27238,10 +26779,8 @@ function linkedList(data, start, end, dim, clockwise, a, b) {
   return finish;
 }
 function filterPoints(start, end) {
-  if (!start)
-    return start;
-  if (!end)
-    end = start;
+  if (!start) return start;
+  if (!end) end = start;
   let p = start;
   let again;
   let past;
@@ -27251,8 +26790,7 @@ function filterPoints(start, end) {
       past = p.prev;
       removeNode(p);
       p = end = past;
-      if (p === p.next)
-        break;
+      if (p === p.next) break;
       again = true;
     } else {
       p = p.next;
@@ -27261,8 +26799,7 @@ function filterPoints(start, end) {
   return end;
 }
 function earcutLinked(ear, createGeometry, dim, minX, minY, invSize, pass) {
-  if (!pass && invSize)
-    indexCurve(ear, minX, minY, invSize);
+  if (!pass && invSize) indexCurve(ear, minX, minY, invSize);
   let stop = ear;
   while (ear.prev !== ear.next) {
     const prev = ear.prev;
@@ -27300,8 +26837,7 @@ function isEar(ear) {
   const a = ear.prev;
   const b = ear;
   const c = ear.next;
-  if (area(a, b, c) >= 0)
-    return false;
+  if (area(a, b, c) >= 0) return false;
   let p = ear.next.next;
   while (p !== ear.prev) {
     if (pointInTriangle(a.x, a.y, b.x, b.y, c.x, c.y, p.x, p.y) && area(p.prev, p, p.next) >= 0)
@@ -27314,8 +26850,7 @@ function isEarHashed(ear, minX, minY, invSize) {
   const a = ear.prev;
   const b = ear;
   const c = ear.next;
-  if (area(a, b, c) >= 0)
-    return false;
+  if (area(a, b, c) >= 0) return false;
   const x0 = Math.min(a.x, b.x, c.x);
   const y0 = Math.min(a.y, b.y, c.y);
   const x1 = Math.max(a.x, b.x, c.x);
@@ -27383,8 +26918,7 @@ function eliminateHoles(data, holeIndices, outerNode, dim, a, b) {
     const start = holeIndices[i] * dim;
     const end = i < len - 1 ? holeIndices[i + 1] * dim : data.length;
     const list = linkedList(data, start, end, dim, false, a, b);
-    if (list === list.next)
-      list.steiner = true;
+    if (list === list.next) list.steiner = true;
     queue.push(getLeftmost(list));
   }
   queue.sort(xDifference);
@@ -27422,20 +26956,16 @@ function findHoleBridge(hole, outerNode) {
       if (x <= hx && x > qx) {
         qx = x;
         if (x === hx) {
-          if (hy === p.y)
-            return p;
-          if (hy === p.next.y)
-            return p.next;
+          if (hy === p.y) return p;
+          if (hy === p.next.y) return p.next;
         }
         m = p.x < p.next.x ? p : p.next;
       }
     }
     p = p.next;
   } while (p !== outerNode);
-  if (!m)
-    return null;
-  if (hx === qx)
-    return m;
+  if (!m) return null;
+  if (hx === qx) return m;
   const stop = m;
   const mx = m.x;
   const my = m.y;
@@ -27468,8 +26998,7 @@ function sectorContainsSector(m, p) {
 function indexCurve(start, minX, minY, invSize) {
   let p = start;
   do {
-    if (p.z === null)
-      p.z = zOrder(p.x, p.y, minX, minY, invSize);
+    if (p.z === null) p.z = zOrder(p.x, p.y, minX, minY, invSize);
     p.prevZ = p.prev;
     p.nextZ = p.next;
     p = p.next;
@@ -27494,8 +27023,7 @@ function sortLinked(list) {
       for (let i = 0; i < inSize; i++) {
         pSize++;
         q = q.nextZ;
-        if (!q)
-          break;
+        if (!q) break;
       }
       let qSize = inSize;
       while (pSize > 0 || qSize > 0 && q) {
@@ -27508,10 +27036,8 @@ function sortLinked(list) {
           q = q.nextZ;
           qSize--;
         }
-        if (tail)
-          tail.nextZ = e;
-        else
-          list = e;
+        if (tail) tail.nextZ = e;
+        else list = e;
         e.prevZ = tail;
         tail = e;
       }
@@ -27565,16 +27091,11 @@ function intersects(p1, q1, p2, q2) {
   const o2 = sign(area(p1, q1, q2));
   const o3 = sign(area(p2, q2, p1));
   const o4 = sign(area(p2, q2, q1));
-  if (o1 !== o2 && o3 !== o4)
-    return true;
-  if (o1 === 0 && onSegment(p1, p2, q1))
-    return true;
-  if (o2 === 0 && onSegment(p1, q2, q1))
-    return true;
-  if (o3 === 0 && onSegment(p2, p1, q2))
-    return true;
-  if (o4 === 0 && onSegment(p2, q1, q2))
-    return true;
+  if (o1 !== o2 && o3 !== o4) return true;
+  if (o1 === 0 && onSegment(p1, p2, q1)) return true;
+  if (o2 === 0 && onSegment(p1, q2, q1)) return true;
+  if (o3 === 0 && onSegment(p2, p1, q2)) return true;
+  if (o4 === 0 && onSegment(p2, q1, q2)) return true;
   return false;
 }
 function onSegment(p, q, r) {
@@ -27638,10 +27159,8 @@ function insertNode(i, x, y, last) {
 function removeNode(p) {
   p.next.prev = p.prev;
   p.prev.next = p.next;
-  if (p.prevZ)
-    p.prevZ.nextZ = p.nextZ;
-  if (p.nextZ)
-    p.nextZ.prevZ = p.prevZ;
+  if (p.prevZ) p.prevZ.nextZ = p.nextZ;
+  if (p.nextZ) p.nextZ.prevZ = p.prevZ;
   p.next = p;
   p.prev = p;
 }
@@ -27672,11 +27191,12 @@ function signedArea(data, start, end, dim, a, b) {
   }
   return sum;
 }
-const _ShellFaceX = class _ShellFaceX {
+class ShellFaceX {
+  static _tempVec = new Vector3();
   static create(indices, data, normals, current, mesh, holes, sizes, faceId) {
     const size = indices.length;
     const amount = sizes.verticesAmount;
-    _ShellFaceX.processBuffers(size, indices, mesh, sizes, data, normals);
+    ShellFaceX.processBuffers(size, indices, mesh, sizes, data, normals);
     const position = mesh.positionBuffer;
     const pointsDiff = sizes.verticesAmount - amount;
     const normalDims = pointsDiff / 3;
@@ -27754,7 +27274,7 @@ const _ShellFaceX = class _ShellFaceX {
   static triangulate(holes, current, size, mesh, sizes, amount) {
     const tri = 3;
     const holesData = this.getHoles(holes, current, size, mesh, sizes);
-    const vertices = _ShellFaceX.getVertices(mesh, amount, sizes);
+    const vertices = ShellFaceX.getVertices(mesh, amount, sizes);
     const dims = FaceUtils.getEarcutDimensions(this._tempVec);
     const onCreateGeometry = this.getEvent(mesh, sizes, amount);
     const firstDim = dims[0];
@@ -27787,10 +27307,22 @@ const _ShellFaceX = class _ShellFaceX {
     const nz = normals[current + 2];
     normal.set([nx, ny, nz], sizes.normalsAmount);
   }
-};
-__publicField(_ShellFaceX, "_tempVec", new Vector3());
-let ShellFaceX = _ShellFaceX;
-const _ShellFace4 = class _ShellFace4 {
+}
+class ShellFace4 {
+  static a = new Vector3();
+  static b = new Vector3();
+  static c = new Vector3();
+  static d = new Vector3();
+  static e = new Vector3();
+  static f = new Vector3();
+  static g = new Vector3();
+  static h = new Vector3();
+  static i = new Vector3();
+  static _vecs = [this.a, this.b, this.c, this.d];
+  static _convexIndices = [0, 1, 3, 3, 1, 2];
+  static totalIncrease = 12;
+  static indexIncrease = 6;
+  static vertexIncrease = 4;
   static create(indices, data, normals, id, mesh, sizes, faceId) {
     this.setAllVectors(indices, data);
     const isConvex = this.getIsConvex();
@@ -27880,23 +27412,10 @@ const _ShellFace4 = class _ShellFace4 {
     }
     sizes.indices += this.indexIncrease;
   }
-};
-__publicField(_ShellFace4, "a", new Vector3());
-__publicField(_ShellFace4, "b", new Vector3());
-__publicField(_ShellFace4, "c", new Vector3());
-__publicField(_ShellFace4, "d", new Vector3());
-__publicField(_ShellFace4, "e", new Vector3());
-__publicField(_ShellFace4, "f", new Vector3());
-__publicField(_ShellFace4, "g", new Vector3());
-__publicField(_ShellFace4, "h", new Vector3());
-__publicField(_ShellFace4, "i", new Vector3());
-__publicField(_ShellFace4, "_vecs", [_ShellFace4.a, _ShellFace4.b, _ShellFace4.c, _ShellFace4.d]);
-__publicField(_ShellFace4, "_convexIndices", [0, 1, 3, 3, 1, 2]);
-__publicField(_ShellFace4, "totalIncrease", 12);
-__publicField(_ShellFace4, "indexIncrease", 6);
-__publicField(_ShellFace4, "vertexIncrease", 4);
-let ShellFace4 = _ShellFace4;
-const _ShellFace3 = class _ShellFace3 {
+}
+class ShellFace3 {
+  static vertexIncrease = 3;
+  static totalIncrease = 9;
   static create(indices, data, normals, mesh, sizes, faceId) {
     this.setFaceIds(sizes, mesh, faceId);
     this.setIndices(mesh, sizes);
@@ -27937,46 +27456,32 @@ const _ShellFace3 = class _ShellFace3 {
     sizes.indices += this.vertexIncrease;
   }
   static updateData(sizes) {
-    sizes.normalsAmount += _ShellFace3.totalIncrease;
-    sizes.vertices += _ShellFace3.vertexIncrease;
-    sizes.verticesAmount += _ShellFace3.totalIncrease;
+    sizes.normalsAmount += ShellFace3.totalIncrease;
+    sizes.vertices += ShellFace3.vertexIncrease;
+    sizes.verticesAmount += ShellFace3.totalIncrease;
   }
-};
-__publicField(_ShellFace3, "vertexIncrease", 3);
-__publicField(_ShellFace3, "totalIncrease", 9);
-let ShellFace3 = _ShellFace3;
+}
 class ShellConstructor {
-  constructor() {
-    __publicField(this, "point", new FloatVector());
-    __publicField(this, "_shellHole", new ShellHole());
-    __publicField(this, "_bigShellHole", new BigShellHole());
-    __publicField(this, "interiorProfiles", /* @__PURE__ */ new Map());
-    __publicField(this, "normalsAvgInterior", new Int16Array());
-    __publicField(this, "_pointsPerProfile", /* @__PURE__ */ new Map());
-    __publicField(this, "_shellProfile", new ShellProfile());
-    __publicField(this, "_bigShellProfile", new BigShellProfile());
-    __publicField(this, "_normalsAvg", new Int16Array());
-    __publicField(this, "_normals", []);
-    __publicField(this, "_indices", 0);
-    __publicField(this, "_sizes", {
-      vertices: 0,
-      indices: 0,
-      verticesAmount: 0,
-      normalsAmount: 0,
-      normals: 0
-    });
-    __publicField(this, "_tileData");
-    __publicField(this, "_faceIdPerProfile", /* @__PURE__ */ new Map());
-    __publicField(this, "nextBuffer", (bufferGeometries) => {
-      this.setTileData(bufferGeometries);
-      this.initializeIndices();
-      this.initializePositions();
-      this.initializeNormals();
-      this.initializeFaceIds();
-      this.initializeSizes();
-      this._indices++;
-    });
-  }
+  point = new FloatVector();
+  _shellHole = new ShellHole();
+  _bigShellHole = new BigShellHole();
+  interiorProfiles = /* @__PURE__ */ new Map();
+  normalsAvgInterior = new Int16Array();
+  _pointsPerProfile = /* @__PURE__ */ new Map();
+  _shellProfile = new ShellProfile();
+  _bigShellProfile = new BigShellProfile();
+  _normalsAvg = new Int16Array();
+  _normals = [];
+  _indices = 0;
+  _sizes = {
+    vertices: 0,
+    indices: 0,
+    verticesAmount: 0,
+    normalsAmount: 0,
+    normals: 0
+  };
+  _tileData;
+  _faceIdPerProfile = /* @__PURE__ */ new Map();
   construct(shell, meshData) {
     this.resetConstructData(meshData);
     this.getPointsPerWire(shell);
@@ -28008,8 +27513,7 @@ class ShellConstructor {
   }
   computeNormalsAvg(shell, indices, id) {
     const isShell = this.isShell(shell);
-    if (!isShell)
-      return;
+    if (!isShell) return;
     const n = this._normals;
     const ppp = this._pointsPerProfile;
     this._normalsAvg = ShellUtils.computeNormalsAvg(indices, id, n, ppp);
@@ -28019,8 +27523,7 @@ class ShellConstructor {
   }
   getPointsPerWire(shell) {
     const isShell = this.isShell(shell);
-    if (!isShell)
-      return;
+    if (!isShell) return;
     ShellUtils.getNormalsOfShellProfile(shell, this._normals);
     this._pointsPerProfile = ShellUtils.getPointsShell(shell);
   }
@@ -28062,8 +27565,7 @@ class ShellConstructor {
     const hole = this.getTempHole(shell);
     const count = hole.indicesLength();
     const isShell = this.isShell(shell);
-    if (!isShell)
-      return;
+    if (!isShell) return;
     for (let id = 0; id < count; id++) {
       this.getIntProfilePoints(id, shell, intProfile);
       this.getIntProfileNormals(intProfile, id);
@@ -28135,6 +27637,15 @@ class ShellConstructor {
       this.nextBuffer(meshData);
     }
   }
+  nextBuffer = (bufferGeometries) => {
+    this.setTileData(bufferGeometries);
+    this.initializeIndices();
+    this.initializePositions();
+    this.initializeNormals();
+    this.initializeFaceIds();
+    this.initializeSizes();
+    this._indices++;
+  };
   initializeFaceIds() {
     const size = this._tileData.positionCount;
     this._tileData.faceIdBuffer = new Uint32Array(size / 3);
@@ -28227,23 +27738,23 @@ class ShellConstructor {
   }
 }
 class ShellFaceRaycaster {
+  a = new Vector3();
+  b = new Vector3();
+  c = new Vector3();
+  d = new Vector3();
+  e = new Vector3();
+  f = new Vector3();
+  g = new Vector3();
+  h = new Vector3();
+  i = new Vector3();
+  j = new Vector3();
+  k = new Vector3();
+  tempTriangle = new Triangle();
+  tempPlane = new Plane();
+  includedVertices = [];
+  interiorProfiles = /* @__PURE__ */ new Map();
+  _meshes;
   constructor(meshes) {
-    __publicField(this, "a", new Vector3());
-    __publicField(this, "b", new Vector3());
-    __publicField(this, "c", new Vector3());
-    __publicField(this, "d", new Vector3());
-    __publicField(this, "e", new Vector3());
-    __publicField(this, "f", new Vector3());
-    __publicField(this, "g", new Vector3());
-    __publicField(this, "h", new Vector3());
-    __publicField(this, "i", new Vector3());
-    __publicField(this, "j", new Vector3());
-    __publicField(this, "k", new Vector3());
-    __publicField(this, "tempTriangle", new Triangle());
-    __publicField(this, "tempPlane", new Plane());
-    __publicField(this, "includedVertices", []);
-    __publicField(this, "interiorProfiles", /* @__PURE__ */ new Map());
-    __publicField(this, "_meshes");
     this._meshes = meshes;
   }
   faceRaycast(id, ray) {
@@ -28384,8 +27895,7 @@ class ShellFaceRaycaster {
   }
   processCollision(shell, profileId, buffer, indices) {
     const contains = this.polygonContains(buffer, indices);
-    if (!contains)
-      return;
+    if (!contains) return;
     const point = this.b.clone();
     const normal = this.tempPlane.normal.clone();
     const faceBuffer = this.getFaceBuffer(shell, profileId, buffer);
@@ -28535,18 +28045,18 @@ class ShellFaceRaycaster {
   }
 }
 class ShellLineRaycaster {
+  _meshes;
+  _minAngle = Math.PI / 32;
+  _shellProfile = new ShellProfile();
+  _bigShellProfile = new BigShellProfile();
+  _tempV1 = new Vector3();
+  _tempV2 = new Vector3();
+  _tempPoint = new Vector3();
+  _normals = [];
+  _pointsByProfile = /* @__PURE__ */ new Map();
+  _shell = new Shell();
+  _result = [];
   constructor(meshes) {
-    __publicField(this, "_meshes");
-    __publicField(this, "_minAngle", Math.PI / 32);
-    __publicField(this, "_shellProfile", new ShellProfile());
-    __publicField(this, "_bigShellProfile", new BigShellProfile());
-    __publicField(this, "_tempV1", new Vector3());
-    __publicField(this, "_tempV2", new Vector3());
-    __publicField(this, "_tempPoint", new Vector3());
-    __publicField(this, "_normals", []);
-    __publicField(this, "_pointsByProfile", /* @__PURE__ */ new Map());
-    __publicField(this, "_shell", new Shell());
-    __publicField(this, "_result", []);
     this._meshes = meshes;
   }
   lineRaycast(id, ray, frustum) {
@@ -28596,10 +28106,8 @@ class ShellLineRaycaster {
     const profile2 = this._pointsByProfile.get(secondIndex);
     const result = [];
     for (const index of profile1) {
-      if (profile2.indexOf(index) === -1)
-        continue;
-      if (index === id)
-        continue;
+      if (profile2.indexOf(index) === -1) continue;
+      if (index === id) continue;
       result.push(index);
     }
     return result;
@@ -28649,9 +28157,9 @@ class ShellLineRaycaster {
   }
 }
 class ShellPointRaycaster {
+  _meshes;
+  _tempVec = new Vector3();
   constructor(_meshes) {
-    __publicField(this, "_meshes");
-    __publicField(this, "_tempVec", new Vector3());
     this._meshes = _meshes;
   }
   pointRaycast(id, frustum) {
@@ -28665,25 +28173,21 @@ class ShellPointRaycaster {
     for (let id = 0; id < count; id++) {
       ShellUtils.point(shell, id, this._tempVec);
       const pointFound = frustum.containsPoint(this._tempVec);
-      if (!pointFound)
-        continue;
+      if (!pointFound) continue;
       const point = this._tempVec.clone();
       points.push({ point });
     }
   }
 }
 class VirtualShellManager extends VirtualMeshManager {
-  constructor() {
-    super(...arguments);
-    __publicField(this, "_lodClass", LodClass.AABB);
-    __publicField(this, "_objectClass", ObjectClass.SHELL);
-    __publicField(this, "_representationClass", RepresentationClass.SHELL);
-    __publicField(this, "_templates", new ShellTemplateConstructor());
-    __publicField(this, "_constructor", new ShellConstructor());
-    __publicField(this, "_faceRaycaster", new ShellFaceRaycaster(this.meshes));
-    __publicField(this, "_lineRaycaster", new ShellLineRaycaster(this.meshes));
-    __publicField(this, "_pointRaycaster", new ShellPointRaycaster(this.meshes));
-  }
+  _lodClass = LodClass.AABB;
+  _objectClass = ObjectClass.SHELL;
+  _representationClass = RepresentationClass.SHELL;
+  _templates = new ShellTemplateConstructor();
+  _constructor = new ShellConstructor();
+  _faceRaycaster = new ShellFaceRaycaster(this.meshes);
+  _lineRaycaster = new ShellLineRaycaster(this.meshes);
+  _pointRaycaster = new ShellPointRaycaster(this.meshes);
   fetchMeshes(meshId, evenVoid) {
     const mesh = this.getMesh(meshId, CurrentLod.GEOMETRY);
     this.constructMesh(mesh, evenVoid, meshId);
@@ -28727,14 +28231,38 @@ class VirtualShellManager extends VirtualMeshManager {
   }
   constructMesh(mesh, evenVoid, meshId) {
     const isVoid = this.isVoidMesh(mesh);
-    if (!isVoid || !evenVoid)
-      return;
+    if (!isVoid || !evenVoid) return;
     const shell = ShellUtils.getShell(this.meshes, meshId);
     this._constructor.construct(shell, mesh);
     this.saveMesh(meshId, mesh, CurrentLod.GEOMETRY);
   }
 }
 class VceCasterUtils {
+  static _floats = new FloatVector();
+  static _wire = new Wire();
+  static _wireSet = new WireSet();
+  static _circleCurve = new CircleCurve();
+  static _wireP1 = new Vector3();
+  static _wireP2 = new Vector3();
+  static _circleP1 = new Vector3();
+  static _circleP2 = new Vector3();
+  static _circleOrigin = new Vector3();
+  static _circleOrientation = new Vector3();
+  static _currentWireSetPoint = new Vector3();
+  static _nextWireSetPoint = new Vector3();
+  // ce: circle extrusion
+  static _ceAxisZ = new Vector3();
+  static _ceAxisY = new Vector3();
+  static _ceAxisX = new Vector3();
+  static _ceRaycastPoint = new Vector3();
+  static _ceSize = new Vector3();
+  static _ceAbsoluteX = new Vector3(0, 0, 1);
+  static _ceAbsoluteZ = new Vector3(1, 0, 0);
+  static _circlePoints = [];
+  static _ceTransform = new Matrix4();
+  static _ceInverseTransform = new Matrix4();
+  static _ceRay = new Ray();
+  static _ceRaycastPoints = [];
   static circleCurve3Divisions(input) {
     const factor = 4;
     const min = 4;
@@ -28899,8 +28427,7 @@ class VceCasterUtils {
   }
   static computeCircleExtrusionRaycastPoints(factor, size, radius) {
     const clashes = this.checkIfCircleExtrusionClashes(factor, size, radius);
-    if (!clashes)
-      return;
+    if (!clashes) return;
     this._ceRaycastPoint.applyMatrix4(this._ceTransform);
     const point = this._ceRaycastPoint.clone();
     this._ceRaycastPoints.push({ point });
@@ -28935,34 +28462,27 @@ class VceCasterUtils {
     return clashes;
   }
 }
-__publicField(VceCasterUtils, "_floats", new FloatVector());
-__publicField(VceCasterUtils, "_wire", new Wire());
-__publicField(VceCasterUtils, "_wireSet", new WireSet());
-__publicField(VceCasterUtils, "_circleCurve", new CircleCurve());
-__publicField(VceCasterUtils, "_wireP1", new Vector3());
-__publicField(VceCasterUtils, "_wireP2", new Vector3());
-__publicField(VceCasterUtils, "_circleP1", new Vector3());
-__publicField(VceCasterUtils, "_circleP2", new Vector3());
-__publicField(VceCasterUtils, "_circleOrigin", new Vector3());
-__publicField(VceCasterUtils, "_circleOrientation", new Vector3());
-__publicField(VceCasterUtils, "_currentWireSetPoint", new Vector3());
-__publicField(VceCasterUtils, "_nextWireSetPoint", new Vector3());
-// ce: circle extrusion
-__publicField(VceCasterUtils, "_ceAxisZ", new Vector3());
-__publicField(VceCasterUtils, "_ceAxisY", new Vector3());
-__publicField(VceCasterUtils, "_ceAxisX", new Vector3());
-__publicField(VceCasterUtils, "_ceRaycastPoint", new Vector3());
-__publicField(VceCasterUtils, "_ceSize", new Vector3());
-__publicField(VceCasterUtils, "_ceAbsoluteX", new Vector3(0, 0, 1));
-__publicField(VceCasterUtils, "_ceAbsoluteZ", new Vector3(1, 0, 0));
-__publicField(VceCasterUtils, "_circlePoints", []);
-__publicField(VceCasterUtils, "_ceTransform", new Matrix4());
-__publicField(VceCasterUtils, "_ceInverseTransform", new Matrix4());
-__publicField(VceCasterUtils, "_ceRay", new Ray());
-__publicField(VceCasterUtils, "_ceRaycastPoints", []);
-const _VceUtils = class _VceUtils {
+class VceUtils {
+  static up = new Vector3(0, 0, 1);
+  static circleCurves = [];
+  static circleCurvePoints;
+  static temp = {
+    circleExtrusion: new CircleExtrusion(),
+    circleCurve: new CircleCurve(),
+    wireSet: new WireSet(),
+    axis: new Axis(),
+    rotation: new Quaternion(),
+    vector: new Vector3()
+  };
+  static _wireSize = 6;
+  static _minSize = 6;
+  static _maxSize = 30;
+  static _axisPartSize = {
+    verticesLength: 0,
+    indicesLength: 0
+  };
   static newPaths(circleCurve, size) {
-    const data = _VceUtils.newPathData();
+    const data = VceUtils.newPathData();
     this.fetchCircleCurveData(circleCurve, data);
     this.fetchCircleCurveMids(size, data, circleCurve);
     this.fetchCircleCurveEnds(data, circleCurve);
@@ -28972,14 +28492,14 @@ const _VceUtils = class _VceUtils {
   static getAxisPartSize(axis, id, vertexSize) {
     const part = axis.parts(id);
     const order = axis.order(id);
-    const data = _VceUtils.getAxisPartData(part, vertexSize, axis, order);
-    _VceUtils.fetchAxisPartSize(vertexSize, data);
+    const data = VceUtils.getAxisPartData(part, vertexSize, axis, order);
+    VceUtils.fetchAxisPartSize(vertexSize, data);
     return this._axisPartSize;
   }
   static vertexLength(radius, factor = 200) {
     const count = Math.round(radius * factor);
-    const clamped = Math.max(count, _VceUtils._minSize);
-    return Math.min(clamped, _VceUtils._maxSize);
+    const clamped = Math.max(count, VceUtils._minSize);
+    return Math.min(clamped, VceUtils._maxSize);
   }
   static setPathVertices(vertexSize) {
     const points = this.circleCurvePoints;
@@ -29022,6 +28542,16 @@ const _VceUtils = class _VceUtils {
       links: 0
     };
   }
+  static getAxisPartWireSetData = (axis, order, size) => {
+    const defValue = 2;
+    const data = this.newEmptyAxisPartData();
+    axis.wireSets(order, this.temp.wireSet);
+    const wires = this.temp.wireSet.psLength() - 1;
+    data.points = wires * defValue * size;
+    data.indices = this._wireSize * wires * size;
+    data.faces = wires * defValue;
+    return data;
+  };
   static fetchCircleCurveMids(size, data, circleCurve) {
     const count = size - 2;
     for (let i = 0; i < count; i++) {
@@ -29037,6 +28567,13 @@ const _VceUtils = class _VceUtils {
       data.mids[i] = newMid;
     }
   }
+  static getAxisPartWireData = (_axis, _order, size) => {
+    const data = this.newEmptyAxisPartData();
+    data.points = 2 * size;
+    data.indices = this._wireSize * size;
+    data.faces = 2;
+    return data;
+  };
   static validSize(pointsSize, extraPoints, vertexSize) {
     const totalSize = pointsSize + extraPoints + vertexSize;
     return limitOf2Bytes >= totalSize;
@@ -29072,73 +28609,35 @@ const _VceUtils = class _VceUtils {
     this._axisPartSize.verticesLength = data.points;
     this._axisPartSize.indicesLength = data.indices + indices + links;
   }
-};
-__publicField(_VceUtils, "up", new Vector3(0, 0, 1));
-__publicField(_VceUtils, "circleCurves", []);
-__publicField(_VceUtils, "circleCurvePoints");
-__publicField(_VceUtils, "temp", {
-  circleExtrusion: new CircleExtrusion(),
-  circleCurve: new CircleCurve(),
-  wireSet: new WireSet(),
-  axis: new Axis(),
-  rotation: new Quaternion(),
-  vector: new Vector3()
-});
-__publicField(_VceUtils, "_wireSize", 6);
-__publicField(_VceUtils, "_minSize", 6);
-__publicField(_VceUtils, "_maxSize", 30);
-__publicField(_VceUtils, "_axisPartSize", {
-  verticesLength: 0,
-  indicesLength: 0
-});
-__publicField(_VceUtils, "getAxisPartWireSetData", (axis, order, size) => {
-  const defValue = 2;
-  const data = _VceUtils.newEmptyAxisPartData();
-  axis.wireSets(order, _VceUtils.temp.wireSet);
-  const wires = _VceUtils.temp.wireSet.psLength() - 1;
-  data.points = wires * defValue * size;
-  data.indices = _VceUtils._wireSize * wires * size;
-  data.faces = wires * defValue;
-  return data;
-});
-__publicField(_VceUtils, "getAxisPartWireData", (_axis, _order, size) => {
-  const data = _VceUtils.newEmptyAxisPartData();
-  data.points = 2 * size;
-  data.indices = _VceUtils._wireSize * size;
-  data.faces = 2;
-  return data;
-});
-__publicField(_VceUtils, "getAxisPartCircleCurveData", (axis, order, size) => {
-  const data = _VceUtils.newEmptyAxisPartData();
-  axis.circleCurves(order, _VceUtils.temp.circleCurve);
-  const bends = VceCasterUtils.circleCurve3Divisions(_VceUtils.temp.circleCurve);
-  const pointCount = size * bends;
-  data.points = pointCount;
-  const indexFactor = size * (bends - 1);
-  const indexCount = _VceUtils._wireSize * indexFactor;
-  data.indices = indexCount;
-  const defValue = 2;
-  data.faces = defValue;
-  data.links = defValue;
-  return data;
-});
-let VceUtils = _VceUtils;
+  static getAxisPartCircleCurveData = (axis, order, size) => {
+    const data = this.newEmptyAxisPartData();
+    axis.circleCurves(order, this.temp.circleCurve);
+    const bends = VceCasterUtils.circleCurve3Divisions(this.temp.circleCurve);
+    const pointCount = size * bends;
+    data.points = pointCount;
+    const indexFactor = size * (bends - 1);
+    const indexCount = this._wireSize * indexFactor;
+    data.indices = indexCount;
+    const defValue = 2;
+    data.faces = defValue;
+    data.links = defValue;
+    return data;
+  };
+}
 class VceConstructor {
-  constructor() {
-    __publicField(this, "_minLinkDistance", 1 / 1e8);
-    __publicField(this, "_first", new Vector3());
-    __publicField(this, "_last", new Vector3());
-    __publicField(this, "_currentPoint");
-    __publicField(this, "_currentIndex");
-    __publicField(this, "_v1", new Vector3());
-    __publicField(this, "_v2", new Vector3());
-    __publicField(this, "_v3", new Vector3());
-    __publicField(this, "_v4", new Vector3());
-    __publicField(this, "_tempLine", new Line3());
-    __publicField(this, "_total", 0);
-    __publicField(this, "_closest", 0);
-    __publicField(this, "_result", 0);
-  }
+  _minLinkDistance = 1 / 1e8;
+  _first = new Vector3();
+  _last = new Vector3();
+  _currentPoint;
+  _currentIndex;
+  _v1 = new Vector3();
+  _v2 = new Vector3();
+  _v3 = new Vector3();
+  _v4 = new Vector3();
+  _tempLine = new Line3();
+  _total = 0;
+  _closest = 0;
+  _result = 0;
   newTemplate(ce, id, templates) {
     const width = ce.radius(id);
     const axis = ce.axes(id, VceUtils.temp.axis);
@@ -29599,8 +29098,7 @@ class VceConstructor {
       const limit = selected + size;
       this.findLinkedVertex(selected, limit, mesh, size, i);
       const closerFound = this._total < this._closest;
-      if (!closerFound)
-        continue;
+      if (!closerFound) continue;
       this._closest = this._total;
       this._result = selected - size + i + 1;
     }
@@ -29632,11 +29130,11 @@ class VceConstructor {
   }
 }
 class VceRaycaster {
+  _meshes;
+  _results = [];
+  _circleExtrusion = new CircleExtrusion();
+  _axis = new Axis();
   constructor(meshes) {
-    __publicField(this, "_meshes");
-    __publicField(this, "_results", []);
-    __publicField(this, "_circleExtrusion", new CircleExtrusion());
-    __publicField(this, "_axis", new Axis());
     this._meshes = meshes;
   }
   raycast(id, ray) {
@@ -29666,8 +29164,7 @@ class VceRaycaster {
       const second = mids[0];
       this.castCurveExtrusion(first, second, ray, radius);
       for (let i = 0; i < mids.length; i++) {
-        if (i === 0)
-          continue;
+        if (i === 0) continue;
         const first2 = mids[i - 1];
         const second2 = mids[i];
         this.castCurveExtrusion(first2, second2, ray, radius);
@@ -29687,12 +29184,12 @@ class VceRaycaster {
   }
 }
 class VceLineRaycaster {
+  _meshes;
+  _found = [];
+  _circleExtrusion = new CircleExtrusion();
+  _axis = new Axis();
+  _wirePoint = new Vector3();
   constructor(meshes) {
-    __publicField(this, "_meshes");
-    __publicField(this, "_found", []);
-    __publicField(this, "_circleExtrusion", new CircleExtrusion());
-    __publicField(this, "_axis", new Axis());
-    __publicField(this, "_wirePoint", new Vector3());
     this._meshes = meshes;
   }
   lineRaycast(id, ray) {
@@ -29732,8 +29229,7 @@ class VceLineRaycaster {
   }
   processCircleCurveBody(body, ray, radius) {
     for (let i = 0; i < body.length; i++) {
-      if (i === 0)
-        continue;
+      if (i === 0) continue;
       const mid = body[i];
       const past = body[i - 1];
       this.cylinderRaycast(past, mid, ray, radius);
@@ -29769,21 +29265,20 @@ class VceLineRaycaster {
     const u = VceCasterUtils;
     const results = u.raycastCircleExtr(first, last, ray, radius);
     for (const result of results) {
-      if (!result.point)
-        continue;
+      if (!result.point) continue;
       this.fetchCylinderRaycastResult(ray, first, last);
     }
   }
 }
 class VcePointRaycaster {
+  _meshes;
+  _results = [];
+  _circleExtrusion = new CircleExtrusion();
+  _axis = new Axis();
+  _normal = new Vector3();
+  _point = new Vector3();
+  _plane = new Plane();
   constructor(meshes) {
-    __publicField(this, "_meshes");
-    __publicField(this, "_results", []);
-    __publicField(this, "_circleExtrusion", new CircleExtrusion());
-    __publicField(this, "_axis", new Axis());
-    __publicField(this, "_normal", new Vector3());
-    __publicField(this, "_point", new Vector3());
-    __publicField(this, "_plane", new Plane());
     this._meshes = meshes;
   }
   pointRaycast(id, ray) {
@@ -29869,51 +29364,8 @@ class VcePointRaycaster {
   }
 }
 class VceLodConstructor {
-  constructor() {
-    __publicField(this, "_currentElement", 0);
-    __publicField(this, "_wireSize", 6);
-    __publicField(this, "newCircleCurveLod", (axis, index, mesh) => {
-      const count = this.newCircleCurveLodPath(axis, index);
-      const points = mesh.positionBuffer;
-      for (let i = 1; i < count; i++) {
-        const first = VceUtils.circleCurves[i - 1];
-        const last = VceUtils.circleCurves[i];
-        this.newWire(points, first, last);
-      }
-    });
-    __publicField(this, "newWireSetLod", (axis, index, mesh) => {
-      const wireSetSegment = axis.wireSets(index);
-      const count = wireSetSegment.psLength();
-      const points = mesh.positionBuffer;
-      for (let i = 1; i < count; i++) {
-        const first = wireSetSegment.ps(i - 1);
-        const last = wireSetSegment.ps(i);
-        this.newWire(points, first, last);
-      }
-    });
-    __publicField(this, "newWireTemplate", (_index, template) => {
-      template.positionCount += this._wireSize;
-    });
-    __publicField(this, "newWireSetTemplate", (index, template) => {
-      const axis = VceUtils.temp.axis;
-      const wireSet = axis.wireSets(index, VceUtils.temp.wireSet);
-      const wires = wireSet.psLength() - 1;
-      template.positionCount += this._wireSize * wires;
-    });
-    __publicField(this, "newWireLod", (axis, index, mesh) => {
-      const wire = axis.wires(index);
-      const first = wire.p1();
-      const last = wire.p2();
-      const points = mesh.positionBuffer;
-      this.newWire(points, first, last);
-    });
-    __publicField(this, "newCircleCurveTemplate", (index, template) => {
-      const axis = VceUtils.temp.axis;
-      const circleCurve = axis.circleCurves(index, VceUtils.temp.circleCurve);
-      const count = VceCasterUtils.circleCurve3Divisions(circleCurve);
-      template.positionCount += this._wireSize * (count - 1);
-    });
-  }
+  _currentElement = 0;
+  _wireSize = 6;
   construct(circleExtrusion, mesh) {
     this._currentElement = 0;
     mesh.positionBuffer = new Float32Array(mesh.positionCount);
@@ -29930,6 +29382,28 @@ class VceLodConstructor {
     const lodConstructor = this.getLodConstructor(type);
     lodConstructor(axis, index, mesh);
   }
+  newCircleCurveLod = (axis, index, mesh) => {
+    const count = this.newCircleCurveLodPath(axis, index);
+    const points = mesh.positionBuffer;
+    for (let i = 1; i < count; i++) {
+      const first = VceUtils.circleCurves[i - 1];
+      const last = VceUtils.circleCurves[i];
+      this.newWire(points, first, last);
+    }
+  };
+  newWireSetLod = (axis, index, mesh) => {
+    const wireSetSegment = axis.wireSets(index);
+    const count = wireSetSegment.psLength();
+    const points = mesh.positionBuffer;
+    for (let i = 1; i < count; i++) {
+      const first = wireSetSegment.ps(i - 1);
+      const last = wireSetSegment.ps(i);
+      this.newWire(points, first, last);
+    }
+  };
+  newWireTemplate = (_index, template) => {
+    template.positionCount += this._wireSize;
+  };
   newCircleCurveLodPath(axis, index) {
     const curve = axis.circleCurves(index);
     const count = VceCasterUtils.circleCurve3Divisions(curve);
@@ -29977,6 +29451,12 @@ class VceLodConstructor {
     };
     return constructors[type];
   }
+  newWireSetTemplate = (index, template) => {
+    const axis = VceUtils.temp.axis;
+    const wireSet = axis.wireSets(index, VceUtils.temp.wireSet);
+    const wires = wireSet.psLength() - 1;
+    template.positionCount += this._wireSize * wires;
+  };
   newTemplate() {
     const circularExtrusion = VceUtils.temp.circleExtrusion;
     const template = this.newTemplateData();
@@ -29999,6 +29479,13 @@ class VceLodConstructor {
       positionCount: 0
     };
   }
+  newWireLod = (axis, index, mesh) => {
+    const wire = axis.wires(index);
+    const first = wire.p1();
+    const last = wire.p2();
+    const points = mesh.positionBuffer;
+    this.newWire(points, first, last);
+  };
   getTemplateConstructor(type) {
     const constructors = {
       [AxisPartClass.WIRE]: this.newWireTemplate,
@@ -30023,19 +29510,22 @@ class VceLodConstructor {
     points[i6] = z2;
     this.selectNextWire();
   }
+  newCircleCurveTemplate = (index, template) => {
+    const axis = VceUtils.temp.axis;
+    const circleCurve = axis.circleCurves(index, VceUtils.temp.circleCurve);
+    const count = VceCasterUtils.circleCurve3Divisions(circleCurve);
+    template.positionCount += this._wireSize * (count - 1);
+  };
 }
 class VirtualCircleExtrusionManager extends VirtualMeshManager {
-  constructor() {
-    super(...arguments);
-    __publicField(this, "_vceConstructor", new VceConstructor());
-    __publicField(this, "_lodConstructor", new VceLodConstructor());
-    __publicField(this, "_vceRaycaster", new VceRaycaster(this.meshes));
-    __publicField(this, "_vceLineRaycaster", new VceLineRaycaster(this.meshes));
-    __publicField(this, "_vcePointRaycaster", new VcePointRaycaster(this.meshes));
-    __publicField(this, "_representationClass", RepresentationClass.CIRCLE_EXTRUSION);
-    __publicField(this, "_objectClass", ObjectClass.LINE);
-    __publicField(this, "lodClass", LodClass.CUSTOM);
-  }
+  _vceConstructor = new VceConstructor();
+  _lodConstructor = new VceLodConstructor();
+  _vceRaycaster = new VceRaycaster(this.meshes);
+  _vceLineRaycaster = new VceLineRaycaster(this.meshes);
+  _vcePointRaycaster = new VcePointRaycaster(this.meshes);
+  _representationClass = RepresentationClass.CIRCLE_EXTRUSION;
+  _objectClass = ObjectClass.LINE;
+  lodClass = LodClass.CUSTOM;
   setupTemplates() {
     const count = this.meshes.circleExtrusionsLength();
     for (let id = 0; id < count; id++) {
@@ -30104,18 +29594,17 @@ class VirtualCircleExtrusionManager extends VirtualMeshManager {
   }
   generateLodIfNeeded(meshId, evenVoid, mesh) {
     const isVoid = !mesh.positionBuffer;
-    if (!isVoid || !evenVoid)
-      return;
+    if (!isVoid || !evenVoid) return;
     this.meshes.circleExtrusions(meshId, VceUtils.temp.circleExtrusion);
     this._lodConstructor.construct(VceUtils.temp.circleExtrusion, mesh);
     this.saveMesh(meshId, mesh, CurrentLod.WIRES);
   }
 }
 class ItemConfigController {
+  size;
+  _data;
+  _highlightData;
   constructor(size) {
-    __publicField(this, "size");
-    __publicField(this, "_data");
-    __publicField(this, "_highlightData");
     this.size = size;
     this._data = new Uint8Array(size);
     this._highlightData = new Uint16Array(size);
@@ -30142,39 +29631,29 @@ class ItemConfigController {
   }
 }
 class MeshConnection {
+  _rate = 64;
+  _updater;
+  _modelId;
+  _threshold = 16;
+  _connection;
+  _list = [];
+  get needsRefresh() {
+    return this._list.length > this._threshold;
+  }
   constructor(modelId, connection, multithreading) {
-    __publicField(this, "_rate", 64);
-    __publicField(this, "_updater");
-    __publicField(this, "_modelId");
-    __publicField(this, "_threshold", 16);
-    __publicField(this, "_connection");
-    __publicField(this, "_list", []);
-    __publicField(this, "refresh", () => {
-      if (!this._connection) {
-        return;
-      }
-      if (this._list.length) {
-        const current = this._list;
-        this._connection.fetchMeshCompute(this._modelId, current);
-        this._list = [];
-      }
-    });
     this._modelId = modelId;
     this._connection = connection;
-    const configuredRate = multithreading == null ? void 0 : multithreading.meshConnectionRate;
+    const configuredRate = multithreading?.meshConnectionRate;
     if (typeof configuredRate === "number" && Number.isFinite(configuredRate) && configuredRate >= 0) {
       this._rate = configuredRate;
     }
-    const configuredThreshold = multithreading == null ? void 0 : multithreading.meshConnectionThreshold;
+    const configuredThreshold = multithreading?.meshConnectionThreshold;
     if (typeof configuredThreshold === "number" && Number.isFinite(configuredThreshold) && configuredThreshold >= 0) {
       this._threshold = configuredThreshold;
     }
     if (this._connection) {
       this._updater = MultithreadingHelper.newUpdater(this.refresh, this._rate);
     }
-  }
-  get needsRefresh() {
-    return this._list.length > this._threshold;
   }
   dispose() {
     if (this._updater !== void 0) {
@@ -30194,30 +29673,40 @@ class MeshConnection {
       this.refresh();
     }
   }
+  refresh = () => {
+    if (!this._connection) {
+      return;
+    }
+    if (this._list.length) {
+      const current = this._list;
+      this._connection.fetchMeshCompute(this._modelId, current);
+      this._list = [];
+    }
+  };
 }
 class RaycastController {
+  _meshes;
+  _model;
+  _boxes;
+  _tiles;
+  _items;
+  _edgeThreshold = 8;
+  _raycastMultiplier = 32;
+  _maxDuration = 512;
+  _precission = 1e-3;
+  _temp = {
+    sample: new Sample(),
+    representation: new Representation(),
+    tempPlane: new Plane(),
+    ray: new Ray(),
+    frustum: new Frustum(),
+    m1: new Matrix4(),
+    m2: new Matrix4(),
+    m3: new Matrix4(),
+    v1: new Vector3(),
+    planes: []
+  };
   constructor(model, boxes, tiles, items) {
-    __publicField(this, "_meshes");
-    __publicField(this, "_model");
-    __publicField(this, "_boxes");
-    __publicField(this, "_tiles");
-    __publicField(this, "_items");
-    __publicField(this, "_edgeThreshold", 8);
-    __publicField(this, "_raycastMultiplier", 32);
-    __publicField(this, "_maxDuration", 512);
-    __publicField(this, "_precission", 1e-3);
-    __publicField(this, "_temp", {
-      sample: new Sample(),
-      representation: new Representation(),
-      tempPlane: new Plane(),
-      ray: new Ray(),
-      frustum: new Frustum(),
-      m1: new Matrix4(),
-      m2: new Matrix4(),
-      m3: new Matrix4(),
-      v1: new Vector3(),
-      planes: []
-    });
     this._model = model;
     this._boxes = boxes;
     this._tiles = tiles;
@@ -30286,7 +29775,6 @@ class RaycastController {
   // fullyInside === true keeps only items whose geometry is entirely inside;
   // false keeps items whose geometry touches the selection.
   narrowPhaseFrustum(sampleIds, frustum, clipPlanes, fullyInside) {
-    var _a2;
     const worldPlanes = clipPlanes && clipPlanes.length ? [...frustum.planes, ...clipPlanes] : frustum.planes;
     const geomCache = /* @__PURE__ */ new Map();
     const result = [];
@@ -30315,7 +29803,7 @@ class RaycastController {
     }
     for (const [, geometries] of geomCache) {
       for (const geometry of geometries) {
-        (_a2 = geometry.disposeBoundsTree) == null ? void 0 : _a2.call(geometry);
+        geometry.disposeBoundsTree?.();
         geometry.dispose();
       }
     }
@@ -30323,8 +29811,7 @@ class RaycastController {
   }
   sampleMatchesFrustum(sampleId, frustum, clipPlanes, fullyInside, geomCache) {
     const sample = this._meshes.samples(sampleId, this._temp.sample);
-    if (!sample)
-      return !fullyInside;
+    if (!sample) return !fullyInside;
     const reprId = sample.representation();
     TransformHelper.get(this._temp.sample, this._meshes, this._temp.m1);
     this._temp.m2.copy(this._temp.m1).invert();
@@ -30333,8 +29820,7 @@ class RaycastController {
       geometries = this.buildSampleGeometries(sampleId);
       geomCache.set(reprId, geometries);
     }
-    if (geometries.length === 0)
-      return !fullyInside;
+    if (geometries.length === 0) return !fullyInside;
     const localPlanes = this.toLocalPlanes(frustum, clipPlanes, this._temp.m2);
     if (fullyInside) {
       for (const geometry of geometries) {
@@ -30553,11 +30039,9 @@ class RaycastController {
       this._meshes.samples(id, this._temp.sample);
       const itemId = this._temp.sample.item();
       const localIdIndex = this._meshes.meshesItems(itemId);
-      if (localIdIndex === null)
-        continue;
+      if (localIdIndex === null) continue;
       const localId = this._model.localIds(localIdIndex);
-      if (localId === null)
-        continue;
+      if (localId === null) continue;
       localIds.add(localId);
     }
     return Array.from(localIds);
@@ -30810,23 +30294,20 @@ let AC = globalThis.AbortController;
 let AS = globalThis.AbortSignal;
 if (typeof AC === "undefined") {
   AS = class AbortSignal {
-    constructor() {
-      __publicField(this, "onabort");
-      __publicField(this, "_onabort", []);
-      __publicField(this, "reason");
-      __publicField(this, "aborted", false);
-    }
+    onabort;
+    _onabort = [];
+    reason;
+    aborted = false;
     addEventListener(_, fn) {
       this._onabort.push(fn);
     }
   };
   AC = class AbortController {
     constructor() {
-      __publicField(this, "signal", new AS());
       warnACPolyfill();
     }
+    signal = new AS();
     abort(reason) {
-      var _a2, _b2;
       if (this.signal.aborted)
         return;
       this.signal.reason = reason;
@@ -30834,10 +30315,10 @@ if (typeof AC === "undefined") {
       for (const fn of this.signal._onabort) {
         fn(reason);
       }
-      (_b2 = (_a2 = this.signal).onabort) == null ? void 0 : _b2.call(_a2, reason);
+      this.signal.onabort?.(reason);
     }
   };
-  let printACPolyfillWarning = ((_a = PROCESS.env) == null ? void 0 : _a.LRU_CACHE_IGNORE_AC_WARNING) !== "1";
+  let printACPolyfillWarning = PROCESS.env?.LRU_CACHE_IGNORE_AC_WARNING !== "1";
   const warnACPolyfill = () => {
     if (!printACPolyfillWarning)
       return;
@@ -30854,24 +30335,26 @@ class ZeroArray extends Array {
     this.fill(0);
   }
 }
-const _Stack = class _Stack {
-  constructor(max, HeapCls) {
-    __publicField(this, "heap");
-    __publicField(this, "length");
-    if (!__privateGet(_Stack, _constructing)) {
-      throw new TypeError("instantiate Stack using Stack.create(n)");
-    }
-    this.heap = new HeapCls(max);
-    this.length = 0;
-  }
+class Stack {
+  heap;
+  length;
+  // private constructor
+  static #constructing = false;
   static create(max) {
     const HeapCls = getUintArray(max);
     if (!HeapCls)
       return [];
-    __privateSet(_Stack, _constructing, true);
-    const s = new _Stack(max, HeapCls);
-    __privateSet(_Stack, _constructing, false);
+    Stack.#constructing = true;
+    const s = new Stack(max, HeapCls);
+    Stack.#constructing = false;
     return s;
+  }
+  constructor(max, HeapCls) {
+    if (!Stack.#constructing) {
+      throw new TypeError("instantiate Stack using Stack.create(n)");
+    }
+    this.heap = new HeapCls(max);
+    this.length = 0;
   }
   push(n) {
     this.heap[this.length++] = n;
@@ -30879,234 +30362,95 @@ const _Stack = class _Stack {
   pop() {
     return this.heap[--this.length];
   }
-};
-_constructing = new WeakMap();
-// private constructor
-__privateAdd(_Stack, _constructing, false);
-let Stack = _Stack;
-const _LRUCache = class _LRUCache {
-  constructor(options) {
-    __privateAdd(this, _initializeTTLTracking);
-    __privateAdd(this, _initializeSizeTracking);
-    __privateAdd(this, _indexes);
-    __privateAdd(this, _rindexes);
-    __privateAdd(this, _isValidIndex);
-    __privateAdd(this, _evict);
-    __privateAdd(this, _backgroundFetch);
-    __privateAdd(this, _isBackgroundFetch);
-    __privateAdd(this, _connect);
-    __privateAdd(this, _moveToTail);
-    __privateAdd(this, _delete);
-    __privateAdd(this, _clear);
-    // options that cannot be changed without disaster
-    __privateAdd(this, _max, void 0);
-    __privateAdd(this, _maxSize, void 0);
-    __privateAdd(this, _dispose, void 0);
-    __privateAdd(this, _onInsert, void 0);
-    __privateAdd(this, _disposeAfter, void 0);
-    __privateAdd(this, _fetchMethod, void 0);
-    __privateAdd(this, _memoMethod, void 0);
-    /**
-     * {@link LRUCache.OptionsBase.ttl}
-     */
-    __publicField(this, "ttl");
-    /**
-     * {@link LRUCache.OptionsBase.ttlResolution}
-     */
-    __publicField(this, "ttlResolution");
-    /**
-     * {@link LRUCache.OptionsBase.ttlAutopurge}
-     */
-    __publicField(this, "ttlAutopurge");
-    /**
-     * {@link LRUCache.OptionsBase.updateAgeOnGet}
-     */
-    __publicField(this, "updateAgeOnGet");
-    /**
-     * {@link LRUCache.OptionsBase.updateAgeOnHas}
-     */
-    __publicField(this, "updateAgeOnHas");
-    /**
-     * {@link LRUCache.OptionsBase.allowStale}
-     */
-    __publicField(this, "allowStale");
-    /**
-     * {@link LRUCache.OptionsBase.noDisposeOnSet}
-     */
-    __publicField(this, "noDisposeOnSet");
-    /**
-     * {@link LRUCache.OptionsBase.noUpdateTTL}
-     */
-    __publicField(this, "noUpdateTTL");
-    /**
-     * {@link LRUCache.OptionsBase.maxEntrySize}
-     */
-    __publicField(this, "maxEntrySize");
-    /**
-     * {@link LRUCache.OptionsBase.sizeCalculation}
-     */
-    __publicField(this, "sizeCalculation");
-    /**
-     * {@link LRUCache.OptionsBase.noDeleteOnFetchRejection}
-     */
-    __publicField(this, "noDeleteOnFetchRejection");
-    /**
-     * {@link LRUCache.OptionsBase.noDeleteOnStaleGet}
-     */
-    __publicField(this, "noDeleteOnStaleGet");
-    /**
-     * {@link LRUCache.OptionsBase.allowStaleOnFetchAbort}
-     */
-    __publicField(this, "allowStaleOnFetchAbort");
-    /**
-     * {@link LRUCache.OptionsBase.allowStaleOnFetchRejection}
-     */
-    __publicField(this, "allowStaleOnFetchRejection");
-    /**
-     * {@link LRUCache.OptionsBase.ignoreFetchAbort}
-     */
-    __publicField(this, "ignoreFetchAbort");
-    // computed properties
-    __privateAdd(this, _size, void 0);
-    __privateAdd(this, _calculatedSize, void 0);
-    __privateAdd(this, _keyMap, void 0);
-    __privateAdd(this, _keyList, void 0);
-    __privateAdd(this, _valList, void 0);
-    __privateAdd(this, _next, void 0);
-    __privateAdd(this, _prev, void 0);
-    __privateAdd(this, _head, void 0);
-    __privateAdd(this, _tail, void 0);
-    __privateAdd(this, _free, void 0);
-    __privateAdd(this, _disposed, void 0);
-    __privateAdd(this, _sizes, void 0);
-    __privateAdd(this, _starts, void 0);
-    __privateAdd(this, _ttls, void 0);
-    __privateAdd(this, _hasDispose, void 0);
-    __privateAdd(this, _hasFetchMethod, void 0);
-    __privateAdd(this, _hasDisposeAfter, void 0);
-    __privateAdd(this, _hasOnInsert, void 0);
-    // conditionally set private methods related to TTL
-    __privateAdd(this, _updateItemAge, () => {
-    });
-    __privateAdd(this, _statusTTL, () => {
-    });
-    __privateAdd(this, _setItemTTL, () => {
-    });
-    /* c8 ignore stop */
-    __privateAdd(this, _isStale, () => false);
-    __privateAdd(this, _removeItemSize, (_i) => {
-    });
-    __privateAdd(this, _addItemSize, (_i, _s, _st) => {
-    });
-    __privateAdd(this, _requireSize, (_k, _v, size, sizeCalculation) => {
-      if (size || sizeCalculation) {
-        throw new TypeError("cannot set size without setting maxSize or maxEntrySize on cache");
-      }
-      return 0;
-    });
-    /**
-     * A String value that is used in the creation of the default string
-     * description of an object. Called by the built-in method
-     * `Object.prototype.toString`.
-     */
-    __publicField(this, _b, "LRUCache");
-    const { max = 0, ttl, ttlResolution = 1, ttlAutopurge, updateAgeOnGet, updateAgeOnHas, allowStale, dispose, onInsert, disposeAfter, noDisposeOnSet, noUpdateTTL, maxSize = 0, maxEntrySize = 0, sizeCalculation, fetchMethod, memoMethod, noDeleteOnFetchRejection, noDeleteOnStaleGet, allowStaleOnFetchRejection, allowStaleOnFetchAbort, ignoreFetchAbort } = options;
-    if (max !== 0 && !isPosInt(max)) {
-      throw new TypeError("max option must be a nonnegative integer");
-    }
-    const UintArray = max ? getUintArray(max) : Array;
-    if (!UintArray) {
-      throw new Error("invalid max value: " + max);
-    }
-    __privateSet(this, _max, max);
-    __privateSet(this, _maxSize, maxSize);
-    this.maxEntrySize = maxEntrySize || __privateGet(this, _maxSize);
-    this.sizeCalculation = sizeCalculation;
-    if (this.sizeCalculation) {
-      if (!__privateGet(this, _maxSize) && !this.maxEntrySize) {
-        throw new TypeError("cannot set sizeCalculation without setting maxSize or maxEntrySize");
-      }
-      if (typeof this.sizeCalculation !== "function") {
-        throw new TypeError("sizeCalculation set to non-function");
-      }
-    }
-    if (memoMethod !== void 0 && typeof memoMethod !== "function") {
-      throw new TypeError("memoMethod must be a function if defined");
-    }
-    __privateSet(this, _memoMethod, memoMethod);
-    if (fetchMethod !== void 0 && typeof fetchMethod !== "function") {
-      throw new TypeError("fetchMethod must be a function if specified");
-    }
-    __privateSet(this, _fetchMethod, fetchMethod);
-    __privateSet(this, _hasFetchMethod, !!fetchMethod);
-    __privateSet(this, _keyMap, /* @__PURE__ */ new Map());
-    __privateSet(this, _keyList, new Array(max).fill(void 0));
-    __privateSet(this, _valList, new Array(max).fill(void 0));
-    __privateSet(this, _next, new UintArray(max));
-    __privateSet(this, _prev, new UintArray(max));
-    __privateSet(this, _head, 0);
-    __privateSet(this, _tail, 0);
-    __privateSet(this, _free, Stack.create(max));
-    __privateSet(this, _size, 0);
-    __privateSet(this, _calculatedSize, 0);
-    if (typeof dispose === "function") {
-      __privateSet(this, _dispose, dispose);
-    }
-    if (typeof onInsert === "function") {
-      __privateSet(this, _onInsert, onInsert);
-    }
-    if (typeof disposeAfter === "function") {
-      __privateSet(this, _disposeAfter, disposeAfter);
-      __privateSet(this, _disposed, []);
-    } else {
-      __privateSet(this, _disposeAfter, void 0);
-      __privateSet(this, _disposed, void 0);
-    }
-    __privateSet(this, _hasDispose, !!__privateGet(this, _dispose));
-    __privateSet(this, _hasOnInsert, !!__privateGet(this, _onInsert));
-    __privateSet(this, _hasDisposeAfter, !!__privateGet(this, _disposeAfter));
-    this.noDisposeOnSet = !!noDisposeOnSet;
-    this.noUpdateTTL = !!noUpdateTTL;
-    this.noDeleteOnFetchRejection = !!noDeleteOnFetchRejection;
-    this.allowStaleOnFetchRejection = !!allowStaleOnFetchRejection;
-    this.allowStaleOnFetchAbort = !!allowStaleOnFetchAbort;
-    this.ignoreFetchAbort = !!ignoreFetchAbort;
-    if (this.maxEntrySize !== 0) {
-      if (__privateGet(this, _maxSize) !== 0) {
-        if (!isPosInt(__privateGet(this, _maxSize))) {
-          throw new TypeError("maxSize must be a positive integer if specified");
-        }
-      }
-      if (!isPosInt(this.maxEntrySize)) {
-        throw new TypeError("maxEntrySize must be a positive integer if specified");
-      }
-      __privateMethod(this, _initializeSizeTracking, initializeSizeTracking_fn).call(this);
-    }
-    this.allowStale = !!allowStale;
-    this.noDeleteOnStaleGet = !!noDeleteOnStaleGet;
-    this.updateAgeOnGet = !!updateAgeOnGet;
-    this.updateAgeOnHas = !!updateAgeOnHas;
-    this.ttlResolution = isPosInt(ttlResolution) || ttlResolution === 0 ? ttlResolution : 1;
-    this.ttlAutopurge = !!ttlAutopurge;
-    this.ttl = ttl || 0;
-    if (this.ttl) {
-      if (!isPosInt(this.ttl)) {
-        throw new TypeError("ttl must be a positive integer if specified");
-      }
-      __privateMethod(this, _initializeTTLTracking, initializeTTLTracking_fn).call(this);
-    }
-    if (__privateGet(this, _max) === 0 && this.ttl === 0 && __privateGet(this, _maxSize) === 0) {
-      throw new TypeError("At least one of max, maxSize, or ttl is required");
-    }
-    if (!this.ttlAutopurge && !__privateGet(this, _max) && !__privateGet(this, _maxSize)) {
-      const code = "LRU_CACHE_UNBOUNDED";
-      if (shouldWarn(code)) {
-        warned.add(code);
-        const msg = "TTL caching without ttlAutopurge, max, or maxSize can result in unbounded memory consumption.";
-        emitWarning(msg, "UnboundedCacheWarning", code, _LRUCache);
-      }
-    }
-  }
+}
+class LRUCache {
+  // options that cannot be changed without disaster
+  #max;
+  #maxSize;
+  #dispose;
+  #onInsert;
+  #disposeAfter;
+  #fetchMethod;
+  #memoMethod;
+  /**
+   * {@link LRUCache.OptionsBase.ttl}
+   */
+  ttl;
+  /**
+   * {@link LRUCache.OptionsBase.ttlResolution}
+   */
+  ttlResolution;
+  /**
+   * {@link LRUCache.OptionsBase.ttlAutopurge}
+   */
+  ttlAutopurge;
+  /**
+   * {@link LRUCache.OptionsBase.updateAgeOnGet}
+   */
+  updateAgeOnGet;
+  /**
+   * {@link LRUCache.OptionsBase.updateAgeOnHas}
+   */
+  updateAgeOnHas;
+  /**
+   * {@link LRUCache.OptionsBase.allowStale}
+   */
+  allowStale;
+  /**
+   * {@link LRUCache.OptionsBase.noDisposeOnSet}
+   */
+  noDisposeOnSet;
+  /**
+   * {@link LRUCache.OptionsBase.noUpdateTTL}
+   */
+  noUpdateTTL;
+  /**
+   * {@link LRUCache.OptionsBase.maxEntrySize}
+   */
+  maxEntrySize;
+  /**
+   * {@link LRUCache.OptionsBase.sizeCalculation}
+   */
+  sizeCalculation;
+  /**
+   * {@link LRUCache.OptionsBase.noDeleteOnFetchRejection}
+   */
+  noDeleteOnFetchRejection;
+  /**
+   * {@link LRUCache.OptionsBase.noDeleteOnStaleGet}
+   */
+  noDeleteOnStaleGet;
+  /**
+   * {@link LRUCache.OptionsBase.allowStaleOnFetchAbort}
+   */
+  allowStaleOnFetchAbort;
+  /**
+   * {@link LRUCache.OptionsBase.allowStaleOnFetchRejection}
+   */
+  allowStaleOnFetchRejection;
+  /**
+   * {@link LRUCache.OptionsBase.ignoreFetchAbort}
+   */
+  ignoreFetchAbort;
+  // computed properties
+  #size;
+  #calculatedSize;
+  #keyMap;
+  #keyList;
+  #valList;
+  #next;
+  #prev;
+  #head;
+  #tail;
+  #free;
+  #disposed;
+  #sizes;
+  #starts;
+  #ttls;
+  #hasDispose;
+  #hasFetchMethod;
+  #hasDisposeAfter;
+  #hasOnInsert;
   /**
    * Do not call this method unless you need to inspect the
    * inner workings of the cache.  If anything returned by this
@@ -31119,46 +30463,28 @@ const _LRUCache = class _LRUCache {
   static unsafeExposeInternals(c) {
     return {
       // properties
-      starts: __privateGet(c, _starts),
-      ttls: __privateGet(c, _ttls),
-      sizes: __privateGet(c, _sizes),
-      keyMap: __privateGet(c, _keyMap),
-      keyList: __privateGet(c, _keyList),
-      valList: __privateGet(c, _valList),
-      next: __privateGet(c, _next),
-      prev: __privateGet(c, _prev),
+      starts: c.#starts,
+      ttls: c.#ttls,
+      sizes: c.#sizes,
+      keyMap: c.#keyMap,
+      keyList: c.#keyList,
+      valList: c.#valList,
+      next: c.#next,
+      prev: c.#prev,
       get head() {
-        return __privateGet(c, _head);
+        return c.#head;
       },
       get tail() {
-        return __privateGet(c, _tail);
+        return c.#tail;
       },
-      free: __privateGet(c, _free),
+      free: c.#free,
       // methods
-      isBackgroundFetch: (p) => {
-        var _a2;
-        return __privateMethod(_a2 = c, _isBackgroundFetch, isBackgroundFetch_fn).call(_a2, p);
-      },
-      backgroundFetch: (k, index, options, context) => {
-        var _a2;
-        return __privateMethod(_a2 = c, _backgroundFetch, backgroundFetch_fn).call(_a2, k, index, options, context);
-      },
-      moveToTail: (index) => {
-        var _a2;
-        return __privateMethod(_a2 = c, _moveToTail, moveToTail_fn).call(_a2, index);
-      },
-      indexes: (options) => {
-        var _a2;
-        return __privateMethod(_a2 = c, _indexes, indexes_fn).call(_a2, options);
-      },
-      rindexes: (options) => {
-        var _a2;
-        return __privateMethod(_a2 = c, _rindexes, rindexes_fn).call(_a2, options);
-      },
-      isStale: (index) => {
-        var _a2;
-        return __privateGet(_a2 = c, _isStale).call(_a2, index);
-      }
+      isBackgroundFetch: (p) => c.#isBackgroundFetch(p),
+      backgroundFetch: (k, index, options, context) => c.#backgroundFetch(k, index, options, context),
+      moveToTail: (index) => c.#moveToTail(index),
+      indexes: (options) => c.#indexes(options),
+      rindexes: (options) => c.#rindexes(options),
+      isStale: (index) => c.#isStale(index)
     };
   }
   // Protected read-only members
@@ -31166,68 +30492,330 @@ const _LRUCache = class _LRUCache {
    * {@link LRUCache.OptionsBase.max} (read-only)
    */
   get max() {
-    return __privateGet(this, _max);
+    return this.#max;
   }
   /**
    * {@link LRUCache.OptionsBase.maxSize} (read-only)
    */
   get maxSize() {
-    return __privateGet(this, _maxSize);
+    return this.#maxSize;
   }
   /**
    * The total computed size of items in the cache (read-only)
    */
   get calculatedSize() {
-    return __privateGet(this, _calculatedSize);
+    return this.#calculatedSize;
   }
   /**
    * The number of items stored in the cache (read-only)
    */
   get size() {
-    return __privateGet(this, _size);
+    return this.#size;
   }
   /**
    * {@link LRUCache.OptionsBase.fetchMethod} (read-only)
    */
   get fetchMethod() {
-    return __privateGet(this, _fetchMethod);
+    return this.#fetchMethod;
   }
   get memoMethod() {
-    return __privateGet(this, _memoMethod);
+    return this.#memoMethod;
   }
   /**
    * {@link LRUCache.OptionsBase.dispose} (read-only)
    */
   get dispose() {
-    return __privateGet(this, _dispose);
+    return this.#dispose;
   }
   /**
    * {@link LRUCache.OptionsBase.onInsert} (read-only)
    */
   get onInsert() {
-    return __privateGet(this, _onInsert);
+    return this.#onInsert;
   }
   /**
    * {@link LRUCache.OptionsBase.disposeAfter} (read-only)
    */
   get disposeAfter() {
-    return __privateGet(this, _disposeAfter);
+    return this.#disposeAfter;
+  }
+  constructor(options) {
+    const { max = 0, ttl, ttlResolution = 1, ttlAutopurge, updateAgeOnGet, updateAgeOnHas, allowStale, dispose, onInsert, disposeAfter, noDisposeOnSet, noUpdateTTL, maxSize = 0, maxEntrySize = 0, sizeCalculation, fetchMethod, memoMethod, noDeleteOnFetchRejection, noDeleteOnStaleGet, allowStaleOnFetchRejection, allowStaleOnFetchAbort, ignoreFetchAbort } = options;
+    if (max !== 0 && !isPosInt(max)) {
+      throw new TypeError("max option must be a nonnegative integer");
+    }
+    const UintArray = max ? getUintArray(max) : Array;
+    if (!UintArray) {
+      throw new Error("invalid max value: " + max);
+    }
+    this.#max = max;
+    this.#maxSize = maxSize;
+    this.maxEntrySize = maxEntrySize || this.#maxSize;
+    this.sizeCalculation = sizeCalculation;
+    if (this.sizeCalculation) {
+      if (!this.#maxSize && !this.maxEntrySize) {
+        throw new TypeError("cannot set sizeCalculation without setting maxSize or maxEntrySize");
+      }
+      if (typeof this.sizeCalculation !== "function") {
+        throw new TypeError("sizeCalculation set to non-function");
+      }
+    }
+    if (memoMethod !== void 0 && typeof memoMethod !== "function") {
+      throw new TypeError("memoMethod must be a function if defined");
+    }
+    this.#memoMethod = memoMethod;
+    if (fetchMethod !== void 0 && typeof fetchMethod !== "function") {
+      throw new TypeError("fetchMethod must be a function if specified");
+    }
+    this.#fetchMethod = fetchMethod;
+    this.#hasFetchMethod = !!fetchMethod;
+    this.#keyMap = /* @__PURE__ */ new Map();
+    this.#keyList = new Array(max).fill(void 0);
+    this.#valList = new Array(max).fill(void 0);
+    this.#next = new UintArray(max);
+    this.#prev = new UintArray(max);
+    this.#head = 0;
+    this.#tail = 0;
+    this.#free = Stack.create(max);
+    this.#size = 0;
+    this.#calculatedSize = 0;
+    if (typeof dispose === "function") {
+      this.#dispose = dispose;
+    }
+    if (typeof onInsert === "function") {
+      this.#onInsert = onInsert;
+    }
+    if (typeof disposeAfter === "function") {
+      this.#disposeAfter = disposeAfter;
+      this.#disposed = [];
+    } else {
+      this.#disposeAfter = void 0;
+      this.#disposed = void 0;
+    }
+    this.#hasDispose = !!this.#dispose;
+    this.#hasOnInsert = !!this.#onInsert;
+    this.#hasDisposeAfter = !!this.#disposeAfter;
+    this.noDisposeOnSet = !!noDisposeOnSet;
+    this.noUpdateTTL = !!noUpdateTTL;
+    this.noDeleteOnFetchRejection = !!noDeleteOnFetchRejection;
+    this.allowStaleOnFetchRejection = !!allowStaleOnFetchRejection;
+    this.allowStaleOnFetchAbort = !!allowStaleOnFetchAbort;
+    this.ignoreFetchAbort = !!ignoreFetchAbort;
+    if (this.maxEntrySize !== 0) {
+      if (this.#maxSize !== 0) {
+        if (!isPosInt(this.#maxSize)) {
+          throw new TypeError("maxSize must be a positive integer if specified");
+        }
+      }
+      if (!isPosInt(this.maxEntrySize)) {
+        throw new TypeError("maxEntrySize must be a positive integer if specified");
+      }
+      this.#initializeSizeTracking();
+    }
+    this.allowStale = !!allowStale;
+    this.noDeleteOnStaleGet = !!noDeleteOnStaleGet;
+    this.updateAgeOnGet = !!updateAgeOnGet;
+    this.updateAgeOnHas = !!updateAgeOnHas;
+    this.ttlResolution = isPosInt(ttlResolution) || ttlResolution === 0 ? ttlResolution : 1;
+    this.ttlAutopurge = !!ttlAutopurge;
+    this.ttl = ttl || 0;
+    if (this.ttl) {
+      if (!isPosInt(this.ttl)) {
+        throw new TypeError("ttl must be a positive integer if specified");
+      }
+      this.#initializeTTLTracking();
+    }
+    if (this.#max === 0 && this.ttl === 0 && this.#maxSize === 0) {
+      throw new TypeError("At least one of max, maxSize, or ttl is required");
+    }
+    if (!this.ttlAutopurge && !this.#max && !this.#maxSize) {
+      const code = "LRU_CACHE_UNBOUNDED";
+      if (shouldWarn(code)) {
+        warned.add(code);
+        const msg = "TTL caching without ttlAutopurge, max, or maxSize can result in unbounded memory consumption.";
+        emitWarning(msg, "UnboundedCacheWarning", code, LRUCache);
+      }
+    }
   }
   /**
    * Return the number of ms left in the item's TTL. If item is not in cache,
    * returns `0`. Returns `Infinity` if item is in cache without a defined TTL.
    */
   getRemainingTTL(key) {
-    return __privateGet(this, _keyMap).has(key) ? Infinity : 0;
+    return this.#keyMap.has(key) ? Infinity : 0;
+  }
+  #initializeTTLTracking() {
+    const ttls = new ZeroArray(this.#max);
+    const starts = new ZeroArray(this.#max);
+    this.#ttls = ttls;
+    this.#starts = starts;
+    this.#setItemTTL = (index, ttl, start = perf.now()) => {
+      starts[index] = ttl !== 0 ? start : 0;
+      ttls[index] = ttl;
+      if (ttl !== 0 && this.ttlAutopurge) {
+        const t = setTimeout(() => {
+          if (this.#isStale(index)) {
+            this.#delete(this.#keyList[index], "expire");
+          }
+        }, ttl + 1);
+        if (t.unref) {
+          t.unref();
+        }
+      }
+    };
+    this.#updateItemAge = (index) => {
+      starts[index] = ttls[index] !== 0 ? perf.now() : 0;
+    };
+    this.#statusTTL = (status, index) => {
+      if (ttls[index]) {
+        const ttl = ttls[index];
+        const start = starts[index];
+        if (!ttl || !start)
+          return;
+        status.ttl = ttl;
+        status.start = start;
+        status.now = cachedNow || getNow();
+        const age = status.now - start;
+        status.remainingTTL = ttl - age;
+      }
+    };
+    let cachedNow = 0;
+    const getNow = () => {
+      const n = perf.now();
+      if (this.ttlResolution > 0) {
+        cachedNow = n;
+        const t = setTimeout(() => cachedNow = 0, this.ttlResolution);
+        if (t.unref) {
+          t.unref();
+        }
+      }
+      return n;
+    };
+    this.getRemainingTTL = (key) => {
+      const index = this.#keyMap.get(key);
+      if (index === void 0) {
+        return 0;
+      }
+      const ttl = ttls[index];
+      const start = starts[index];
+      if (!ttl || !start) {
+        return Infinity;
+      }
+      const age = (cachedNow || getNow()) - start;
+      return ttl - age;
+    };
+    this.#isStale = (index) => {
+      const s = starts[index];
+      const t = ttls[index];
+      return !!t && !!s && (cachedNow || getNow()) - s > t;
+    };
+  }
+  // conditionally set private methods related to TTL
+  #updateItemAge = () => {
+  };
+  #statusTTL = () => {
+  };
+  #setItemTTL = () => {
+  };
+  /* c8 ignore stop */
+  #isStale = () => false;
+  #initializeSizeTracking() {
+    const sizes = new ZeroArray(this.#max);
+    this.#calculatedSize = 0;
+    this.#sizes = sizes;
+    this.#removeItemSize = (index) => {
+      this.#calculatedSize -= sizes[index];
+      sizes[index] = 0;
+    };
+    this.#requireSize = (k, v, size, sizeCalculation) => {
+      if (this.#isBackgroundFetch(v)) {
+        return 0;
+      }
+      if (!isPosInt(size)) {
+        if (sizeCalculation) {
+          if (typeof sizeCalculation !== "function") {
+            throw new TypeError("sizeCalculation must be a function");
+          }
+          size = sizeCalculation(v, k);
+          if (!isPosInt(size)) {
+            throw new TypeError("sizeCalculation return invalid (expect positive integer)");
+          }
+        } else {
+          throw new TypeError("invalid size value (must be positive integer). When maxSize or maxEntrySize is used, sizeCalculation or size must be set.");
+        }
+      }
+      return size;
+    };
+    this.#addItemSize = (index, size, status) => {
+      sizes[index] = size;
+      if (this.#maxSize) {
+        const maxSize = this.#maxSize - sizes[index];
+        while (this.#calculatedSize > maxSize) {
+          this.#evict(true);
+        }
+      }
+      this.#calculatedSize += sizes[index];
+      if (status) {
+        status.entrySize = size;
+        status.totalCalculatedSize = this.#calculatedSize;
+      }
+    };
+  }
+  #removeItemSize = (_i) => {
+  };
+  #addItemSize = (_i, _s, _st) => {
+  };
+  #requireSize = (_k, _v, size, sizeCalculation) => {
+    if (size || sizeCalculation) {
+      throw new TypeError("cannot set size without setting maxSize or maxEntrySize on cache");
+    }
+    return 0;
+  };
+  *#indexes({ allowStale = this.allowStale } = {}) {
+    if (this.#size) {
+      for (let i = this.#tail; true; ) {
+        if (!this.#isValidIndex(i)) {
+          break;
+        }
+        if (allowStale || !this.#isStale(i)) {
+          yield i;
+        }
+        if (i === this.#head) {
+          break;
+        } else {
+          i = this.#prev[i];
+        }
+      }
+    }
+  }
+  *#rindexes({ allowStale = this.allowStale } = {}) {
+    if (this.#size) {
+      for (let i = this.#head; true; ) {
+        if (!this.#isValidIndex(i)) {
+          break;
+        }
+        if (allowStale || !this.#isStale(i)) {
+          yield i;
+        }
+        if (i === this.#tail) {
+          break;
+        } else {
+          i = this.#next[i];
+        }
+      }
+    }
+  }
+  #isValidIndex(index) {
+    return index !== void 0 && this.#keyMap.get(this.#keyList[index]) === index;
   }
   /**
    * Return a generator yielding `[key, value]` pairs,
    * in order from most recently used to least recently used.
    */
   *entries() {
-    for (const i of __privateMethod(this, _indexes, indexes_fn).call(this)) {
-      if (__privateGet(this, _valList)[i] !== void 0 && __privateGet(this, _keyList)[i] !== void 0 && !__privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, __privateGet(this, _valList)[i])) {
-        yield [__privateGet(this, _keyList)[i], __privateGet(this, _valList)[i]];
+    for (const i of this.#indexes()) {
+      if (this.#valList[i] !== void 0 && this.#keyList[i] !== void 0 && !this.#isBackgroundFetch(this.#valList[i])) {
+        yield [this.#keyList[i], this.#valList[i]];
       }
     }
   }
@@ -31238,9 +30826,9 @@ const _LRUCache = class _LRUCache {
    * in order from least recently used to most recently used.
    */
   *rentries() {
-    for (const i of __privateMethod(this, _rindexes, rindexes_fn).call(this)) {
-      if (__privateGet(this, _valList)[i] !== void 0 && __privateGet(this, _keyList)[i] !== void 0 && !__privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, __privateGet(this, _valList)[i])) {
-        yield [__privateGet(this, _keyList)[i], __privateGet(this, _valList)[i]];
+    for (const i of this.#rindexes()) {
+      if (this.#valList[i] !== void 0 && this.#keyList[i] !== void 0 && !this.#isBackgroundFetch(this.#valList[i])) {
+        yield [this.#keyList[i], this.#valList[i]];
       }
     }
   }
@@ -31249,9 +30837,9 @@ const _LRUCache = class _LRUCache {
    * in order from most recently used to least recently used.
    */
   *keys() {
-    for (const i of __privateMethod(this, _indexes, indexes_fn).call(this)) {
-      const k = __privateGet(this, _keyList)[i];
-      if (k !== void 0 && !__privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, __privateGet(this, _valList)[i])) {
+    for (const i of this.#indexes()) {
+      const k = this.#keyList[i];
+      if (k !== void 0 && !this.#isBackgroundFetch(this.#valList[i])) {
         yield k;
       }
     }
@@ -31263,9 +30851,9 @@ const _LRUCache = class _LRUCache {
    * in order from least recently used to most recently used.
    */
   *rkeys() {
-    for (const i of __privateMethod(this, _rindexes, rindexes_fn).call(this)) {
-      const k = __privateGet(this, _keyList)[i];
-      if (k !== void 0 && !__privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, __privateGet(this, _valList)[i])) {
+    for (const i of this.#rindexes()) {
+      const k = this.#keyList[i];
+      if (k !== void 0 && !this.#isBackgroundFetch(this.#valList[i])) {
         yield k;
       }
     }
@@ -31275,10 +30863,10 @@ const _LRUCache = class _LRUCache {
    * in order from most recently used to least recently used.
    */
   *values() {
-    for (const i of __privateMethod(this, _indexes, indexes_fn).call(this)) {
-      const v = __privateGet(this, _valList)[i];
-      if (v !== void 0 && !__privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, __privateGet(this, _valList)[i])) {
-        yield __privateGet(this, _valList)[i];
+    for (const i of this.#indexes()) {
+      const v = this.#valList[i];
+      if (v !== void 0 && !this.#isBackgroundFetch(this.#valList[i])) {
+        yield this.#valList[i];
       }
     }
   }
@@ -31289,10 +30877,10 @@ const _LRUCache = class _LRUCache {
    * in order from least recently used to most recently used.
    */
   *rvalues() {
-    for (const i of __privateMethod(this, _rindexes, rindexes_fn).call(this)) {
-      const v = __privateGet(this, _valList)[i];
-      if (v !== void 0 && !__privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, __privateGet(this, _valList)[i])) {
-        yield __privateGet(this, _valList)[i];
+    for (const i of this.#rindexes()) {
+      const v = this.#valList[i];
+      if (v !== void 0 && !this.#isBackgroundFetch(this.#valList[i])) {
+        yield this.#valList[i];
       }
     }
   }
@@ -31304,17 +30892,23 @@ const _LRUCache = class _LRUCache {
     return this.entries();
   }
   /**
+   * A String value that is used in the creation of the default string
+   * description of an object. Called by the built-in method
+   * `Object.prototype.toString`.
+   */
+  [Symbol.toStringTag] = "LRUCache";
+  /**
    * Find a value for which the supplied fn method returns a truthy value,
    * similar to `Array.find()`. fn is called as `fn(value, key, cache)`.
    */
   find(fn, getOptions = {}) {
-    for (const i of __privateMethod(this, _indexes, indexes_fn).call(this)) {
-      const v = __privateGet(this, _valList)[i];
-      const value = __privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, v) ? v.__staleWhileFetching : v;
+    for (const i of this.#indexes()) {
+      const v = this.#valList[i];
+      const value = this.#isBackgroundFetch(v) ? v.__staleWhileFetching : v;
       if (value === void 0)
         continue;
-      if (fn(value, __privateGet(this, _keyList)[i], this)) {
-        return this.get(__privateGet(this, _keyList)[i], getOptions);
+      if (fn(value, this.#keyList[i], this)) {
+        return this.get(this.#keyList[i], getOptions);
       }
     }
   }
@@ -31330,12 +30924,12 @@ const _LRUCache = class _LRUCache {
    * Does not update age or recenty of use, or iterate over stale values.
    */
   forEach(fn, thisp = this) {
-    for (const i of __privateMethod(this, _indexes, indexes_fn).call(this)) {
-      const v = __privateGet(this, _valList)[i];
-      const value = __privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, v) ? v.__staleWhileFetching : v;
+    for (const i of this.#indexes()) {
+      const v = this.#valList[i];
+      const value = this.#isBackgroundFetch(v) ? v.__staleWhileFetching : v;
       if (value === void 0)
         continue;
-      fn.call(thisp, value, __privateGet(this, _keyList)[i], this);
+      fn.call(thisp, value, this.#keyList[i], this);
     }
   }
   /**
@@ -31343,12 +30937,12 @@ const _LRUCache = class _LRUCache {
    * reverse order.  (ie, less recently used items are iterated over first.)
    */
   rforEach(fn, thisp = this) {
-    for (const i of __privateMethod(this, _rindexes, rindexes_fn).call(this)) {
-      const v = __privateGet(this, _valList)[i];
-      const value = __privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, v) ? v.__staleWhileFetching : v;
+    for (const i of this.#rindexes()) {
+      const v = this.#valList[i];
+      const value = this.#isBackgroundFetch(v) ? v.__staleWhileFetching : v;
       if (value === void 0)
         continue;
-      fn.call(thisp, value, __privateGet(this, _keyList)[i], this);
+      fn.call(thisp, value, this.#keyList[i], this);
     }
   }
   /**
@@ -31357,9 +30951,9 @@ const _LRUCache = class _LRUCache {
    */
   purgeStale() {
     let deleted = false;
-    for (const i of __privateMethod(this, _rindexes, rindexes_fn).call(this, { allowStale: true })) {
-      if (__privateGet(this, _isStale).call(this, i)) {
-        __privateMethod(this, _delete, delete_fn).call(this, __privateGet(this, _keyList)[i], "expire");
+    for (const i of this.#rindexes({ allowStale: true })) {
+      if (this.#isStale(i)) {
+        this.#delete(this.#keyList[i], "expire");
         deleted = true;
       }
     }
@@ -31378,25 +30972,25 @@ const _LRUCache = class _LRUCache {
    * if relevant.
    */
   info(key) {
-    const i = __privateGet(this, _keyMap).get(key);
+    const i = this.#keyMap.get(key);
     if (i === void 0)
       return void 0;
-    const v = __privateGet(this, _valList)[i];
-    const value = __privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, v) ? v.__staleWhileFetching : v;
+    const v = this.#valList[i];
+    const value = this.#isBackgroundFetch(v) ? v.__staleWhileFetching : v;
     if (value === void 0)
       return void 0;
     const entry = { value };
-    if (__privateGet(this, _ttls) && __privateGet(this, _starts)) {
-      const ttl = __privateGet(this, _ttls)[i];
-      const start = __privateGet(this, _starts)[i];
+    if (this.#ttls && this.#starts) {
+      const ttl = this.#ttls[i];
+      const start = this.#starts[i];
       if (ttl && start) {
         const remain = ttl - (perf.now() - start);
         entry.ttl = remain;
         entry.start = Date.now();
       }
     }
-    if (__privateGet(this, _sizes)) {
-      entry.size = __privateGet(this, _sizes)[i];
+    if (this.#sizes) {
+      entry.size = this.#sizes[i];
     }
     return entry;
   }
@@ -31415,20 +31009,20 @@ const _LRUCache = class _LRUCache {
    */
   dump() {
     const arr = [];
-    for (const i of __privateMethod(this, _indexes, indexes_fn).call(this, { allowStale: true })) {
-      const key = __privateGet(this, _keyList)[i];
-      const v = __privateGet(this, _valList)[i];
-      const value = __privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, v) ? v.__staleWhileFetching : v;
+    for (const i of this.#indexes({ allowStale: true })) {
+      const key = this.#keyList[i];
+      const v = this.#valList[i];
+      const value = this.#isBackgroundFetch(v) ? v.__staleWhileFetching : v;
       if (value === void 0 || key === void 0)
         continue;
       const entry = { value };
-      if (__privateGet(this, _ttls) && __privateGet(this, _starts)) {
-        entry.ttl = __privateGet(this, _ttls)[i];
-        const age = perf.now() - __privateGet(this, _starts)[i];
+      if (this.#ttls && this.#starts) {
+        entry.ttl = this.#ttls[i];
+        const age = perf.now() - this.#starts[i];
         entry.start = Math.floor(Date.now() - age);
       }
-      if (__privateGet(this, _sizes)) {
-        entry.size = __privateGet(this, _sizes)[i];
+      if (this.#sizes) {
+        entry.size = this.#sizes[i];
       }
       arr.unshift([key, entry]);
     }
@@ -31484,93 +31078,92 @@ const _LRUCache = class _LRUCache {
    * `cache.delete(key)`. `undefined` is never stored in the cache.
    */
   set(k, v, setOptions = {}) {
-    var _a2, _b2, _c3, _d, _e, _f, _g;
     if (v === void 0) {
       this.delete(k);
       return this;
     }
     const { ttl = this.ttl, start, noDisposeOnSet = this.noDisposeOnSet, sizeCalculation = this.sizeCalculation, status } = setOptions;
     let { noUpdateTTL = this.noUpdateTTL } = setOptions;
-    const size = __privateGet(this, _requireSize).call(this, k, v, setOptions.size || 0, sizeCalculation);
+    const size = this.#requireSize(k, v, setOptions.size || 0, sizeCalculation);
     if (this.maxEntrySize && size > this.maxEntrySize) {
       if (status) {
         status.set = "miss";
         status.maxEntrySizeExceeded = true;
       }
-      __privateMethod(this, _delete, delete_fn).call(this, k, "set");
+      this.#delete(k, "set");
       return this;
     }
-    let index = __privateGet(this, _size) === 0 ? void 0 : __privateGet(this, _keyMap).get(k);
+    let index = this.#size === 0 ? void 0 : this.#keyMap.get(k);
     if (index === void 0) {
-      index = __privateGet(this, _size) === 0 ? __privateGet(this, _tail) : __privateGet(this, _free).length !== 0 ? __privateGet(this, _free).pop() : __privateGet(this, _size) === __privateGet(this, _max) ? __privateMethod(this, _evict, evict_fn).call(this, false) : __privateGet(this, _size);
-      __privateGet(this, _keyList)[index] = k;
-      __privateGet(this, _valList)[index] = v;
-      __privateGet(this, _keyMap).set(k, index);
-      __privateGet(this, _next)[__privateGet(this, _tail)] = index;
-      __privateGet(this, _prev)[index] = __privateGet(this, _tail);
-      __privateSet(this, _tail, index);
-      __privateWrapper(this, _size)._++;
-      __privateGet(this, _addItemSize).call(this, index, size, status);
+      index = this.#size === 0 ? this.#tail : this.#free.length !== 0 ? this.#free.pop() : this.#size === this.#max ? this.#evict(false) : this.#size;
+      this.#keyList[index] = k;
+      this.#valList[index] = v;
+      this.#keyMap.set(k, index);
+      this.#next[this.#tail] = index;
+      this.#prev[index] = this.#tail;
+      this.#tail = index;
+      this.#size++;
+      this.#addItemSize(index, size, status);
       if (status)
         status.set = "add";
       noUpdateTTL = false;
-      if (__privateGet(this, _hasOnInsert)) {
-        (_a2 = __privateGet(this, _onInsert)) == null ? void 0 : _a2.call(this, v, k, "add");
+      if (this.#hasOnInsert) {
+        this.#onInsert?.(v, k, "add");
       }
     } else {
-      __privateMethod(this, _moveToTail, moveToTail_fn).call(this, index);
-      const oldVal = __privateGet(this, _valList)[index];
+      this.#moveToTail(index);
+      const oldVal = this.#valList[index];
       if (v !== oldVal) {
-        if (__privateGet(this, _hasFetchMethod) && __privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, oldVal)) {
+        if (this.#hasFetchMethod && this.#isBackgroundFetch(oldVal)) {
           oldVal.__abortController.abort(new Error("replaced"));
           const { __staleWhileFetching: s } = oldVal;
           if (s !== void 0 && !noDisposeOnSet) {
-            if (__privateGet(this, _hasDispose)) {
-              (_b2 = __privateGet(this, _dispose)) == null ? void 0 : _b2.call(this, s, k, "set");
+            if (this.#hasDispose) {
+              this.#dispose?.(s, k, "set");
             }
-            if (__privateGet(this, _hasDisposeAfter)) {
-              (_c3 = __privateGet(this, _disposed)) == null ? void 0 : _c3.push([s, k, "set"]);
+            if (this.#hasDisposeAfter) {
+              this.#disposed?.push([s, k, "set"]);
             }
           }
         } else if (!noDisposeOnSet) {
-          if (__privateGet(this, _hasDispose)) {
-            (_d = __privateGet(this, _dispose)) == null ? void 0 : _d.call(this, oldVal, k, "set");
+          if (this.#hasDispose) {
+            this.#dispose?.(oldVal, k, "set");
           }
-          if (__privateGet(this, _hasDisposeAfter)) {
-            (_e = __privateGet(this, _disposed)) == null ? void 0 : _e.push([oldVal, k, "set"]);
+          if (this.#hasDisposeAfter) {
+            this.#disposed?.push([oldVal, k, "set"]);
           }
         }
-        __privateGet(this, _removeItemSize).call(this, index);
-        __privateGet(this, _addItemSize).call(this, index, size, status);
-        __privateGet(this, _valList)[index] = v;
+        this.#removeItemSize(index);
+        this.#addItemSize(index, size, status);
+        this.#valList[index] = v;
         if (status) {
           status.set = "replace";
-          const oldValue = oldVal && __privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, oldVal) ? oldVal.__staleWhileFetching : oldVal;
+          const oldValue = oldVal && this.#isBackgroundFetch(oldVal) ? oldVal.__staleWhileFetching : oldVal;
           if (oldValue !== void 0)
             status.oldValue = oldValue;
         }
       } else if (status) {
         status.set = "update";
       }
-      if (__privateGet(this, _hasOnInsert)) {
-        (_f = this.onInsert) == null ? void 0 : _f.call(this, v, k, v === oldVal ? "update" : "replace");
+      if (this.#hasOnInsert) {
+        this.onInsert?.(v, k, v === oldVal ? "update" : "replace");
       }
     }
-    if (ttl !== 0 && !__privateGet(this, _ttls)) {
-      __privateMethod(this, _initializeTTLTracking, initializeTTLTracking_fn).call(this);
+    if (ttl !== 0 && !this.#ttls) {
+      this.#initializeTTLTracking();
     }
-    if (__privateGet(this, _ttls)) {
+    if (this.#ttls) {
       if (!noUpdateTTL) {
-        __privateGet(this, _setItemTTL).call(this, index, ttl, start);
+        this.#setItemTTL(index, ttl, start);
       }
       if (status)
-        __privateGet(this, _statusTTL).call(this, status, index);
+        this.#statusTTL(status, index);
     }
-    if (!noDisposeOnSet && __privateGet(this, _hasDisposeAfter) && __privateGet(this, _disposed)) {
-      const dt = __privateGet(this, _disposed);
+    if (!noDisposeOnSet && this.#hasDisposeAfter && this.#disposed) {
+      const dt = this.#disposed;
       let task;
-      while (task = dt == null ? void 0 : dt.shift()) {
-        (_g = __privateGet(this, _disposeAfter)) == null ? void 0 : _g.call(this, ...task);
+      while (task = dt?.shift()) {
+        this.#disposeAfter?.(...task);
       }
     }
     return this;
@@ -31580,12 +31173,11 @@ const _LRUCache = class _LRUCache {
    * `undefined` if cache is empty.
    */
   pop() {
-    var _a2;
     try {
-      while (__privateGet(this, _size)) {
-        const val = __privateGet(this, _valList)[__privateGet(this, _head)];
-        __privateMethod(this, _evict, evict_fn).call(this, true);
-        if (__privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, val)) {
+      while (this.#size) {
+        const val = this.#valList[this.#head];
+        this.#evict(true);
+        if (this.#isBackgroundFetch(val)) {
           if (val.__staleWhileFetching) {
             return val.__staleWhileFetching;
           }
@@ -31594,14 +31186,44 @@ const _LRUCache = class _LRUCache {
         }
       }
     } finally {
-      if (__privateGet(this, _hasDisposeAfter) && __privateGet(this, _disposed)) {
-        const dt = __privateGet(this, _disposed);
+      if (this.#hasDisposeAfter && this.#disposed) {
+        const dt = this.#disposed;
         let task;
-        while (task = dt == null ? void 0 : dt.shift()) {
-          (_a2 = __privateGet(this, _disposeAfter)) == null ? void 0 : _a2.call(this, ...task);
+        while (task = dt?.shift()) {
+          this.#disposeAfter?.(...task);
         }
       }
     }
+  }
+  #evict(free) {
+    const head = this.#head;
+    const k = this.#keyList[head];
+    const v = this.#valList[head];
+    if (this.#hasFetchMethod && this.#isBackgroundFetch(v)) {
+      v.__abortController.abort(new Error("evicted"));
+    } else if (this.#hasDispose || this.#hasDisposeAfter) {
+      if (this.#hasDispose) {
+        this.#dispose?.(v, k, "evict");
+      }
+      if (this.#hasDisposeAfter) {
+        this.#disposed?.push([v, k, "evict"]);
+      }
+    }
+    this.#removeItemSize(head);
+    if (free) {
+      this.#keyList[head] = void 0;
+      this.#valList[head] = void 0;
+      this.#free.push(head);
+    }
+    if (this.#size === 1) {
+      this.#head = this.#tail = 0;
+      this.#free.length = 0;
+    } else {
+      this.#head = this.#next[head];
+    }
+    this.#keyMap.delete(k);
+    this.#size--;
+    return head;
   }
   /**
    * Check if a key is in the cache, without updating the recency of use.
@@ -31621,24 +31243,24 @@ const _LRUCache = class _LRUCache {
    */
   has(k, hasOptions = {}) {
     const { updateAgeOnHas = this.updateAgeOnHas, status } = hasOptions;
-    const index = __privateGet(this, _keyMap).get(k);
+    const index = this.#keyMap.get(k);
     if (index !== void 0) {
-      const v = __privateGet(this, _valList)[index];
-      if (__privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, v) && v.__staleWhileFetching === void 0) {
+      const v = this.#valList[index];
+      if (this.#isBackgroundFetch(v) && v.__staleWhileFetching === void 0) {
         return false;
       }
-      if (!__privateGet(this, _isStale).call(this, index)) {
+      if (!this.#isStale(index)) {
         if (updateAgeOnHas) {
-          __privateGet(this, _updateItemAge).call(this, index);
+          this.#updateItemAge(index);
         }
         if (status) {
           status.has = "hit";
-          __privateGet(this, _statusTTL).call(this, status, index);
+          this.#statusTTL(status, index);
         }
         return true;
       } else if (status) {
         status.has = "stale";
-        __privateGet(this, _statusTTL).call(this, status, index);
+        this.#statusTTL(status, index);
       }
     } else if (status) {
       status.has = "miss";
@@ -31654,12 +31276,125 @@ const _LRUCache = class _LRUCache {
    */
   peek(k, peekOptions = {}) {
     const { allowStale = this.allowStale } = peekOptions;
-    const index = __privateGet(this, _keyMap).get(k);
-    if (index === void 0 || !allowStale && __privateGet(this, _isStale).call(this, index)) {
+    const index = this.#keyMap.get(k);
+    if (index === void 0 || !allowStale && this.#isStale(index)) {
       return;
     }
-    const v = __privateGet(this, _valList)[index];
-    return __privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, v) ? v.__staleWhileFetching : v;
+    const v = this.#valList[index];
+    return this.#isBackgroundFetch(v) ? v.__staleWhileFetching : v;
+  }
+  #backgroundFetch(k, index, options, context) {
+    const v = index === void 0 ? void 0 : this.#valList[index];
+    if (this.#isBackgroundFetch(v)) {
+      return v;
+    }
+    const ac = new AC();
+    const { signal } = options;
+    signal?.addEventListener("abort", () => ac.abort(signal.reason), {
+      signal: ac.signal
+    });
+    const fetchOpts = {
+      signal: ac.signal,
+      options,
+      context
+    };
+    const cb = (v2, updateCache = false) => {
+      const { aborted } = ac.signal;
+      const ignoreAbort = options.ignoreFetchAbort && v2 !== void 0;
+      if (options.status) {
+        if (aborted && !updateCache) {
+          options.status.fetchAborted = true;
+          options.status.fetchError = ac.signal.reason;
+          if (ignoreAbort)
+            options.status.fetchAbortIgnored = true;
+        } else {
+          options.status.fetchResolved = true;
+        }
+      }
+      if (aborted && !ignoreAbort && !updateCache) {
+        return fetchFail(ac.signal.reason);
+      }
+      const bf2 = p;
+      if (this.#valList[index] === p) {
+        if (v2 === void 0) {
+          if (bf2.__staleWhileFetching) {
+            this.#valList[index] = bf2.__staleWhileFetching;
+          } else {
+            this.#delete(k, "fetch");
+          }
+        } else {
+          if (options.status)
+            options.status.fetchUpdated = true;
+          this.set(k, v2, fetchOpts.options);
+        }
+      }
+      return v2;
+    };
+    const eb = (er) => {
+      if (options.status) {
+        options.status.fetchRejected = true;
+        options.status.fetchError = er;
+      }
+      return fetchFail(er);
+    };
+    const fetchFail = (er) => {
+      const { aborted } = ac.signal;
+      const allowStaleAborted = aborted && options.allowStaleOnFetchAbort;
+      const allowStale = allowStaleAborted || options.allowStaleOnFetchRejection;
+      const noDelete = allowStale || options.noDeleteOnFetchRejection;
+      const bf2 = p;
+      if (this.#valList[index] === p) {
+        const del = !noDelete || bf2.__staleWhileFetching === void 0;
+        if (del) {
+          this.#delete(k, "fetch");
+        } else if (!allowStaleAborted) {
+          this.#valList[index] = bf2.__staleWhileFetching;
+        }
+      }
+      if (allowStale) {
+        if (options.status && bf2.__staleWhileFetching !== void 0) {
+          options.status.returnedStale = true;
+        }
+        return bf2.__staleWhileFetching;
+      } else if (bf2.__returned === bf2) {
+        throw er;
+      }
+    };
+    const pcall = (res, rej) => {
+      const fmp = this.#fetchMethod?.(k, v, fetchOpts);
+      if (fmp && fmp instanceof Promise) {
+        fmp.then((v2) => res(v2 === void 0 ? void 0 : v2), rej);
+      }
+      ac.signal.addEventListener("abort", () => {
+        if (!options.ignoreFetchAbort || options.allowStaleOnFetchAbort) {
+          res(void 0);
+          if (options.allowStaleOnFetchAbort) {
+            res = (v2) => cb(v2, true);
+          }
+        }
+      });
+    };
+    if (options.status)
+      options.status.fetchDispatched = true;
+    const p = new Promise(pcall).then(cb, eb);
+    const bf = Object.assign(p, {
+      __abortController: ac,
+      __staleWhileFetching: v,
+      __returned: void 0
+    });
+    if (index === void 0) {
+      this.set(k, bf, { ...fetchOpts.options, status: void 0 });
+      index = this.#keyMap.get(k);
+    } else {
+      this.#valList[index] = bf;
+    }
+    return bf;
+  }
+  #isBackgroundFetch(p) {
+    if (!this.#hasFetchMethod)
+      return false;
+    const b = p;
+    return !!b && b instanceof Promise && b.hasOwnProperty("__staleWhileFetching") && b.__abortController instanceof AC;
   }
   async fetch(k, fetchOptions = {}) {
     const {
@@ -31683,7 +31418,7 @@ const _LRUCache = class _LRUCache {
       status,
       signal
     } = fetchOptions;
-    if (!__privateGet(this, _hasFetchMethod)) {
+    if (!this.#hasFetchMethod) {
       if (status)
         status.fetch = "get";
       return this.get(k, {
@@ -31709,15 +31444,15 @@ const _LRUCache = class _LRUCache {
       status,
       signal
     };
-    let index = __privateGet(this, _keyMap).get(k);
+    let index = this.#keyMap.get(k);
     if (index === void 0) {
       if (status)
         status.fetch = "miss";
-      const p = __privateMethod(this, _backgroundFetch, backgroundFetch_fn).call(this, k, index, options, context);
+      const p = this.#backgroundFetch(k, index, options, context);
       return p.__returned = p;
     } else {
-      const v = __privateGet(this, _valList)[index];
-      if (__privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, v)) {
+      const v = this.#valList[index];
+      if (this.#isBackgroundFetch(v)) {
         const stale = allowStale && v.__staleWhileFetching !== void 0;
         if (status) {
           status.fetch = "inflight";
@@ -31726,19 +31461,19 @@ const _LRUCache = class _LRUCache {
         }
         return stale ? v.__staleWhileFetching : v.__returned = v;
       }
-      const isStale = __privateGet(this, _isStale).call(this, index);
+      const isStale = this.#isStale(index);
       if (!forceRefresh && !isStale) {
         if (status)
           status.fetch = "hit";
-        __privateMethod(this, _moveToTail, moveToTail_fn).call(this, index);
+        this.#moveToTail(index);
         if (updateAgeOnGet) {
-          __privateGet(this, _updateItemAge).call(this, index);
+          this.#updateItemAge(index);
         }
         if (status)
-          __privateGet(this, _statusTTL).call(this, status, index);
+          this.#statusTTL(status, index);
         return v;
       }
-      const p = __privateMethod(this, _backgroundFetch, backgroundFetch_fn).call(this, k, index, options, context);
+      const p = this.#backgroundFetch(k, index, options, context);
       const hasStale = p.__staleWhileFetching !== void 0;
       const staleVal = hasStale && allowStale;
       if (status) {
@@ -31756,7 +31491,7 @@ const _LRUCache = class _LRUCache {
     return v;
   }
   memo(k, memoOptions = {}) {
-    const memoMethod = __privateGet(this, _memoMethod);
+    const memoMethod = this.#memoMethod;
     if (!memoMethod) {
       throw new Error("no memoMethod provided to constructor");
     }
@@ -31779,18 +31514,18 @@ const _LRUCache = class _LRUCache {
    */
   get(k, getOptions = {}) {
     const { allowStale = this.allowStale, updateAgeOnGet = this.updateAgeOnGet, noDeleteOnStaleGet = this.noDeleteOnStaleGet, status } = getOptions;
-    const index = __privateGet(this, _keyMap).get(k);
+    const index = this.#keyMap.get(k);
     if (index !== void 0) {
-      const value = __privateGet(this, _valList)[index];
-      const fetching = __privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, value);
+      const value = this.#valList[index];
+      const fetching = this.#isBackgroundFetch(value);
       if (status)
-        __privateGet(this, _statusTTL).call(this, status, index);
-      if (__privateGet(this, _isStale).call(this, index)) {
+        this.#statusTTL(status, index);
+      if (this.#isStale(index)) {
         if (status)
           status.get = "stale";
         if (!fetching) {
           if (!noDeleteOnStaleGet) {
-            __privateMethod(this, _delete, delete_fn).call(this, k, "expire");
+            this.#delete(k, "expire");
           }
           if (status && allowStale)
             status.returnedStale = true;
@@ -31807,14 +31542,29 @@ const _LRUCache = class _LRUCache {
         if (fetching) {
           return value.__staleWhileFetching;
         }
-        __privateMethod(this, _moveToTail, moveToTail_fn).call(this, index);
+        this.#moveToTail(index);
         if (updateAgeOnGet) {
-          __privateGet(this, _updateItemAge).call(this, index);
+          this.#updateItemAge(index);
         }
         return value;
       }
     } else if (status) {
       status.get = "miss";
+    }
+  }
+  #connect(p, n) {
+    this.#prev[n] = p;
+    this.#next[p] = n;
+  }
+  #moveToTail(index) {
+    if (index !== this.#tail) {
+      if (index === this.#head) {
+        this.#head = this.#next[index];
+      } else {
+        this.#connect(this.#prev[index], this.#next[index]);
+      }
+      this.#connect(this.#tail, index);
+      this.#tail = index;
     }
   }
   /**
@@ -31823,455 +31573,110 @@ const _LRUCache = class _LRUCache {
    * Returns true if the key was deleted, false otherwise.
    */
   delete(k) {
-    return __privateMethod(this, _delete, delete_fn).call(this, k, "delete");
+    return this.#delete(k, "delete");
+  }
+  #delete(k, reason) {
+    let deleted = false;
+    if (this.#size !== 0) {
+      const index = this.#keyMap.get(k);
+      if (index !== void 0) {
+        deleted = true;
+        if (this.#size === 1) {
+          this.#clear(reason);
+        } else {
+          this.#removeItemSize(index);
+          const v = this.#valList[index];
+          if (this.#isBackgroundFetch(v)) {
+            v.__abortController.abort(new Error("deleted"));
+          } else if (this.#hasDispose || this.#hasDisposeAfter) {
+            if (this.#hasDispose) {
+              this.#dispose?.(v, k, reason);
+            }
+            if (this.#hasDisposeAfter) {
+              this.#disposed?.push([v, k, reason]);
+            }
+          }
+          this.#keyMap.delete(k);
+          this.#keyList[index] = void 0;
+          this.#valList[index] = void 0;
+          if (index === this.#tail) {
+            this.#tail = this.#prev[index];
+          } else if (index === this.#head) {
+            this.#head = this.#next[index];
+          } else {
+            const pi = this.#prev[index];
+            this.#next[pi] = this.#next[index];
+            const ni = this.#next[index];
+            this.#prev[ni] = this.#prev[index];
+          }
+          this.#size--;
+          this.#free.push(index);
+        }
+      }
+    }
+    if (this.#hasDisposeAfter && this.#disposed?.length) {
+      const dt = this.#disposed;
+      let task;
+      while (task = dt?.shift()) {
+        this.#disposeAfter?.(...task);
+      }
+    }
+    return deleted;
   }
   /**
    * Clear the cache entirely, throwing away all values.
    */
   clear() {
-    return __privateMethod(this, _clear, clear_fn).call(this, "delete");
+    return this.#clear("delete");
   }
-};
-_b = Symbol.toStringTag;
-_max = new WeakMap();
-_maxSize = new WeakMap();
-_dispose = new WeakMap();
-_onInsert = new WeakMap();
-_disposeAfter = new WeakMap();
-_fetchMethod = new WeakMap();
-_memoMethod = new WeakMap();
-_size = new WeakMap();
-_calculatedSize = new WeakMap();
-_keyMap = new WeakMap();
-_keyList = new WeakMap();
-_valList = new WeakMap();
-_next = new WeakMap();
-_prev = new WeakMap();
-_head = new WeakMap();
-_tail = new WeakMap();
-_free = new WeakMap();
-_disposed = new WeakMap();
-_sizes = new WeakMap();
-_starts = new WeakMap();
-_ttls = new WeakMap();
-_hasDispose = new WeakMap();
-_hasFetchMethod = new WeakMap();
-_hasDisposeAfter = new WeakMap();
-_hasOnInsert = new WeakMap();
-_initializeTTLTracking = new WeakSet();
-initializeTTLTracking_fn = function() {
-  const ttls = new ZeroArray(__privateGet(this, _max));
-  const starts = new ZeroArray(__privateGet(this, _max));
-  __privateSet(this, _ttls, ttls);
-  __privateSet(this, _starts, starts);
-  __privateSet(this, _setItemTTL, (index, ttl, start = perf.now()) => {
-    starts[index] = ttl !== 0 ? start : 0;
-    ttls[index] = ttl;
-    if (ttl !== 0 && this.ttlAutopurge) {
-      const t = setTimeout(() => {
-        if (__privateGet(this, _isStale).call(this, index)) {
-          __privateMethod(this, _delete, delete_fn).call(this, __privateGet(this, _keyList)[index], "expire");
-        }
-      }, ttl + 1);
-      if (t.unref) {
-        t.unref();
-      }
-    }
-  });
-  __privateSet(this, _updateItemAge, (index) => {
-    starts[index] = ttls[index] !== 0 ? perf.now() : 0;
-  });
-  __privateSet(this, _statusTTL, (status, index) => {
-    if (ttls[index]) {
-      const ttl = ttls[index];
-      const start = starts[index];
-      if (!ttl || !start)
-        return;
-      status.ttl = ttl;
-      status.start = start;
-      status.now = cachedNow || getNow();
-      const age = status.now - start;
-      status.remainingTTL = ttl - age;
-    }
-  });
-  let cachedNow = 0;
-  const getNow = () => {
-    const n = perf.now();
-    if (this.ttlResolution > 0) {
-      cachedNow = n;
-      const t = setTimeout(() => cachedNow = 0, this.ttlResolution);
-      if (t.unref) {
-        t.unref();
-      }
-    }
-    return n;
-  };
-  this.getRemainingTTL = (key) => {
-    const index = __privateGet(this, _keyMap).get(key);
-    if (index === void 0) {
-      return 0;
-    }
-    const ttl = ttls[index];
-    const start = starts[index];
-    if (!ttl || !start) {
-      return Infinity;
-    }
-    const age = (cachedNow || getNow()) - start;
-    return ttl - age;
-  };
-  __privateSet(this, _isStale, (index) => {
-    const s = starts[index];
-    const t = ttls[index];
-    return !!t && !!s && (cachedNow || getNow()) - s > t;
-  });
-};
-_updateItemAge = new WeakMap();
-_statusTTL = new WeakMap();
-_setItemTTL = new WeakMap();
-_isStale = new WeakMap();
-_initializeSizeTracking = new WeakSet();
-initializeSizeTracking_fn = function() {
-  const sizes = new ZeroArray(__privateGet(this, _max));
-  __privateSet(this, _calculatedSize, 0);
-  __privateSet(this, _sizes, sizes);
-  __privateSet(this, _removeItemSize, (index) => {
-    __privateSet(this, _calculatedSize, __privateGet(this, _calculatedSize) - sizes[index]);
-    sizes[index] = 0;
-  });
-  __privateSet(this, _requireSize, (k, v, size, sizeCalculation) => {
-    if (__privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, v)) {
-      return 0;
-    }
-    if (!isPosInt(size)) {
-      if (sizeCalculation) {
-        if (typeof sizeCalculation !== "function") {
-          throw new TypeError("sizeCalculation must be a function");
-        }
-        size = sizeCalculation(v, k);
-        if (!isPosInt(size)) {
-          throw new TypeError("sizeCalculation return invalid (expect positive integer)");
-        }
+  #clear(reason) {
+    for (const index of this.#rindexes({ allowStale: true })) {
+      const v = this.#valList[index];
+      if (this.#isBackgroundFetch(v)) {
+        v.__abortController.abort(new Error("deleted"));
       } else {
-        throw new TypeError("invalid size value (must be positive integer). When maxSize or maxEntrySize is used, sizeCalculation or size must be set.");
-      }
-    }
-    return size;
-  });
-  __privateSet(this, _addItemSize, (index, size, status) => {
-    sizes[index] = size;
-    if (__privateGet(this, _maxSize)) {
-      const maxSize = __privateGet(this, _maxSize) - sizes[index];
-      while (__privateGet(this, _calculatedSize) > maxSize) {
-        __privateMethod(this, _evict, evict_fn).call(this, true);
-      }
-    }
-    __privateSet(this, _calculatedSize, __privateGet(this, _calculatedSize) + sizes[index]);
-    if (status) {
-      status.entrySize = size;
-      status.totalCalculatedSize = __privateGet(this, _calculatedSize);
-    }
-  });
-};
-_removeItemSize = new WeakMap();
-_addItemSize = new WeakMap();
-_requireSize = new WeakMap();
-_indexes = new WeakSet();
-indexes_fn = function* ({ allowStale = this.allowStale } = {}) {
-  if (__privateGet(this, _size)) {
-    for (let i = __privateGet(this, _tail); true; ) {
-      if (!__privateMethod(this, _isValidIndex, isValidIndex_fn).call(this, i)) {
-        break;
-      }
-      if (allowStale || !__privateGet(this, _isStale).call(this, i)) {
-        yield i;
-      }
-      if (i === __privateGet(this, _head)) {
-        break;
-      } else {
-        i = __privateGet(this, _prev)[i];
-      }
-    }
-  }
-};
-_rindexes = new WeakSet();
-rindexes_fn = function* ({ allowStale = this.allowStale } = {}) {
-  if (__privateGet(this, _size)) {
-    for (let i = __privateGet(this, _head); true; ) {
-      if (!__privateMethod(this, _isValidIndex, isValidIndex_fn).call(this, i)) {
-        break;
-      }
-      if (allowStale || !__privateGet(this, _isStale).call(this, i)) {
-        yield i;
-      }
-      if (i === __privateGet(this, _tail)) {
-        break;
-      } else {
-        i = __privateGet(this, _next)[i];
-      }
-    }
-  }
-};
-_isValidIndex = new WeakSet();
-isValidIndex_fn = function(index) {
-  return index !== void 0 && __privateGet(this, _keyMap).get(__privateGet(this, _keyList)[index]) === index;
-};
-_evict = new WeakSet();
-evict_fn = function(free) {
-  var _a2, _b2;
-  const head = __privateGet(this, _head);
-  const k = __privateGet(this, _keyList)[head];
-  const v = __privateGet(this, _valList)[head];
-  if (__privateGet(this, _hasFetchMethod) && __privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, v)) {
-    v.__abortController.abort(new Error("evicted"));
-  } else if (__privateGet(this, _hasDispose) || __privateGet(this, _hasDisposeAfter)) {
-    if (__privateGet(this, _hasDispose)) {
-      (_a2 = __privateGet(this, _dispose)) == null ? void 0 : _a2.call(this, v, k, "evict");
-    }
-    if (__privateGet(this, _hasDisposeAfter)) {
-      (_b2 = __privateGet(this, _disposed)) == null ? void 0 : _b2.push([v, k, "evict"]);
-    }
-  }
-  __privateGet(this, _removeItemSize).call(this, head);
-  if (free) {
-    __privateGet(this, _keyList)[head] = void 0;
-    __privateGet(this, _valList)[head] = void 0;
-    __privateGet(this, _free).push(head);
-  }
-  if (__privateGet(this, _size) === 1) {
-    __privateSet(this, _head, __privateSet(this, _tail, 0));
-    __privateGet(this, _free).length = 0;
-  } else {
-    __privateSet(this, _head, __privateGet(this, _next)[head]);
-  }
-  __privateGet(this, _keyMap).delete(k);
-  __privateWrapper(this, _size)._--;
-  return head;
-};
-_backgroundFetch = new WeakSet();
-backgroundFetch_fn = function(k, index, options, context) {
-  const v = index === void 0 ? void 0 : __privateGet(this, _valList)[index];
-  if (__privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, v)) {
-    return v;
-  }
-  const ac = new AC();
-  const { signal } = options;
-  signal == null ? void 0 : signal.addEventListener("abort", () => ac.abort(signal.reason), {
-    signal: ac.signal
-  });
-  const fetchOpts = {
-    signal: ac.signal,
-    options,
-    context
-  };
-  const cb = (v2, updateCache = false) => {
-    const { aborted } = ac.signal;
-    const ignoreAbort = options.ignoreFetchAbort && v2 !== void 0;
-    if (options.status) {
-      if (aborted && !updateCache) {
-        options.status.fetchAborted = true;
-        options.status.fetchError = ac.signal.reason;
-        if (ignoreAbort)
-          options.status.fetchAbortIgnored = true;
-      } else {
-        options.status.fetchResolved = true;
-      }
-    }
-    if (aborted && !ignoreAbort && !updateCache) {
-      return fetchFail(ac.signal.reason);
-    }
-    const bf2 = p;
-    if (__privateGet(this, _valList)[index] === p) {
-      if (v2 === void 0) {
-        if (bf2.__staleWhileFetching) {
-          __privateGet(this, _valList)[index] = bf2.__staleWhileFetching;
-        } else {
-          __privateMethod(this, _delete, delete_fn).call(this, k, "fetch");
+        const k = this.#keyList[index];
+        if (this.#hasDispose) {
+          this.#dispose?.(v, k, reason);
         }
-      } else {
-        if (options.status)
-          options.status.fetchUpdated = true;
-        this.set(k, v2, fetchOpts.options);
-      }
-    }
-    return v2;
-  };
-  const eb = (er) => {
-    if (options.status) {
-      options.status.fetchRejected = true;
-      options.status.fetchError = er;
-    }
-    return fetchFail(er);
-  };
-  const fetchFail = (er) => {
-    const { aborted } = ac.signal;
-    const allowStaleAborted = aborted && options.allowStaleOnFetchAbort;
-    const allowStale = allowStaleAborted || options.allowStaleOnFetchRejection;
-    const noDelete = allowStale || options.noDeleteOnFetchRejection;
-    const bf2 = p;
-    if (__privateGet(this, _valList)[index] === p) {
-      const del = !noDelete || bf2.__staleWhileFetching === void 0;
-      if (del) {
-        __privateMethod(this, _delete, delete_fn).call(this, k, "fetch");
-      } else if (!allowStaleAborted) {
-        __privateGet(this, _valList)[index] = bf2.__staleWhileFetching;
-      }
-    }
-    if (allowStale) {
-      if (options.status && bf2.__staleWhileFetching !== void 0) {
-        options.status.returnedStale = true;
-      }
-      return bf2.__staleWhileFetching;
-    } else if (bf2.__returned === bf2) {
-      throw er;
-    }
-  };
-  const pcall = (res, rej) => {
-    var _a2;
-    const fmp = (_a2 = __privateGet(this, _fetchMethod)) == null ? void 0 : _a2.call(this, k, v, fetchOpts);
-    if (fmp && fmp instanceof Promise) {
-      fmp.then((v2) => res(v2 === void 0 ? void 0 : v2), rej);
-    }
-    ac.signal.addEventListener("abort", () => {
-      if (!options.ignoreFetchAbort || options.allowStaleOnFetchAbort) {
-        res(void 0);
-        if (options.allowStaleOnFetchAbort) {
-          res = (v2) => cb(v2, true);
+        if (this.#hasDisposeAfter) {
+          this.#disposed?.push([v, k, reason]);
         }
       }
-    });
-  };
-  if (options.status)
-    options.status.fetchDispatched = true;
-  const p = new Promise(pcall).then(cb, eb);
-  const bf = Object.assign(p, {
-    __abortController: ac,
-    __staleWhileFetching: v,
-    __returned: void 0
-  });
-  if (index === void 0) {
-    this.set(k, bf, { ...fetchOpts.options, status: void 0 });
-    index = __privateGet(this, _keyMap).get(k);
-  } else {
-    __privateGet(this, _valList)[index] = bf;
-  }
-  return bf;
-};
-_isBackgroundFetch = new WeakSet();
-isBackgroundFetch_fn = function(p) {
-  if (!__privateGet(this, _hasFetchMethod))
-    return false;
-  const b = p;
-  return !!b && b instanceof Promise && b.hasOwnProperty("__staleWhileFetching") && b.__abortController instanceof AC;
-};
-_connect = new WeakSet();
-connect_fn = function(p, n) {
-  __privateGet(this, _prev)[n] = p;
-  __privateGet(this, _next)[p] = n;
-};
-_moveToTail = new WeakSet();
-moveToTail_fn = function(index) {
-  if (index !== __privateGet(this, _tail)) {
-    if (index === __privateGet(this, _head)) {
-      __privateSet(this, _head, __privateGet(this, _next)[index]);
-    } else {
-      __privateMethod(this, _connect, connect_fn).call(this, __privateGet(this, _prev)[index], __privateGet(this, _next)[index]);
     }
-    __privateMethod(this, _connect, connect_fn).call(this, __privateGet(this, _tail), index);
-    __privateSet(this, _tail, index);
-  }
-};
-_delete = new WeakSet();
-delete_fn = function(k, reason) {
-  var _a2, _b2, _c3, _d;
-  let deleted = false;
-  if (__privateGet(this, _size) !== 0) {
-    const index = __privateGet(this, _keyMap).get(k);
-    if (index !== void 0) {
-      deleted = true;
-      if (__privateGet(this, _size) === 1) {
-        __privateMethod(this, _clear, clear_fn).call(this, reason);
-      } else {
-        __privateGet(this, _removeItemSize).call(this, index);
-        const v = __privateGet(this, _valList)[index];
-        if (__privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, v)) {
-          v.__abortController.abort(new Error("deleted"));
-        } else if (__privateGet(this, _hasDispose) || __privateGet(this, _hasDisposeAfter)) {
-          if (__privateGet(this, _hasDispose)) {
-            (_a2 = __privateGet(this, _dispose)) == null ? void 0 : _a2.call(this, v, k, reason);
-          }
-          if (__privateGet(this, _hasDisposeAfter)) {
-            (_b2 = __privateGet(this, _disposed)) == null ? void 0 : _b2.push([v, k, reason]);
-          }
-        }
-        __privateGet(this, _keyMap).delete(k);
-        __privateGet(this, _keyList)[index] = void 0;
-        __privateGet(this, _valList)[index] = void 0;
-        if (index === __privateGet(this, _tail)) {
-          __privateSet(this, _tail, __privateGet(this, _prev)[index]);
-        } else if (index === __privateGet(this, _head)) {
-          __privateSet(this, _head, __privateGet(this, _next)[index]);
-        } else {
-          const pi = __privateGet(this, _prev)[index];
-          __privateGet(this, _next)[pi] = __privateGet(this, _next)[index];
-          const ni = __privateGet(this, _next)[index];
-          __privateGet(this, _prev)[ni] = __privateGet(this, _prev)[index];
-        }
-        __privateWrapper(this, _size)._--;
-        __privateGet(this, _free).push(index);
+    this.#keyMap.clear();
+    this.#valList.fill(void 0);
+    this.#keyList.fill(void 0);
+    if (this.#ttls && this.#starts) {
+      this.#ttls.fill(0);
+      this.#starts.fill(0);
+    }
+    if (this.#sizes) {
+      this.#sizes.fill(0);
+    }
+    this.#head = 0;
+    this.#tail = 0;
+    this.#free.length = 0;
+    this.#calculatedSize = 0;
+    this.#size = 0;
+    if (this.#hasDisposeAfter && this.#disposed) {
+      const dt = this.#disposed;
+      let task;
+      while (task = dt?.shift()) {
+        this.#disposeAfter?.(...task);
       }
     }
   }
-  if (__privateGet(this, _hasDisposeAfter) && ((_c3 = __privateGet(this, _disposed)) == null ? void 0 : _c3.length)) {
-    const dt = __privateGet(this, _disposed);
-    let task;
-    while (task = dt == null ? void 0 : dt.shift()) {
-      (_d = __privateGet(this, _disposeAfter)) == null ? void 0 : _d.call(this, ...task);
-    }
-  }
-  return deleted;
-};
-_clear = new WeakSet();
-clear_fn = function(reason) {
-  var _a2, _b2, _c3;
-  for (const index of __privateMethod(this, _rindexes, rindexes_fn).call(this, { allowStale: true })) {
-    const v = __privateGet(this, _valList)[index];
-    if (__privateMethod(this, _isBackgroundFetch, isBackgroundFetch_fn).call(this, v)) {
-      v.__abortController.abort(new Error("deleted"));
-    } else {
-      const k = __privateGet(this, _keyList)[index];
-      if (__privateGet(this, _hasDispose)) {
-        (_a2 = __privateGet(this, _dispose)) == null ? void 0 : _a2.call(this, v, k, reason);
-      }
-      if (__privateGet(this, _hasDisposeAfter)) {
-        (_b2 = __privateGet(this, _disposed)) == null ? void 0 : _b2.push([v, k, reason]);
-      }
-    }
-  }
-  __privateGet(this, _keyMap).clear();
-  __privateGet(this, _valList).fill(void 0);
-  __privateGet(this, _keyList).fill(void 0);
-  if (__privateGet(this, _ttls) && __privateGet(this, _starts)) {
-    __privateGet(this, _ttls).fill(0);
-    __privateGet(this, _starts).fill(0);
-  }
-  if (__privateGet(this, _sizes)) {
-    __privateGet(this, _sizes).fill(0);
-  }
-  __privateSet(this, _head, 0);
-  __privateSet(this, _tail, 0);
-  __privateGet(this, _free).length = 0;
-  __privateSet(this, _calculatedSize, 0);
-  __privateSet(this, _size, 0);
-  if (__privateGet(this, _hasDisposeAfter) && __privateGet(this, _disposed)) {
-    const dt = __privateGet(this, _disposed);
-    let task;
-    while (task = dt == null ? void 0 : dt.shift()) {
-      (_c3 = __privateGet(this, _disposeAfter)) == null ? void 0 : _c3.call(this, ...task);
-    }
-  }
-};
-let LRUCache = _LRUCache;
-const _VirtualMemoryController = class _VirtualMemoryController {
+}
+class VirtualMemoryController {
+  static oneHundredMb = 1e8;
+  static _meshes = this.setupMeshes();
+  static _capacity;
+  static _memoryAttributes = [
+    "positionBuffer",
+    "indexBuffer",
+    "normalBuffer"
+  ];
   static get(id) {
     return this._meshes.get(id);
   }
@@ -32286,9 +31691,17 @@ const _VirtualMemoryController = class _VirtualMemoryController {
       this._meshes.delete(id);
     }
   }
+  static updateMeshMemory = (mesh) => {
+    mesh.usedMemory = 0;
+    for (const key of this._memoryAttributes) {
+      if (mesh.usedMemory !== void 0 && mesh[key]) {
+        mesh.usedMemory += mesh[key].byteLength;
+      }
+    }
+    this.lockIn(mesh);
+  };
   static setCapacity(value) {
-    if (value === this._capacity)
-      return;
+    if (value === this._capacity) return;
     this._meshes.clear();
     this._meshes = this.setupMeshes(value);
     this._capacity = value;
@@ -32321,107 +31734,90 @@ const _VirtualMemoryController = class _VirtualMemoryController {
       return this.getDataSetMemory(mesh);
     };
   }
-};
-__publicField(_VirtualMemoryController, "oneHundredMb", 1e8);
-__publicField(_VirtualMemoryController, "_meshes", _VirtualMemoryController.setupMeshes());
-__publicField(_VirtualMemoryController, "_capacity");
-__publicField(_VirtualMemoryController, "_memoryAttributes", [
-  "positionBuffer",
-  "indexBuffer",
-  "normalBuffer"
-]);
-__publicField(_VirtualMemoryController, "updateMeshMemory", (mesh) => {
-  mesh.usedMemory = 0;
-  for (const key of _VirtualMemoryController._memoryAttributes) {
-    if (mesh.usedMemory !== void 0 && mesh[key]) {
-      mesh.usedMemory += mesh[key].byteLength;
-    }
-  }
-  _VirtualMemoryController.lockIn(mesh);
-});
-let VirtualMemoryController = _VirtualMemoryController;
-const _VirtualTilesController = class _VirtualTilesController {
+}
+class VirtualTilesController {
+  meshes;
+  tilesUpdated = false;
+  static _graphicMemoryConsumed = 0;
+  _sampleAmount;
+  _tileDimension;
+  _tileBySample;
+  _lodBySample;
+  _virtualMeshes = /* @__PURE__ */ new Map();
+  _meshConnection;
+  _samples;
+  _tileIdGenerator = new CRC();
+  _tiles = /* @__PURE__ */ new Map();
+  _tilesChanged = /* @__PURE__ */ new Set();
+  _sizeByTile = /* @__PURE__ */ new Map();
+  _samplesDimensions;
+  _sampleLodClass;
+  _sampleLodState;
+  _sampleLodSize;
+  _boxes;
+  _items;
+  _materials;
+  _modelId;
+  _lastView = {
+    rotation: new Vector3(),
+    location: new Vector3()
+  };
+  _params = {
+    updateTime: 16,
+    updateSamples: 64,
+    updateviewOrientation: 8 * Math.PI / 180,
+    updateViewPosition: 256,
+    smallTileSize: 0.32,
+    mediumTileSize: 4,
+    smallObjectSize: 2,
+    smallScreenSize: 2,
+    mediumScreenSize: 4,
+    largeScreenSize: 16,
+    tempTileDataSize: 6,
+    tileIdIncrement: 1,
+    tileSizeMultiplier: 10,
+    minTileDimension: 32,
+    tileDimensionFactor: 8
+  };
+  _temp = {
+    sample: new Sample(),
+    representation: new Representation(),
+    vector: new Vector3(),
+    matrix: new Matrix4(),
+    transform: new Matrix4(),
+    boundingBox: new Box3(),
+    sampleGeometry: {},
+    box: new Box3(),
+    raycastPoints: [],
+    tileData: {
+      positionCount: this._params.tempTileDataSize,
+      objectClass: ObjectClass.LINE,
+      positionBuffer: new Float32Array(this._params.tempTileDataSize)
+    },
+    tileCenter: new Vector3(),
+    tile: {
+      objectClass: ObjectClass.LINE,
+      positionCount: 6
+    },
+    viewDimension: 0,
+    pastFieldOfview: 0
+  };
+  _currentSample = 0;
+  _virtualPlanes = [];
+  _changedSamples = 0;
+  _virtualView;
+  /**
+   * Per-sample frustum verdict from the spatial hierarchy, refreshed on
+   * every real view change: 1 = the sample's box is provably outside
+   * the frustum/clipping planes (skip all per-sample plane math in
+   * {@link fetchLodLevel}), 0 = candidate (run the exact per-sample
+   * test as before, so the final classification is unchanged). All
+   * zeroes when no view or lookup exists — the pass then behaves
+   * exactly like the flat version.
+   */
+  _outsideMask;
+  _lodMode = LodMode.DEFAULT;
   constructor(data) {
-    __publicField(this, "meshes");
-    __publicField(this, "tilesUpdated", false);
-    __publicField(this, "_sampleAmount");
-    __publicField(this, "_tileDimension");
-    __publicField(this, "_tileBySample");
-    __publicField(this, "_lodBySample");
-    __publicField(this, "_virtualMeshes", /* @__PURE__ */ new Map());
-    __publicField(this, "_meshConnection");
-    __publicField(this, "_samples");
-    __publicField(this, "_tileIdGenerator", new CRC());
-    __publicField(this, "_tiles", /* @__PURE__ */ new Map());
-    __publicField(this, "_tilesChanged", /* @__PURE__ */ new Set());
-    __publicField(this, "_sizeByTile", /* @__PURE__ */ new Map());
-    __publicField(this, "_samplesDimensions");
-    __publicField(this, "_sampleLodClass");
-    __publicField(this, "_sampleLodState");
-    __publicField(this, "_sampleLodSize");
-    __publicField(this, "_boxes");
-    __publicField(this, "_items");
-    __publicField(this, "_materials");
-    __publicField(this, "_modelId");
-    __publicField(this, "_lastView", {
-      rotation: new Vector3(),
-      location: new Vector3()
-    });
-    __publicField(this, "_params", {
-      updateTime: 16,
-      updateSamples: 64,
-      updateviewOrientation: 8 * Math.PI / 180,
-      updateViewPosition: 256,
-      smallTileSize: 0.32,
-      mediumTileSize: 4,
-      smallObjectSize: 2,
-      smallScreenSize: 2,
-      mediumScreenSize: 4,
-      largeScreenSize: 16,
-      tempTileDataSize: 6,
-      tileIdIncrement: 1,
-      tileSizeMultiplier: 10,
-      minTileDimension: 32,
-      tileDimensionFactor: 8
-    });
-    __publicField(this, "_temp", {
-      sample: new Sample(),
-      representation: new Representation(),
-      vector: new Vector3(),
-      matrix: new Matrix4(),
-      transform: new Matrix4(),
-      boundingBox: new Box3(),
-      sampleGeometry: {},
-      box: new Box3(),
-      raycastPoints: [],
-      tileData: {
-        positionCount: this._params.tempTileDataSize,
-        objectClass: ObjectClass.LINE,
-        positionBuffer: new Float32Array(this._params.tempTileDataSize)
-      },
-      tileCenter: new Vector3(),
-      tile: {
-        objectClass: ObjectClass.LINE,
-        positionCount: 6
-      },
-      viewDimension: 0,
-      pastFieldOfview: 0
-    });
-    __publicField(this, "_currentSample", 0);
-    __publicField(this, "_virtualPlanes", []);
-    __publicField(this, "_changedSamples", 0);
-    __publicField(this, "_virtualView");
-    /**
-     * Per-sample frustum verdict from the spatial hierarchy, refreshed on
-     * every real view change: 1 = the sample's box is provably outside
-     * the frustum/clipping planes (skip all per-sample plane math in
-     * {@link fetchLodLevel}), 0 = candidate (run the exact per-sample
-     * test as before, so the final classification is unchanged). All
-     * zeroes when no view or lookup exists — the pass then behaves
-     * exactly like the flat version.
-     */
-    __publicField(this, "_outsideMask");
-    __publicField(this, "_lodMode", LodMode.DEFAULT);
     this._modelId = data.modelId;
     this._boxes = data.boxes;
     this._items = data.items;
@@ -32474,9 +31870,9 @@ const _VirtualTilesController = class _VirtualTilesController {
     for (let i = 0; i < this._sampleAmount; i++) {
       this.generateSampleInTiles(this._samplesDimensions[i]);
       if (i % step === 0) {
-        onProgress == null ? void 0 : onProgress(i / this._sampleAmount);
+        onProgress?.(i / this._sampleAmount);
         await new Promise((resolve) => setTimeout(resolve, 0));
-        throwIfAborted == null ? void 0 : throwIfAborted();
+        throwIfAborted?.();
       }
     }
     this.setupTileVisibilityAndHighlight();
@@ -32507,9 +31903,8 @@ const _VirtualTilesController = class _VirtualTilesController {
    * (empty model) or no view yet.
    */
   updateOutsideMask() {
-    var _a2;
     const lookup = this._boxes.lookup;
-    const frustum = (_a2 = this._virtualView) == null ? void 0 : _a2.cameraFrustum;
+    const frustum = this._virtualView?.cameraFrustum;
     if (!lookup || !frustum) {
       this._outsideMask.fill(0);
       return;
@@ -32553,14 +31948,11 @@ const _VirtualTilesController = class _VirtualTilesController {
    */
   getDrawChunksForItems(itemIds) {
     const result = [];
-    if (itemIds.size === 0)
-      return result;
+    if (itemIds.size === 0) return result;
     for (const [tileId, tile] of this._tiles) {
-      if (!tile.notVirtual)
-        continue;
+      if (!tile.notVirtual) continue;
       const totalIndices = tile.indexCount ?? 0;
-      if (!totalIndices)
-        continue;
+      if (!totalIndices) continue;
       const positions = [];
       const sizes = [];
       let runStart = -1;
@@ -32568,8 +31960,7 @@ const _VirtualTilesController = class _VirtualTilesController {
       for (const [sample] of tile.sampleLocation) {
         const inSet = itemIds.has(this.itemId(sample));
         if (inSet) {
-          if (runStart < 0)
-            runStart = location;
+          if (runStart < 0) runStart = location;
         } else if (runStart >= 0) {
           const startIdx = tile.indexLocation[runStart];
           const endIdx = tile.indexLocation[location];
@@ -32584,8 +31975,7 @@ const _VirtualTilesController = class _VirtualTilesController {
         positions.push(startIdx);
         sizes.push(totalIndices - startIdx);
       }
-      if (positions.length === 0)
-        continue;
+      if (positions.length === 0) continue;
       result.push({
         tileId,
         position: new Uint32Array(positions),
@@ -32793,8 +32183,7 @@ const _VirtualTilesController = class _VirtualTilesController {
   }
   updateOrientationIfNeeded() {
     const orientation = this.getCurrentViewOrientation();
-    if (!orientation)
-      return;
+    if (!orientation) return;
     const orientationThreshold = this._params.updateviewOrientation;
     const orientationChange = orientation.angleTo(this._lastView.rotation);
     const orientationNeedsUpdate = orientationChange > orientationThreshold;
@@ -32921,7 +32310,7 @@ const _VirtualTilesController = class _VirtualTilesController {
     return MultiBufferData.get(tile.visibilities, locations, filter);
   }
   memoryOverflow() {
-    const current = _VirtualTilesController._graphicMemoryConsumed;
+    const current = VirtualTilesController._graphicMemoryConsumed;
     const available = this._virtualView.graphicThreshold;
     return current > available;
   }
@@ -33043,8 +32432,7 @@ const _VirtualTilesController = class _VirtualTilesController {
     this._samples.setVisible(id, vis);
     this._samples.setHighlight(id, high);
     const tileIds = this.getTileIds(id, lod);
-    if (tileIds === void 0)
-      return;
+    if (tileIds === void 0) return;
     MiscHelper.forEach(tileIds, (tileId) => {
       this.updateTile(tileId, id, high, vis);
     });
@@ -33077,7 +32465,7 @@ const _VirtualTilesController = class _VirtualTilesController {
     if (shouldDelete) {
       this.deleteGeometry(tileId);
       tile.notVirtual = false;
-      _VirtualTilesController._graphicMemoryConsumed -= tile.usedMemory;
+      VirtualTilesController._graphicMemoryConsumed -= tile.usedMemory;
       return;
     }
     this._tilesChanged.add(tileId);
@@ -33284,8 +32672,7 @@ const _VirtualTilesController = class _VirtualTilesController {
     if (tileIds === void 0) {
       tileIds = tileId;
     } else if (typeof tileIds === "number") {
-      if (tileIds !== tileId)
-        tileIds = [tileIds, tileId];
+      if (tileIds !== tileId) tileIds = [tileIds, tileId];
     } else if (!tileIds.includes(tileId)) {
       tileIds.push(tileId);
     }
@@ -33426,7 +32813,7 @@ const _VirtualTilesController = class _VirtualTilesController {
     return { visibilityData, highlightData, highlightIds };
   }
   updateMemoryOnTileLoad(tile) {
-    _VirtualTilesController._graphicMemoryConsumed += tile.usedMemory;
+    VirtualTilesController._graphicMemoryConsumed += tile.usedMemory;
   }
   fetchTileMatrixOnLoad(tile) {
     if (tile.location) {
@@ -33533,15 +32920,13 @@ const _VirtualTilesController = class _VirtualTilesController {
     this.meshes.samples(sample, this._temp.sample);
     return this._temp.sample.item();
   }
-};
-__publicField(_VirtualTilesController, "_graphicMemoryConsumed", 0);
-let VirtualTilesController = _VirtualTilesController;
+}
 class VirtualMaterialController {
+  _modelId;
+  _list = [];
+  _idsByDefinition = /* @__PURE__ */ new Map();
+  _onTransfer;
   constructor(modelId, onTransfer) {
-    __publicField(this, "_modelId");
-    __publicField(this, "_list", []);
-    __publicField(this, "_idsByDefinition", /* @__PURE__ */ new Map());
-    __publicField(this, "_onTransfer");
     this._modelId = modelId;
     this._onTransfer = onTransfer;
   }
@@ -33562,13 +32947,11 @@ class VirtualMaterialController {
   getItemsMaterialDefinition(model, indices, localIds) {
     const result = [];
     const meshes = model.meshes();
-    if (!meshes)
-      return [];
+    if (!meshes) return [];
     const map = /* @__PURE__ */ new Map();
     for (const [index, itemIndex] of indices.entries()) {
       const sample = meshes.samples(itemIndex);
-      if (!sample)
-        continue;
+      if (!sample) continue;
       const materialIndex = sample.material();
       let materialItems = map.get(materialIndex);
       if (!materialItems) {
@@ -33579,8 +32962,7 @@ class VirtualMaterialController {
     }
     for (const [materialIndex, localIds2] of map.entries()) {
       const material = meshes.materials(materialIndex);
-      if (!material)
-        continue;
+      if (!material) continue;
       const definition = ParserHelper.parseMaterial(material);
       result.push({ localIds: [...localIds2], definition });
     }
@@ -34040,15 +33422,13 @@ function createCircleExtrusion(builder, circleExtrusion) {
   return ceOffset;
 }
 function copySpatialStructure(builder, spatialStructure) {
-  if (!spatialStructure)
-    return null;
+  if (!spatialStructure) return null;
   const childrenLength = spatialStructure.childrenLength();
   const childrenOffsets = [];
   for (let i = 0; i < childrenLength; i++) {
     const current = spatialStructure.children(i);
     const childOffset = copySpatialStructure(builder, current);
-    if (childOffset === null)
-      continue;
+    if (childOffset === null) continue;
     childrenOffsets.push(childOffset);
   }
   const childrenOffset = SpatialStructure.createChildrenVector(
@@ -34079,8 +33459,7 @@ function createSpatialStructure(builder, spatialStructure) {
   for (let i = 0; i < childrenLength; i++) {
     const current = children[i];
     const childOffset = createSpatialStructure(builder, current);
-    if (childOffset === null)
-      continue;
+    if (childOffset === null) continue;
     childrenOffsets.push(childOffset);
   }
   const childrenOffset = SpatialStructure.createChildrenVector(
@@ -34124,15 +33503,14 @@ function buildSample(builder, localIdToIndex, itemId, matId, reprId, ltId) {
   Sample.createSample(builder, itemIndex, matIndex, reprIndex, ltIndex);
 }
 function buildIndex(builder, data) {
-  var _a2, _b2;
   const nameOffset = builder.createString(data.name);
   const { keysOffset, isStringKey } = createKeysVector(builder, data.keys);
   const { valuesOffset, isStringValue } = createValuesVector(
     builder,
     data.values
   );
-  const endOffset = ((_a2 = data.end) == null ? void 0 : _a2.length) ? ModelIndex.createEndVector(builder, data.end) : null;
-  const startOffset = ((_b2 = data.start) == null ? void 0 : _b2.length) ? ModelIndex.createStartVector(builder, data.start) : null;
+  const endOffset = data.end?.length ? ModelIndex.createEndVector(builder, data.end) : null;
+  const startOffset = data.start?.length ? ModelIndex.createStartVector(builder, data.start) : null;
   ModelIndex.startModelIndex(builder);
   ModelIndex.addName(builder, nameOffset);
   if (isStringKey) {
@@ -34147,10 +33525,8 @@ function buildIndex(builder, data) {
       ModelIndex.addNumberValues(builder, valuesOffset);
     }
   }
-  if (endOffset !== null)
-    ModelIndex.addEnd(builder, endOffset);
-  if (startOffset !== null)
-    ModelIndex.addStart(builder, startOffset);
+  if (endOffset !== null) ModelIndex.addEnd(builder, endOffset);
+  if (startOffset !== null) ModelIndex.addStart(builder, startOffset);
   return ModelIndex.endModelIndex(builder);
 }
 function copyIndex(builder, src) {
@@ -34167,8 +33543,7 @@ function readIndex(src) {
   let keys;
   if (stringKeysLen > 0) {
     const arr = new Array(stringKeysLen);
-    for (let i = 0; i < stringKeysLen; i++)
-      arr[i] = src.stringKeys(i) ?? "";
+    for (let i = 0; i < stringKeysLen; i++) arr[i] = src.stringKeys(i) ?? "";
     keys = arr;
   } else {
     const numberKeys = src.numberKeysArray();
@@ -34384,8 +33759,7 @@ function getIdsDelta(model, requests) {
   }
   const deletedReprs = EditUtils.getRepresentations(model, deletedRepsIds);
   for (const [id, repr] of deletedReprs) {
-    if (prevRepresentations.has(id))
-      continue;
+    if (prevRepresentations.has(id)) continue;
     if (repr.representationClass === RepresentationClass.SHELL) {
       detaDeletedShellsCount++;
     } else if (repr.representationClass === RepresentationClass.CIRCLE_EXTRUSION) {
@@ -34641,8 +34015,8 @@ function getAffectedItems(requests, editedSamples, meshes, model, affectedItems)
 }
 function edit(model, requests, config) {
   const meshes = model.meshes();
-  const raw = (config == null ? void 0 : config.raw) ?? false;
-  const delta = (config == null ? void 0 : config.delta) ?? false;
+  const raw = config?.raw ?? false;
+  const delta = config?.delta ?? false;
   let deltaItemIds = /* @__PURE__ */ new Set();
   let deltaGts = /* @__PURE__ */ new Set();
   let deltaLts = /* @__PURE__ */ new Set();
@@ -34927,7 +34301,7 @@ function edit(model, requests, config) {
         }
         const errors = [];
         for (let index = 0; index < keys.length; index++) {
-          const valuesStart = (start == null ? void 0 : start[index]) ?? end[index - 1] ?? 0;
+          const valuesStart = start?.[index] ?? end[index - 1] ?? 0;
           const valuesEnd = end[index];
           if (valuesStart < 0 || valuesEnd > values.length || valuesStart > valuesEnd) {
             errors.push({
@@ -35706,8 +35080,7 @@ function edit(model, requests, config) {
     for (const name in relationData.data) {
       const ids = relationData.data[name];
       const filteredIds = ids.filter((id) => !itemsToDelete.has(id));
-      if (!filteredIds.length)
-        continue;
+      if (!filteredIds.length) continue;
       const dataOffset2 = builder.createSharedString(
         JSON.stringify([name, ...filteredIds])
       );
@@ -35773,15 +35146,11 @@ function edit(model, requests, config) {
   const upsertNames = new Set(indexesToUpsert.keys());
   for (let i = 0; i < model.indexesLength(); i++) {
     const existing = model.indexes(i);
-    if (!existing)
-      continue;
+    if (!existing) continue;
     const name = existing.name();
-    if (!name)
-      continue;
-    if (indexesToDelete.has(name))
-      continue;
-    if (upsertNames.has(name))
-      continue;
+    if (!name) continue;
+    if (indexesToDelete.has(name)) continue;
+    if (upsertNames.has(name)) continue;
     indexOffsets.push(copyIndex(builder, existing));
   }
   for (const data of indexesToUpsert.values()) {
@@ -36167,8 +35536,7 @@ function getGlobalTransforms(model, ids) {
     const localId = meshes.globalTransformIds(i);
     const idIndex = meshes.meshesItems(i);
     const itemId = model.localIds(idIndex);
-    if (!source.has(localId))
-      continue;
+    if (!source.has(localId)) continue;
     const gtData = getTransformData(tempTransform);
     globalTransforms.set(localId, { ...gtData, itemId });
   }
@@ -36314,8 +35682,7 @@ function getItemSnapData(vModel, itemId) {
   const model = vModel.data;
   const meshes = model.meshes();
   const sampleIndices = vModel.boxes.sampleOf(itemId);
-  if (!sampleIndices || sampleIndices.length === 0)
-    return null;
+  if (!sampleIndices || sampleIndices.length === 0) return null;
   const result = {
     samples: {},
     localTransforms: {},
@@ -36349,8 +35716,7 @@ function getItemSnapData(vModel, itemId) {
     };
     meshes.localTransforms(ltIndex, tempTransform);
     result.localTransforms[ltId] = getTransformData(tempTransform);
-    if (result.representations[reprId])
-      continue;
+    if (result.representations[reprId]) continue;
     meshes.representations(representationIndex, tempRepresentation);
     const repr = getRepresentationData(tempRepresentation);
     if (repr.representationClass === RepresentationClass.SHELL) {
@@ -36396,8 +35762,7 @@ function solveIds(requests, nextId) {
   const tempIds = /* @__PURE__ */ new Map();
   const result = [];
   for (const request of requests) {
-    if (isIndexRequest(request))
-      continue;
+    if (isIndexRequest(request)) continue;
     if (request.localId !== void 0) {
       continue;
     }
@@ -36409,8 +35774,7 @@ function solveIds(requests, nextId) {
     result.push(newId);
   }
   for (const request of requests) {
-    if (isIndexRequest(request))
-      continue;
+    if (isIndexRequest(request)) continue;
     if (request.type === EditRequestType.UPDATE_SAMPLE || request.type === EditRequestType.CREATE_SAMPLE) {
       const sample = request.data;
       solveSampleTempId(sample, "item", tempIds);
@@ -36476,53 +35840,51 @@ function applyChangesToIds(actions, ids, key, addCreatedElements) {
   return Array.from(resultSet);
 }
 class EditUtils {
+  static edit = edit;
+  static solveIds = solveIds;
+  static newModel = newModel;
+  static applyChangesToRawData = applyChangesToRawData;
+  static applyChangesToSpecialData = applyChangesToSpecialData;
+  static applyChangesToIds = applyChangesToIds;
+  static getModelFromBuffer = getModelFromBuffer;
+  static getSampleData = getSampleData;
+  static getTransformData = getTransformData;
+  static getRelationData = getRelationData;
+  static getMaterialData = getMaterialData;
+  static getRepresentationData = getRepresentationData;
+  static getShellData = getShellData;
+  static getMaterialsIds = getMaterialsIds;
+  static getMaterials = getMaterials;
+  static getRepresentationsIds = getRepresentationsIds;
+  static getRepresentations = getRepresentations;
+  static getLocalTransformsIds = getLocalTransformsIds;
+  static getLocalTransforms = getLocalTransforms;
+  static getGlobalTransformsIds = getGlobalTransformsIds;
+  static getGlobalTransforms = getGlobalTransforms;
+  static getSamplesIds = getSamplesIds;
+  static getSamples = getSamples;
+  static getItemsIds = getItemsIds;
+  static getItems = getItems;
+  static getGlobalTranformsIdsOfItems = getGlobalTranformsIdsOfItems;
+  static getElementsData = getElementsData;
+  static getItemSnapData = getItemSnapData;
+  static getGeometryIndicesFromRepresentations = getGeometryIndicesFromRepresentations;
+  static getRootModelId = getRootModelId;
+  static getSerializedAttributes = getSerializedAttributes;
+  static itemDataToRawItemData = itemDataToRawItemData;
+  static DELTA_MODEL_ID = DELTA_MODEL_ID;
 }
-__publicField(EditUtils, "edit", edit);
-__publicField(EditUtils, "solveIds", solveIds);
-__publicField(EditUtils, "newModel", newModel);
-__publicField(EditUtils, "applyChangesToRawData", applyChangesToRawData);
-__publicField(EditUtils, "applyChangesToSpecialData", applyChangesToSpecialData);
-__publicField(EditUtils, "applyChangesToIds", applyChangesToIds);
-__publicField(EditUtils, "getModelFromBuffer", getModelFromBuffer);
-__publicField(EditUtils, "getSampleData", getSampleData);
-__publicField(EditUtils, "getTransformData", getTransformData);
-__publicField(EditUtils, "getRelationData", getRelationData);
-__publicField(EditUtils, "getMaterialData", getMaterialData);
-__publicField(EditUtils, "getRepresentationData", getRepresentationData);
-__publicField(EditUtils, "getShellData", getShellData);
-__publicField(EditUtils, "getMaterialsIds", getMaterialsIds);
-__publicField(EditUtils, "getMaterials", getMaterials);
-__publicField(EditUtils, "getRepresentationsIds", getRepresentationsIds);
-__publicField(EditUtils, "getRepresentations", getRepresentations);
-__publicField(EditUtils, "getLocalTransformsIds", getLocalTransformsIds);
-__publicField(EditUtils, "getLocalTransforms", getLocalTransforms);
-__publicField(EditUtils, "getGlobalTransformsIds", getGlobalTransformsIds);
-__publicField(EditUtils, "getGlobalTransforms", getGlobalTransforms);
-__publicField(EditUtils, "getSamplesIds", getSamplesIds);
-__publicField(EditUtils, "getSamples", getSamples);
-__publicField(EditUtils, "getItemsIds", getItemsIds);
-__publicField(EditUtils, "getItems", getItems);
-__publicField(EditUtils, "getGlobalTranformsIdsOfItems", getGlobalTranformsIdsOfItems);
-__publicField(EditUtils, "getElementsData", getElementsData);
-__publicField(EditUtils, "getItemSnapData", getItemSnapData);
-__publicField(EditUtils, "getGeometryIndicesFromRepresentations", getGeometryIndicesFromRepresentations);
-__publicField(EditUtils, "getRootModelId", getRootModelId);
-__publicField(EditUtils, "getSerializedAttributes", getSerializedAttributes);
-__publicField(EditUtils, "itemDataToRawItemData", itemDataToRawItemData);
-__publicField(EditUtils, "DELTA_MODEL_ID", DELTA_MODEL_ID);
 var Handle = class {
   constructor(value, schema = 2, tapeItem) {
     this.value = value;
     this.type = 5;
-    if (tapeItem && (tapeItem == null ? void 0 : tapeItem.type) === 2)
-      return TypeInitialiser(schema, tapeItem);
+    if (tapeItem && tapeItem?.type === 2) return TypeInitialiser(schema, tapeItem);
   }
 };
 var NumberHandle = class {
   constructor(v, type) {
     this.type = 4;
-    if (type)
-      this.type = type;
+    if (type) this.type = type;
     this.value = v;
   }
   get internalValue() {
@@ -36543,10 +35905,8 @@ var IfcLineObject = class {
 };
 var TypeInitialisers = {};
 function TypeInitialiser(schema, tapeItem) {
-  if (Array.isArray(tapeItem))
-    tapeItem.map((p) => TypeInitialiser(schema, p));
-  if (tapeItem.typecode)
-    return TypeInitialisers[schema][tapeItem.typecode](tapeItem.value);
+  if (Array.isArray(tapeItem)) tapeItem.map((p) => TypeInitialiser(schema, p));
+  if (tapeItem.typecode) return TypeInitialisers[schema][tapeItem.typecode](tapeItem.value);
   return tapeItem.value;
 }
 TypeInitialisers[1] = {
@@ -78872,62 +78232,28 @@ var IFC4X3;
   }
   IFC4X32.IfcController = IfcController;
 })(IFC4X3 || (IFC4X3 = {}));
-_c = class {
-  static setLogLevel(level) {
-    this.logLevel = level;
-  }
-  static log(msg, ...args) {
-    if (this.logLevel <= 4) {
-      console.log(msg, ...args);
-    }
-  }
-  static debug(msg, ...args) {
-    if (this.logLevel <= 1) {
-      console.trace("DEBUG: ", msg, ...args);
-    }
-  }
-  static warn(msg, ...args) {
-    if (this.logLevel <= 3) {
-      console.warn("WARN: ", msg, ...args);
-    }
-  }
-  static error(msg, ...args) {
-    if (this.logLevel <= 4) {
-      console.error("ERROR: ", msg, ...args);
-    }
-  }
-}, _c.logLevel = 4, _c;
 if (typeof document !== "undefined") {
   const currentScriptData = document.currentScript;
-  if ((currentScriptData == null ? void 0 : currentScriptData.src) !== void 0)
+  if (currentScriptData?.src !== void 0)
     currentScriptData.src.substring(
       0,
       currentScriptData.src.lastIndexOf("/") + 1
     );
 }
 class VirtualPropertiesController {
+  _model;
+  _boxes;
+  _localIdsToGeometryIds = /* @__PURE__ */ new Map();
+  _guidToLocalIdMap = /* @__PURE__ */ new Map();
+  _items = /* @__PURE__ */ new Map();
+  _itemDataCache = /* @__PURE__ */ new Map();
+  _itemDataConfig = {
+    attributesDefault: true,
+    relationsDefault: { attributes: false, relations: false }
+  };
+  _spatialStructure = null;
+  _virtualModel;
   constructor(virtualModel, boxes, config) {
-    __publicField(this, "_model");
-    __publicField(this, "_boxes");
-    __publicField(this, "_localIdsToGeometryIds", /* @__PURE__ */ new Map());
-    __publicField(this, "_guidToLocalIdMap", /* @__PURE__ */ new Map());
-    __publicField(this, "_items", /* @__PURE__ */ new Map());
-    __publicField(this, "_itemDataCache", /* @__PURE__ */ new Map());
-    __publicField(this, "_itemDataConfig", {
-      attributesDefault: true,
-      relationsDefault: { attributes: false, relations: false }
-    });
-    __publicField(this, "_spatialStructure", null);
-    __publicField(this, "_virtualModel");
-    __publicField(this, "_relations", /* @__PURE__ */ new Map());
-    // Memoized localId → array index lookups. The flatbuffer accessors return
-    // a fresh TypedArray view on every call, so the caches are keyed by the
-    // underlying buffer and length instead of array identity. Without these,
-    // every getItemAttributes/getItemRelations call does a linear indexOf scan,
-    // which makes bulk reads (e.g. getItemsData over all psets) O(n²).
-    __publicField(this, "_localIdIndexCache", null);
-    __publicField(this, "_relationsItemIndexCache", null);
-    __publicField(this, "_categoryIndexCache", null);
     this._virtualModel = virtualModel;
     this._model = virtualModel.data;
     this._boxes = boxes;
@@ -78957,8 +78283,7 @@ class VirtualPropertiesController {
       }
       for (let i = 0; i < this._model.guidsItemsLength(); i++) {
         const localId = this._model.guidsItems(i);
-        if (localId === null)
-          continue;
+        if (localId === null) continue;
         const guid = this._model.guids(i);
         this._guidToLocalIdMap.set(guid, localId);
         let itemInfo = this._items.get(localId);
@@ -78975,15 +78300,21 @@ class VirtualPropertiesController {
       }
     }
   }
+  _relations = /* @__PURE__ */ new Map();
+  // Memoized localId → array index lookups. The flatbuffer accessors return
+  // a fresh TypedArray view on every call, so the caches are keyed by the
+  // underlying buffer and length instead of array identity. Without these,
+  // every getItemAttributes/getItemRelations call does a linear indexOf scan,
+  // which makes bulk reads (e.g. getItemsData over all psets) O(n²).
+  _localIdIndexCache = null;
+  _relationsItemIndexCache = null;
   indexOfLocalId(localId) {
     const arr = this._model.localIdsArray();
-    if (!arr)
-      return void 0;
+    if (!arr) return void 0;
     let cache = this._localIdIndexCache;
     if (!cache || cache.length !== arr.length || cache.buffer !== arr.buffer) {
       const map = /* @__PURE__ */ new Map();
-      for (let i = 0; i < arr.length; i++)
-        map.set(arr[i], i);
+      for (let i = 0; i < arr.length; i++) map.set(arr[i], i);
       cache = { buffer: arr.buffer, length: arr.length, map };
       this._localIdIndexCache = cache;
     }
@@ -78991,13 +78322,11 @@ class VirtualPropertiesController {
   }
   indexOfRelationsItem(localId) {
     const arr = this._model.relationsItemsArray();
-    if (!arr)
-      return void 0;
+    if (!arr) return void 0;
     let cache = this._relationsItemIndexCache;
     if (!cache || cache.length !== arr.length || cache.buffer !== arr.buffer) {
       const map = /* @__PURE__ */ new Map();
-      for (let i = 0; i < arr.length; i++)
-        map.set(arr[i], i);
+      for (let i = 0; i < arr.length; i++) map.set(arr[i], i);
       cache = { buffer: arr.buffer, length: arr.length, map };
       this._relationsItemIndexCache = cache;
     }
@@ -79013,8 +78342,7 @@ class VirtualPropertiesController {
     const psetLocalIds = categoriesIds[category];
     for (const psetId of psetLocalIds) {
       const relations = this.getItemRelations(psetId);
-      if (!(relations && relations[relation]))
-        continue;
+      if (!(relations && relations[relation])) continue;
       const localIds = relations[relation];
       for (const itemId of localIds) {
         let relationsObject = this._relations.get(itemId);
@@ -79054,19 +78382,16 @@ class VirtualPropertiesController {
   getItemIdsFromLocalIds(localIds) {
     if (!localIds) {
       const meshes = this._model.meshes();
-      if (!meshes)
-        return [];
+      if (!meshes) return [];
       const count = meshes.meshesItemsLength();
       const all = new Array(count);
-      for (let itemId = 0; itemId < count; itemId++)
-        all[itemId] = itemId;
+      for (let itemId = 0; itemId < count; itemId++) all[itemId] = itemId;
       return all;
     }
     const itemIds = [];
     for (const localId of localIds) {
       const found = this._localIdsToGeometryIds.get(localId);
-      if (!found)
-        continue;
+      if (!found) continue;
       for (const itemId of found) {
         itemIds.push(itemId);
       }
@@ -79079,13 +78404,10 @@ class VirtualPropertiesController {
     const result = [];
     for (const itemId of itemIds) {
       const localIdIndex = meshes.meshesItems(itemId);
-      if (localIdIndex === null)
-        continue;
+      if (localIdIndex === null) continue;
       const localId = this._model.localIds(localIdIndex);
-      if (localId === null)
-        continue;
-      if (seen.has(localId))
-        continue;
+      if (localId === null) continue;
+      if (seen.has(localId)) continue;
       seen.add(localId);
       result.push(localId);
     }
@@ -79117,8 +78439,7 @@ class VirtualPropertiesController {
     const result = /* @__PURE__ */ new Set();
     for (const id of ids) {
       const localId = this.convertToLocalId(id);
-      if (localId === null)
-        continue;
+      if (localId === null) continue;
       this.traverseSpatialStructure(localId, result);
     }
     return [...result];
@@ -79133,18 +78454,15 @@ class VirtualPropertiesController {
   }
   getLocalIds() {
     const array = this._model.localIdsArray();
-    if (!array)
-      return [];
+    if (!array) return [];
     return Array.from(array);
   }
   getItemsCategories(ids) {
-    var _a2;
     const result = [];
     for (const id of ids) {
       const localId = this.convertToLocalId(id);
-      if (localId === null)
-        continue;
-      let category = ((_a2 = this._items.get(localId)) == null ? void 0 : _a2.category) ?? null;
+      if (localId === null) continue;
+      let category = this._items.get(localId)?.category ?? null;
       if (category === null) {
         const created = this._virtualModel.requestIndex.first(
           localId,
@@ -79167,10 +78485,9 @@ class VirtualPropertiesController {
     return result;
   }
   getGuidsByLocalIds(localIds) {
-    var _a2;
     const result = [];
     for (const id of localIds) {
-      const guid = (_a2 = this._items.get(id)) == null ? void 0 : _a2.guid;
+      const guid = this._items.get(id)?.guid;
       result.push(guid !== void 0 ? guid : null);
     }
     return result;
@@ -79179,8 +78496,7 @@ class VirtualPropertiesController {
     const names = /* @__PURE__ */ new Set();
     for (let i = 0; i < this._model.uniqueAttributesLength(); i++) {
       const attribute = this._model.uniqueAttributes(i);
-      if (!attribute)
-        continue;
+      if (!attribute) continue;
       const [name] = JSON.parse(attribute);
       names.add(name);
     }
@@ -79190,15 +78506,13 @@ class VirtualPropertiesController {
     const values = /* @__PURE__ */ new Set();
     for (let i = 0; i < this._model.uniqueAttributesLength(); i++) {
       const attribute = this._model.uniqueAttributes(i);
-      if (!attribute)
-        continue;
+      if (!attribute) continue;
       const [, value] = JSON.parse(attribute);
       values.add(value);
     }
     return [...values];
   }
   getAttributesUniqueValues(params) {
-    var _a2, _b2, _c3;
     const map = /* @__PURE__ */ new Map();
     const areCategoriesDefined = params.every(
       (value) => value.categories !== void 0
@@ -79206,23 +78520,19 @@ class VirtualPropertiesController {
     const categoriesRegex = params.map((value) => value.categories).filter((value) => value !== void 0).flat();
     for (let i = 0; i < this._model.categoriesLength(); i++) {
       const localId = this._model.localIds(i);
-      if (localId === null)
-        continue;
+      if (localId === null) continue;
       let valid = true;
       if (areCategoriesDefined) {
         const category2 = this._model.categories(i);
-        valid = categoriesRegex.some((regex) => regex == null ? void 0 : regex.test(category2));
+        valid = categoriesRegex.some((regex) => regex?.test(category2));
       }
-      if (!valid)
-        continue;
+      if (!valid) continue;
       const buffer = this._model.attributes(i);
-      if (!buffer)
-        continue;
+      if (!buffer) continue;
       const attributeSet = {};
       for (let j = 0; j < buffer.dataLength(); j++) {
         const attr = buffer.data(j);
-        if (!attr)
-          continue;
+        if (!attr) continue;
         const [name, value, type] = JSON.parse(attr);
         attributeSet[name] = { value, type };
       }
@@ -79233,16 +78543,14 @@ class VirtualPropertiesController {
         if (categories) {
           categoryMatch = categories.some((value) => value.test(category));
         }
-        if (!categoryMatch)
-          continue;
+        if (!categoryMatch) continue;
         let setPasses = true;
         if (attributes) {
           const { aggregation, queries } = attributes;
           const queryResults = [];
           for (const { name, value, type, negate } of queries) {
             const key = keys.find((key2) => name.test(key2));
-            if (!(key && ((_a2 = attributeSet[key]) == null ? void 0 : _a2.value) !== void 0))
-              break;
+            if (!(key && attributeSet[key]?.value !== void 0)) break;
             let pass = false;
             const { value: keyValue, type: keyType } = attributeSet[key];
             if (value instanceof RegExp) {
@@ -79253,18 +78561,16 @@ class VirtualPropertiesController {
             if (type !== void 0) {
               pass = pass && typeof keyType === "string" && type.test(keyType);
             }
-            if (negate)
-              pass = !pass;
+            if (negate) pass = !pass;
             queryResults.push(pass);
           }
           setPasses = aggregation === "exclusive" ? queryResults.every((result2) => result2) : queryResults.some((result2) => result2);
         }
         if (setPasses) {
           const key = keys.find((key2) => get.test(key2));
-          if (!(key && ((_b2 = attributeSet[key]) == null ? void 0 : _b2.value) !== void 0))
-            continue;
+          if (!(key && attributeSet[key]?.value !== void 0)) continue;
           const mapKey = resultKey ?? key;
-          const value = (_c3 = attributeSet[key]) == null ? void 0 : _c3.value;
+          const value = attributeSet[key]?.value;
           if (!map.has(mapKey)) {
             map.set(mapKey, /* @__PURE__ */ new Map());
           }
@@ -79292,8 +78598,7 @@ class VirtualPropertiesController {
     const types = /* @__PURE__ */ new Set();
     for (let i = 0; i < this._model.uniqueAttributesLength(); i++) {
       const attribute = this._model.uniqueAttributes(i);
-      if (!attribute)
-        continue;
+      if (!attribute) continue;
       const [, , type] = JSON.parse(attribute);
       types.add(type);
     }
@@ -79303,8 +78608,7 @@ class VirtualPropertiesController {
     const names = /* @__PURE__ */ new Set();
     for (let i = 0; i < this._model.relationNamesLength(); i++) {
       const name = this._model.relationNames(i);
-      if (!name)
-        continue;
+      if (!name) continue;
       names.add(name);
     }
     return [...names];
@@ -79393,7 +78697,6 @@ class VirtualPropertiesController {
     data[name] = { value, type };
   }
   getItemData(id, config = {}) {
-    var _a2;
     const allAttributes = this._itemDataConfig.attributesDefault;
     const attributesConfig = this._itemDataConfig.attributes;
     const relationsConfig = this._itemDataConfig.relations ?? {};
@@ -79430,7 +78733,7 @@ class VirtualPropertiesController {
       return {};
     }
     const [category] = this.getItemsCategories([localId]);
-    const guid = typeof id === "string" ? id : ((_a2 = this._items.get(id)) == null ? void 0 : _a2.guid) ?? null;
+    const guid = typeof id === "string" ? id : this._items.get(id)?.guid ?? null;
     const data = {
       _category: { value: category },
       _localId: { value: localId },
@@ -79441,10 +78744,10 @@ class VirtualPropertiesController {
       const itemAttrs = this.getItemAttributes(id);
       for (const [key, value] of Object.entries(itemAttrs ?? {})) {
         if (allAttributes) {
-          if (!(attributesConfig == null ? void 0 : attributesConfig.includes(key))) {
+          if (!attributesConfig?.includes(key)) {
             data[key] = value;
           }
-        } else if (attributesConfig == null ? void 0 : attributesConfig.includes(key)) {
+        } else if (attributesConfig?.includes(key)) {
           data[key] = value;
         }
       }
@@ -79479,8 +78782,7 @@ class VirtualPropertiesController {
     this._itemDataCache.clear();
     const result = [];
     const _ids = ids.length !== 0 ? ids : this._model.localIdsArray();
-    if (!_ids)
-      return result;
+    if (!_ids) return result;
     this._itemDataConfig = {
       ...this._itemDataConfig,
       ...config
@@ -79543,8 +78845,7 @@ class VirtualPropertiesController {
     const categories = /* @__PURE__ */ new Set();
     for (let index = 0; index < this._model.categoriesLength(); index++) {
       const category = this._model.categories(index);
-      if (!category)
-        continue;
+      if (!category) continue;
       categories.add(category);
     }
     for (let i = 0; i < this._virtualModel.requests.length; i++) {
@@ -79592,12 +78893,10 @@ class VirtualPropertiesController {
           const target = result[currentCategory];
           if (deletedItems.size > 0) {
             for (const localId of ids) {
-              if (!deletedItems.has(localId))
-                target.push(localId);
+              if (!deletedItems.has(localId)) target.push(localId);
             }
           } else {
-            for (const localId of ids)
-              target.push(localId);
+            for (const localId of ids) target.push(localId);
           }
           break;
         }
@@ -79605,6 +78904,7 @@ class VirtualPropertiesController {
     }
     return result;
   }
+  _categoryIndexCache = null;
   /**
    * Lazily built category → localIds index over the immutable flatbuffer
    * data. Keyed by the underlying buffer and length so it rebuilds if the
@@ -79619,8 +78919,7 @@ class VirtualPropertiesController {
       const map = /* @__PURE__ */ new Map();
       for (let index = 0; index < length; index++) {
         const currentCategory = this._model.categories(index);
-        if (!currentCategory)
-          continue;
+        if (!currentCategory) continue;
         const localId = this._model.localIds(index);
         let ids = map.get(currentCategory);
         if (!ids) {
@@ -79696,23 +78995,19 @@ class VirtualPropertiesController {
     const allAttributesLength = this._model.attributesLength();
     const res = [];
     const missingItemsToIterate = new Set(itemIds);
-    const itemIdSet = (itemIds == null ? void 0 : itemIds.length) ? new Set(itemIds) : null;
+    const itemIdSet = itemIds?.length ? new Set(itemIds) : null;
     for (let i = 0; i < allAttributesLength; i++) {
       const localId = this._model.localIds(i);
-      if (localId === null)
-        continue;
+      if (localId === null) continue;
       missingItemsToIterate.delete(localId);
-      if (itemIdSet && !itemIdSet.has(localId))
-        continue;
+      if (itemIdSet && !itemIdSet.has(localId)) continue;
       const attribute = this._model.attributes(i);
-      if (!attribute)
-        continue;
-      const dataLength = attribute == null ? void 0 : attribute.dataLength();
+      if (!attribute) continue;
+      const dataLength = attribute?.dataLength();
       let itemPasses = false;
       for (let j = 0; j < dataLength; j++) {
         const data = attribute.data(j);
-        if (!data)
-          continue;
+        if (!data) continue;
         const [attrName, val, typeValue] = JSON.parse(data);
         const pass = this.checkAttribute(
           {
@@ -79769,8 +79064,7 @@ class VirtualPropertiesController {
           localId,
           EditRequestType.CREATE_ITEM
         );
-        if (!created)
-          continue;
+        if (!created) continue;
         const data = {};
         for (const name2 in created.data.data) {
           const found = created.data.data[name2];
@@ -79810,9 +79104,8 @@ class VirtualPropertiesController {
     const sources = sourceItemIds ?? this.getAllLocalIds();
     for (const srcId of sources) {
       const rels = this.getItemRelations(srcId);
-      const linked = rels == null ? void 0 : rels[name];
-      if (!linked)
-        continue;
+      const linked = rels?.[name];
+      if (!linked) continue;
       if (targetItemIds) {
         for (const trgId of linked) {
           if (targetItemIds.has(trgId)) {
@@ -79827,24 +79120,21 @@ class VirtualPropertiesController {
     return res;
   }
   getItemsByQuery(params, config) {
-    var _a2;
     const { categories, attributes, relation } = params;
-    let candidateIds = config == null ? void 0 : config.localIds;
+    let candidateIds = config?.localIds;
     if (candidateIds) {
       if (categories) {
         const itemsCategories = this.getItemsCategories(candidateIds);
         candidateIds = candidateIds.filter((_, index) => {
           const category = itemsCategories[index];
-          if (!category)
-            return null;
+          if (!category) return null;
           return categories.some((entry) => entry.test(category));
         });
       }
     } else {
-      candidateIds = ((_a2 = categories == null ? void 0 : categories.filter(Boolean)) == null ? void 0 : _a2.length) ? Object.values(this.getItemsOfCategories(categories)).flat() : void 0;
+      candidateIds = categories?.filter(Boolean)?.length ? Object.values(this.getItemsOfCategories(categories)).flat() : void 0;
     }
-    if ((candidateIds == null ? void 0 : candidateIds.length) === 0)
-      return [];
+    if (candidateIds?.length === 0) return [];
     if (attributes) {
       const aggregation = attributes.aggregation ?? "exclusive";
       const ids = [];
@@ -79884,8 +79174,7 @@ class VirtualPropertiesController {
       }
       candidateIds = [...set];
     }
-    if ((candidateIds == null ? void 0 : candidateIds.length) === 0)
-      return [];
+    if (candidateIds?.length === 0) return [];
     if (relation && Boolean(relation.name)) {
       const { name, query } = relation;
       const targetIds = query ? new Set(this.getItemsByQuery(query)) : void 0;
@@ -79921,8 +79210,7 @@ class VirtualPropertiesController {
     for (let i = 0; i < length; i++) {
       const localIdIndex = geometries.meshesItems(i);
       const localId = this._model.localIds(localIdIndex);
-      if (localId === null)
-        continue;
+      if (localId === null) continue;
       if (!this._localIdsToGeometryIds.has(localId)) {
         this._localIdsToGeometryIds.set(localId, []);
       }
@@ -79931,11 +79219,9 @@ class VirtualPropertiesController {
   }
   convertToLocalId(id) {
     const isLocalId = typeof id === "number";
-    if (isLocalId)
-      return id;
+    if (isLocalId) return id;
     const localId = this._guidToLocalIdMap.get(id);
-    if (localId === void 0)
-      return null;
+    if (localId === void 0) return null;
     return localId;
   }
   getChildrenLocalIds(treeItem, collector) {
@@ -79949,8 +79235,7 @@ class VirtualPropertiesController {
     }
   }
   traverseSpatialStructure(localId, collector, treeItem = this.getSpatialStructure()) {
-    if (!treeItem)
-      return;
+    if (!treeItem) return;
     if (treeItem.localId === localId && treeItem.children) {
       for (const child of treeItem.children) {
         this.getChildrenLocalIds(child, collector);
@@ -79965,8 +79250,8 @@ class VirtualPropertiesController {
   }
 }
 class AlignmentsController {
+  _fragments;
   constructor(virtualFragmentsModel) {
-    __publicField(this, "_fragments");
     this._fragments = virtualFragmentsModel;
   }
   getAlignments() {
@@ -79989,9 +79274,7 @@ class AlignmentsController {
   }
 }
 class VirtualTemplateController {
-  constructor() {
-    __publicField(this, "_templates", /* @__PURE__ */ new Map());
-  }
+  _templates = /* @__PURE__ */ new Map();
   add(code, template) {
     this._templates.set(code, template);
   }
@@ -80012,16 +79295,16 @@ class VirtualTemplateController {
     return result;
   }
 }
-const DELETED = Symbol("deleted index");
+const DELETED = /* @__PURE__ */ Symbol("deleted index");
 class VirtualIndexesController {
+  _vm;
+  _storedByName = /* @__PURE__ */ new Map();
+  _storedNames = null;
+  /** Overlay built from pending CREATE/UPDATE/DELETE_INDEX requests. */
+  _overlay = null;
+  /** Length of the request list when the overlay was built; rebuild on mismatch. */
+  _overlayRequestsLen = -1;
   constructor(vm) {
-    __publicField(this, "_vm");
-    __publicField(this, "_storedByName", /* @__PURE__ */ new Map());
-    __publicField(this, "_storedNames", null);
-    /** Overlay built from pending CREATE/UPDATE/DELETE_INDEX requests. */
-    __publicField(this, "_overlay", null);
-    /** Length of the request list when the overlay was built; rebuild on mismatch. */
-    __publicField(this, "_overlayRequestsLen", -1);
     this._vm = vm;
   }
   /**
@@ -80036,16 +79319,13 @@ class VirtualIndexesController {
     const seen = /* @__PURE__ */ new Set();
     for (const name of stored) {
       const o = overlay.get(name);
-      if (o === DELETED)
-        continue;
+      if (o === DELETED) continue;
       out.push(name);
       seen.add(name);
     }
     for (const [name, entry] of overlay) {
-      if (entry === DELETED)
-        continue;
-      if (seen.has(name))
-        continue;
+      if (entry === DELETED) continue;
+      if (seen.has(name)) continue;
       out.push(name);
     }
     return out;
@@ -80065,22 +79345,18 @@ class VirtualIndexesController {
    */
   getKeys(name) {
     const entry = this.resolve(name);
-    if (!entry)
-      return null;
+    if (!entry) return null;
     return entry.info.keyType === "number" ? this.materializeNumberKeys(entry) : this.materializeStringKeys(entry);
   }
   getKey(name, index) {
     const entry = this.resolve(name);
-    if (!entry)
-      return null;
+    if (!entry) return null;
     return entry.info.keyType === "number" ? this.materializeNumberKeys(entry)[index] ?? null : this.readStringKey(entry.source, index);
   }
   getValues(name) {
     const entry = this.resolve(name);
-    if (!entry)
-      return null;
-    if (entry.info.valueType === "none")
-      return null;
+    if (!entry) return null;
+    if (entry.info.valueType === "none") return null;
     const inverse = this.inverseMap(entry);
     return Array.from(inverse.keys());
   }
@@ -80089,10 +79365,8 @@ class VirtualIndexesController {
    */
   has(name, key) {
     const entry = this.resolve(name);
-    if (!entry)
-      return false;
-    if (typeof key !== entry.info.keyType)
-      return false;
+    if (!entry) return false;
+    if (typeof key !== entry.info.keyType) return false;
     return this.keyMap(entry).has(key);
   }
   /**
@@ -80102,16 +79376,12 @@ class VirtualIndexesController {
    */
   getEntry(name, key) {
     const entry = this.resolve(name);
-    if (!entry)
-      return null;
-    if (typeof key !== entry.info.keyType)
-      return null;
+    if (!entry) return null;
+    if (typeof key !== entry.info.keyType) return null;
     const position = this.keyMap(entry).get(key);
-    if (position === void 0)
-      return null;
+    if (position === void 0) return null;
     const { mode, valueType } = entry.info;
-    if (mode === "keysOnly" || valueType === "none")
-      return null;
+    if (mode === "keysOnly" || valueType === "none") return null;
     if (mode === "oneToOne") {
       return this.readScalarValue(entry, position);
     }
@@ -80127,16 +79397,12 @@ class VirtualIndexesController {
    */
   getInverseEntry(name, value) {
     const entry = this.resolve(name);
-    if (!entry)
-      return null;
-    if (entry.info.valueType === "none")
-      return null;
-    if (typeof value !== entry.info.valueType)
-      return null;
+    if (!entry) return null;
+    if (entry.info.valueType === "none") return null;
+    if (typeof value !== entry.info.valueType) return null;
     const inverse = this.inverseMap(entry);
     const keys = inverse.get(value);
-    if (!keys)
-      return null;
+    if (!keys) return null;
     return entry.info.keyType === "number" ? Uint32Array.from(keys) : keys.slice();
   }
   /**
@@ -80155,11 +79421,9 @@ class VirtualIndexesController {
     this._storedByName.delete(name);
     if (this._storedNames) {
       const i = this._storedNames.indexOf(name);
-      if (i !== -1)
-        this._storedNames.splice(i, 1);
+      if (i !== -1) this._storedNames.splice(i, 1);
     }
-    if (this._overlay)
-      this._overlay.delete(name);
+    if (this._overlay) this._overlay.delete(name);
   }
   // ---------------------------------------------------------------------------
   // Resolution
@@ -80167,23 +79431,18 @@ class VirtualIndexesController {
   resolve(name) {
     const overlay = this.overlay();
     const pending = overlay.get(name);
-    if (pending === DELETED)
-      return null;
-    if (pending !== void 0)
-      return pending;
+    if (pending === DELETED) return null;
+    if (pending !== void 0) return pending;
     return this.resolveStored(name);
   }
   resolveStored(name) {
     const cached = this._storedByName.get(name);
-    if (cached)
-      return cached;
+    if (cached) return cached;
     const length = this._vm.data.indexesLength();
     for (let i = 0; i < length; i++) {
       const fb = this._vm.data.indexes(i);
-      if (!fb)
-        continue;
-      if (fb.name() !== name)
-        continue;
+      if (!fb) continue;
+      if (fb.name() !== name) continue;
       const entry = this.entryFromFb(fb, name);
       this._storedByName.set(name, entry);
       return entry;
@@ -80191,17 +79450,14 @@ class VirtualIndexesController {
     return null;
   }
   storedNames() {
-    if (this._storedNames)
-      return this._storedNames;
+    if (this._storedNames) return this._storedNames;
     const names = [];
     const length = this._vm.data.indexesLength();
     for (let i = 0; i < length; i++) {
       const idx = this._vm.data.indexes(i);
-      if (!idx)
-        continue;
+      if (!idx) continue;
       const name = idx.name();
-      if (!name)
-        continue;
+      if (!name) continue;
       names.push(name);
     }
     this._storedNames = names;
@@ -80237,16 +79493,12 @@ class VirtualIndexesController {
     const keyType = stringKeys > 0 ? "string" : "number";
     const size = keyType === "string" ? stringKeys : numberKeys;
     let valueType = "none";
-    if (stringValues > 0)
-      valueType = "string";
-    else if (numberValues > 0)
-      valueType = "number";
+    if (stringValues > 0) valueType = "string";
+    else if (numberValues > 0) valueType = "number";
     let mode = "keysOnly";
     if (valueType !== "none") {
-      if (endLen === 0)
-        mode = "oneToOne";
-      else
-        mode = startLen > 0 ? "oneToNNonLinear" : "oneToNLinear";
+      if (endLen === 0) mode = "oneToOne";
+      else mode = startLen > 0 ? "oneToNNonLinear" : "oneToNLinear";
     }
     return {
       source: { kind: "fb", fb },
@@ -80256,7 +79508,6 @@ class VirtualIndexesController {
     };
   }
   entryFromRaw(data) {
-    var _a2, _b2;
     const keyType = typeof data.keys[0] === "string" ? "string" : "number";
     const size = data.keys.length;
     let valueType = "none";
@@ -80265,12 +79516,10 @@ class VirtualIndexesController {
     }
     let mode = "keysOnly";
     if (valueType !== "none") {
-      const endLen = ((_a2 = data.end) == null ? void 0 : _a2.length) ?? 0;
-      const startLen = ((_b2 = data.start) == null ? void 0 : _b2.length) ?? 0;
-      if (endLen === 0)
-        mode = "oneToOne";
-      else
-        mode = startLen > 0 ? "oneToNNonLinear" : "oneToNLinear";
+      const endLen = data.end?.length ?? 0;
+      const startLen = data.start?.length ?? 0;
+      if (endLen === 0) mode = "oneToOne";
+      else mode = startLen > 0 ? "oneToNNonLinear" : "oneToNLinear";
     }
     const numberKeysArray = keyType === "number" ? Uint32Array.from(data.keys) : null;
     const numberValuesArray = valueType === "number" && data.values ? Uint32Array.from(data.values) : null;
@@ -80315,22 +79564,19 @@ class VirtualIndexesController {
   // ---------------------------------------------------------------------------
   /** Lazily build the `key -> position in keys vector` map for forward lookup. */
   keyMap(entry) {
-    if (entry.keyPositions)
-      return entry.keyPositions;
+    if (entry.keyPositions) return entry.keyPositions;
     const map = /* @__PURE__ */ new Map();
     const { source, info } = entry;
     if (info.keyType === "number") {
       for (let i = 0; i < info.size; i++) {
         const k = this.readNumberKey(source, i);
-        if (k === null)
-          continue;
+        if (k === null) continue;
         map.set(k, i);
       }
     } else {
       for (let i = 0; i < info.size; i++) {
         const k = this.readStringKey(source, i);
-        if (k === null)
-          continue;
+        if (k === null) continue;
         map.set(k, i);
       }
     }
@@ -80357,8 +79603,7 @@ class VirtualIndexesController {
   }
   readNumberSlice(entry, start, end) {
     const all = this.numberValuesArray(entry.source);
-    if (!all)
-      return new Uint32Array(0);
+    if (!all) return new Uint32Array(0);
     return all.subarray(start, end);
   }
   readStringSlice(entry, start, end) {
@@ -80383,8 +79628,7 @@ class VirtualIndexesController {
   }
   /** Lazily build the inverse map. */
   inverseMap(entry) {
-    if (entry.inverse)
-      return entry.inverse;
+    if (entry.inverse) return entry.inverse;
     const map = /* @__PURE__ */ new Map();
     const { source, info } = entry;
     const pushKey = (value, key) => {
@@ -80400,20 +79644,17 @@ class VirtualIndexesController {
     };
     for (let i = 0; i < info.size; i++) {
       const key = info.keyType === "number" ? this.readNumberKey(source, i) : this.readStringKey(source, i);
-      if (key === null)
-        continue;
+      if (key === null) continue;
       if (info.mode === "oneToOne") {
         const v = this.readScalarValue(entry, i);
-        if (v !== null)
-          pushKey(v, key);
+        if (v !== null) pushKey(v, key);
         continue;
       }
       if (info.mode === "oneToNLinear" || info.mode === "oneToNNonLinear") {
         const [start, end] = this.sliceBounds(entry, i);
         for (let j = start; j < end; j++) {
           const v = info.valueType === "number" ? this.readNumberValueAt(source, j) : this.readStringValueAt(source, j);
-          if (v !== null && v !== void 0)
-            pushKey(v, key);
+          if (v !== null && v !== void 0) pushKey(v, key);
         }
       }
     }
@@ -80421,17 +79662,33 @@ class VirtualIndexesController {
     return map;
   }
 }
-const _VirtualBox = class _VirtualBox {
+class VirtualBox {
+  _dataBuffer;
+  _dataPosition;
+  static _data = {
+    size: 6,
+    defaultPosition: 0,
+    min: {
+      x: 0,
+      y: 2,
+      z: 4
+    },
+    max: {
+      x: 1,
+      y: 3,
+      z: 5
+    },
+    coords: ["x", "y", "z"],
+    points: ["min", "max"]
+  };
   constructor(position, data) {
-    __publicField(this, "_dataBuffer");
-    __publicField(this, "_dataPosition");
     this._dataBuffer = data || this.getDefaultData();
-    this._dataPosition = position || _VirtualBox._data.defaultPosition;
+    this._dataPosition = position || VirtualBox._data.defaultPosition;
   }
   set(values) {
     let counter = 0;
-    for (const point of _VirtualBox._data.points) {
-      for (const coord of _VirtualBox._data.coords) {
+    for (const point of VirtualBox._data.points) {
+      for (const coord of VirtualBox._data.coords) {
         const position = this.getPosition(coord, point);
         const result = values[counter++];
         this.setValue(position, result);
@@ -80443,8 +79700,8 @@ const _VirtualBox = class _VirtualBox {
     return this._dataBuffer[position];
   }
   clone(box) {
-    for (const point of _VirtualBox._data.points) {
-      for (const coord of _VirtualBox._data.coords) {
+    for (const point of VirtualBox._data.points) {
+      for (const coord of VirtualBox._data.coords) {
         const position = this.getPosition(coord, point);
         const result = box.get(coord, point);
         this.setValue(position, result);
@@ -80452,8 +79709,8 @@ const _VirtualBox = class _VirtualBox {
     }
   }
   combine(box1, box2) {
-    for (const point of _VirtualBox._data.points) {
-      for (const coord of _VirtualBox._data.coords) {
+    for (const point of VirtualBox._data.points) {
+      for (const coord of VirtualBox._data.coords) {
         this.save(coord, point, box1, box2);
       }
     }
@@ -80462,10 +79719,10 @@ const _VirtualBox = class _VirtualBox {
     this._dataBuffer[position] = value;
   }
   getDefaultData() {
-    return new Float64Array(_VirtualBox._data.size);
+    return new Float64Array(VirtualBox._data.size);
   }
   getPosition(coord, point) {
-    const coordPosition = _VirtualBox._data[point][coord];
+    const coordPosition = VirtualBox._data[point][coord];
     return coordPosition + this._dataPosition;
   }
   save(coord, point, first, second) {
@@ -80475,54 +79732,36 @@ const _VirtualBox = class _VirtualBox {
     const result = Math[point](data1, data2);
     this.setValue(position, result);
   }
-};
-__publicField(_VirtualBox, "_data", {
-  size: 6,
-  defaultPosition: 0,
-  min: {
-    x: 0,
-    y: 2,
-    z: 4
-  },
-  max: {
-    x: 1,
-    y: 3,
-    z: 5
-  },
-  coords: ["x", "y", "z"],
-  points: ["min", "max"]
-});
-let VirtualBox = _VirtualBox;
-const _VirtualSpatialPoint = class _VirtualSpatialPoint {
+}
+class VirtualSpatialPoint {
+  box;
+  data = 0;
+  static _data = {
+    threshold: 0,
+    factor: -1
+  };
   constructor(position, data) {
-    __publicField(this, "box");
-    __publicField(this, "data", 0);
     this.box = new VirtualBox(position, data);
   }
   get size() {
-    return this.data * _VirtualSpatialPoint._data.factor;
+    return this.data * VirtualSpatialPoint._data.factor;
   }
   get isPoint() {
-    return this.data >= _VirtualSpatialPoint._data.threshold;
+    return this.data >= VirtualSpatialPoint._data.threshold;
   }
   transform(size, box, group) {
     if (!group) {
-      size *= _VirtualSpatialPoint._data.factor;
+      size *= VirtualSpatialPoint._data.factor;
     }
     this.data = size;
     this.box.clone(box);
   }
-};
-__publicField(_VirtualSpatialPoint, "_data", {
-  threshold: 0,
-  factor: -1
-});
-let VirtualSpatialPoint = _VirtualSpatialPoint;
+}
 class VirtualBoxCompressor {
+  _boxes;
+  _min = new Vector3();
+  _max = new Vector3();
   constructor(boxes) {
-    __publicField(this, "_boxes");
-    __publicField(this, "_min", new Vector3());
-    __publicField(this, "_max", new Vector3());
     this._boxes = boxes;
   }
   inflate(bounds) {
@@ -80551,9 +79790,9 @@ class VirtualBoxCompressor {
   }
 }
 class VirtualBoxCollider {
+  _data;
+  _compressor;
   constructor(compressor, data) {
-    __publicField(this, "_data");
-    __publicField(this, "_compressor");
     this._data = data;
     this._compressor = compressor;
   }
@@ -80612,7 +79851,7 @@ class VirtualBoxCollider {
   }
   getRayOnSeen(bounds) {
     let onSeen = this.newDefaultCallback(true);
-    const boundsExists = (bounds == null ? void 0 : bounds.length) > 0;
+    const boundsExists = bounds?.length > 0;
     if (boundsExists) {
       onSeen = (box) => {
         return CameraUtils.collides(box, bounds);
@@ -80695,17 +79934,17 @@ class VirtualBoxCollider {
   }
 }
 class VirtualBoxSorter {
+  _boxes;
+  _total = new Vector3();
+  _change = new Vector3();
+  _average = new Vector3();
+  _tempCenterVector = new Vector3();
+  _tempVectors = {
+    x: new Vector3(),
+    y: new Vector3(),
+    z: new Vector3()
+  };
   constructor(boxes) {
-    __publicField(this, "_boxes");
-    __publicField(this, "_total", new Vector3());
-    __publicField(this, "_change", new Vector3());
-    __publicField(this, "_average", new Vector3());
-    __publicField(this, "_tempCenterVector", new Vector3());
-    __publicField(this, "_tempVectors", {
-      x: new Vector3(),
-      y: new Vector3(),
-      z: new Vector3()
-    });
     this._boxes = boxes;
   }
   sort(dataBuffer, a, b) {
@@ -80789,11 +80028,11 @@ class VirtualBoxSorter {
   }
 }
 class VirtualBoxMaker {
+  _data;
+  _compressor;
+  _boxes;
+  _sorter;
   constructor(boxes, compressor, data) {
-    __publicField(this, "_data");
-    __publicField(this, "_compressor");
-    __publicField(this, "_boxes");
-    __publicField(this, "_sorter");
     this._data = data;
     this._compressor = compressor;
     this._boxes = boxes;
@@ -80858,13 +80097,15 @@ class VirtualBoxMaker {
     point.data = data;
   }
 }
-const _VirtualBoxStructure = class _VirtualBoxStructure {
+class VirtualBoxStructure {
+  static _boxSize = 6;
+  static _limitThreshold = 32;
+  _compressor;
+  _collider;
+  _maker;
+  _data;
+  _boxes;
   constructor(boxes) {
-    __publicField(this, "_compressor");
-    __publicField(this, "_collider");
-    __publicField(this, "_maker");
-    __publicField(this, "_data");
-    __publicField(this, "_boxes");
     this._boxes = boxes;
     this._compressor = new VirtualBoxCompressor(boxes);
     this._data = this.getData();
@@ -80892,7 +80133,7 @@ const _VirtualBoxStructure = class _VirtualBoxStructure {
     return this._collider.rayCollide(bounds, beam);
   }
   setupLimits() {
-    for (let i = 0; i < _VirtualBoxStructure._limitThreshold; i++) {
+    for (let i = 0; i < VirtualBoxStructure._limitThreshold; i++) {
       this._data.limits.primary.push(new VirtualBox());
       this._data.limits.secondary.push(new VirtualBox());
     }
@@ -80912,10 +80153,10 @@ const _VirtualBoxStructure = class _VirtualBoxStructure {
   initData() {
     const pointBuffer = this.getPointBuffer();
     const pointsAmount = this.getPointsAmount(pointBuffer);
-    const size = pointsAmount * _VirtualBoxStructure._boxSize;
+    const size = pointsAmount * VirtualBoxStructure._boxSize;
     const data = new Float64Array(size);
     for (let i = 0; i < pointsAmount; i++) {
-      const position = i * _VirtualBoxStructure._boxSize;
+      const position = i * VirtualBoxStructure._boxSize;
       const newPoint = new VirtualSpatialPoint(position, data);
       this._data.points.push(newPoint);
     }
@@ -80932,21 +80173,24 @@ const _VirtualBoxStructure = class _VirtualBoxStructure {
       }
     };
   }
-};
-__publicField(_VirtualBoxStructure, "_boxSize", 6);
-__publicField(_VirtualBoxStructure, "_limitThreshold", 32);
-let VirtualBoxStructure = _VirtualBoxStructure;
+}
 class VirtualBoxController {
+  lookup = null;
+  _boxSize = 6;
+  _pointSize = 3;
+  _temp;
+  _dimensionsOfSamples;
+  _samples = [];
+  _boxes;
+  _meshes;
+  _box;
+  get fullBox() {
+    return this._box;
+  }
+  set fullBox(box) {
+    this._box = box;
+  }
   constructor(fragments) {
-    __publicField(this, "lookup", null);
-    __publicField(this, "_boxSize", 6);
-    __publicField(this, "_pointSize", 3);
-    __publicField(this, "_temp");
-    __publicField(this, "_dimensionsOfSamples");
-    __publicField(this, "_samples", []);
-    __publicField(this, "_boxes");
-    __publicField(this, "_meshes");
-    __publicField(this, "_box");
     this._temp = {
       box: new Box3(),
       vector: new Vector3(),
@@ -80965,12 +80209,6 @@ class VirtualBoxController {
     const boxSize = sampleCount * this._boxSize;
     this._boxes = new Float64Array(boxSize);
     this.lookup = this.newLookup();
-  }
-  get fullBox() {
-    return this._box;
-  }
-  set fullBox(box) {
-    this._box = box;
   }
   sampleOf(id) {
     return this._samples[id];
@@ -81052,8 +80290,8 @@ class VirtualBoxController {
   }
 }
 class GridsController {
+  _fragments;
   constructor(virtualFragmentsModel) {
-    __publicField(this, "_fragments");
     this._fragments = virtualFragmentsModel;
   }
   async getGrids() {
@@ -81155,18 +80393,16 @@ class CoordinatesHelper {
   }
 }
 class HighlightHelper {
-  constructor() {
-    __publicField(this, "_highlightProps", [
-      "color",
-      "opacity",
-      "transparent",
-      "renderedFaces",
-      "depthTest",
-      "depthWrite",
-      "polygonOffsetFactor",
-      "polygonOffsetUnits"
-    ]);
-  }
+  _highlightProps = [
+    "color",
+    "opacity",
+    "transparent",
+    "renderedFaces",
+    "depthTest",
+    "depthWrite",
+    "polygonOffsetFactor",
+    "polygonOffsetUnits"
+  ];
   resetHighlight(model, items) {
     if (!items) {
       model.itemConfig.clearHighlight();
@@ -81189,8 +80425,7 @@ class HighlightHelper {
     const count = model.itemConfig.size;
     for (let itemId = 0; itemId < count; itemId++) {
       const hasHighlight = model.itemConfig.getHighlight(itemId);
-      if (!hasHighlight)
-        continue;
+      if (!hasHighlight) continue;
       const [localId] = model.properties.getLocalIdsFromItemIds([itemId]);
       found.push(localId);
     }
@@ -81345,9 +80580,7 @@ class HighlightHelper {
   }
 }
 class VisibilityHelper {
-  constructor() {
-    __publicField(this, "_hiddenForEdit", /* @__PURE__ */ new Set());
-  }
+  _hiddenForEdit = /* @__PURE__ */ new Set();
   resetVisible(model) {
     model.itemConfig.clearVisible();
     model.tiles.restart();
@@ -81444,8 +80677,7 @@ class GeometryHelper {
   getSampleGeometry(model, itemIndex, lod) {
     const sampleIndices = model.boxes.sampleOf(itemIndex);
     const result = [];
-    if (!sampleIndices)
-      return result;
+    if (!sampleIndices) return result;
     const meshes = model.data.meshes();
     for (const sampleIndex of sampleIndices) {
       const sample = model.tiles.fetchSample(sampleIndex, lod);
@@ -81476,8 +80708,7 @@ class GeometryHelper {
     const p3 = { x: 0, y: 0, z: 0 };
     const geometries = this.getSampleGeometry(model, id, CurrentLod.GEOMETRY);
     for (const { indices, positions } of geometries) {
-      if (!(indices && positions))
-        continue;
+      if (!(indices && positions)) continue;
       for (let i = 0; i < indices.length - 2; i += 3) {
         const i1 = indices[i] * 3;
         const i2 = indices[i + 1] * 3;
@@ -81507,9 +80738,7 @@ class GeometryHelper {
   }
 }
 class SectionHelper {
-  constructor() {
-    __publicField(this, "_sectionGenerator", new SectionGenerator());
-  }
+  _sectionGenerator = new SectionGenerator();
   getSection(model, plane, indices) {
     this._sectionGenerator.plane = plane;
     performance.now();
@@ -81517,8 +80746,7 @@ class SectionHelper {
     const meshes = [];
     for (const itemID of indices) {
       const sampleIds = model.boxes.sampleOf(itemID);
-      if (!sampleIds)
-        continue;
+      if (!sampleIds) continue;
       for (const sampleId of sampleIds) {
         const boundingBox2 = model.boxes.get(sampleId);
         if (!plane.intersectsBox(boundingBox2)) {
@@ -81530,8 +80758,7 @@ class SectionHelper {
           continue;
         }
         const sample = model.tiles.meshes.samples(sampleId);
-        if (!sample)
-          continue;
+        if (!sample) continue;
         const definitionID = sample.representation();
         if (!visitedGeometries.has(definitionID)) {
           const geometries2 = [];
@@ -81554,8 +80781,7 @@ class SectionHelper {
           visitedGeometries.set(definitionID, geometries2);
         }
         const geometries = visitedGeometries.get(definitionID);
-        if (!geometries)
-          continue;
+        if (!geometries) continue;
         for (const geometry of geometries) {
           const mesh = new Mesh(geometry);
           const transform = model.tiles.getSampleTransform(sampleId);
@@ -81586,53 +80812,50 @@ class SectionHelper {
   }
 }
 class SequenceHelper {
+  _model;
   constructor(model) {
-    __publicField(this, "_model");
-    __publicField(this, "sequenceSelectorFunction", {
-      withVisiblity: (_) => this._model.getItemsByVisibility(_),
-      highlighted: () => this._model.getHighlightItemIds(),
-      children: (_) => this._model.getItemsChildren(_),
-      ofCategory: (_) => {
-        const categoryIds = this._model.getItemsOfCategories(_);
-        return Object.values(categoryIds).flat();
-      },
-      withCondition: () => [],
-      withGeometry: () => this._model.getItemsWithGeometry()
-    });
-    __publicField(this, "sequenceResultFunction", {
-      attributes: (ids) => ids.map((id) => this._model.getItemAttributes(id)),
-      mergedBoxes: (_) => this._model.getBBoxes(_),
-      category: (ids) => this._model.getItemsCategories(ids),
-      children: (_) => this._model.getItemsChildren(_),
-      data: (ids, ...args) => this._model.getItemsData(ids, args[0]),
-      geometry: (ids) => this._model.getItemsGeometry(ids),
-      guid: (_) => this._model.getGuidsByLocalIds(_),
-      highlight: (_) => this._model.getHighlight(_),
-      relations: (ids) => ids.map((id) => this._model.getItemRelations(id)),
-      visibility: (_) => this._model.getVisible(_)
-    });
     this._model = model;
   }
   getSequenced(result, fromItems, inputs) {
-    var _a2;
     const resultFunction = this.sequenceResultFunction[result];
-    if (!resultFunction)
-      return null;
+    if (!resultFunction) return null;
     let partial = [];
     let iterations = 0;
     for (const action of fromItems) {
       const selectorFunction = this.sequenceSelectorFunction[action];
-      if (!selectorFunction)
-        continue;
-      const input2 = (_a2 = inputs == null ? void 0 : inputs.selector) == null ? void 0 : _a2[action];
+      if (!selectorFunction) continue;
+      const input2 = inputs?.selector?.[action];
       const data = iterations === 0 ? input2 : partial;
       partial = selectorFunction(data);
       iterations++;
     }
-    const input = inputs == null ? void 0 : inputs.result;
+    const input = inputs?.result;
     const out = resultFunction(partial, input);
     return out;
   }
+  sequenceSelectorFunction = {
+    withVisiblity: (_) => this._model.getItemsByVisibility(_),
+    highlighted: () => this._model.getHighlightItemIds(),
+    children: (_) => this._model.getItemsChildren(_),
+    ofCategory: (_) => {
+      const categoryIds = this._model.getItemsOfCategories(_);
+      return Object.values(categoryIds).flat();
+    },
+    withCondition: () => [],
+    withGeometry: () => this._model.getItemsWithGeometry()
+  };
+  sequenceResultFunction = {
+    attributes: (ids) => ids.map((id) => this._model.getItemAttributes(id)),
+    mergedBoxes: (_) => this._model.getBBoxes(_),
+    category: (ids) => this._model.getItemsCategories(ids),
+    children: (_) => this._model.getItemsChildren(_),
+    data: (ids, ...args) => this._model.getItemsData(ids, args[0]),
+    geometry: (ids) => this._model.getItemsGeometry(ids),
+    guid: (_) => this._model.getGuidsByLocalIds(_),
+    highlight: (_) => this._model.getHighlight(_),
+    relations: (ids) => ids.map((id) => this._model.getItemRelations(id)),
+    visibility: (_) => this._model.getVisible(_)
+  };
 }
 class ItemsHelper {
   traverse(model, itemIds, onItem) {
@@ -81647,8 +80870,7 @@ class ItemsHelper {
     const count = model.itemConfig.size;
     for (let itemId = 0; itemId < count; itemId++) {
       const conditionPass = condition(itemId);
-      if (!conditionPass)
-        continue;
+      if (!conditionPass) continue;
       found.push(itemId);
     }
     return found;
@@ -81667,14 +80889,12 @@ class ItemsHelper {
   }
 }
 class EditRequestIndex {
-  constructor() {
-    /** Local ids with a pending DELETE_ITEM request. */
-    __publicField(this, "deletedItems", /* @__PURE__ */ new Set());
-    __publicField(this, "_byLocalId", /* @__PURE__ */ new Map());
-    __publicField(this, "_deleteCounts", /* @__PURE__ */ new Map());
-    __publicField(this, "_source", null);
-    __publicField(this, "_size", 0);
-  }
+  /** Local ids with a pending DELETE_ITEM request. */
+  deletedItems = /* @__PURE__ */ new Set();
+  _byLocalId = /* @__PURE__ */ new Map();
+  _deleteCounts = /* @__PURE__ */ new Map();
+  _source = null;
+  _size = 0;
   /**
    * Makes sure the index reflects `requests`. Cheap when the tracked array is
    * unchanged; rebuilds when it was replaced or its length drifted.
@@ -81780,39 +81000,34 @@ class EditRequestIndex {
   }
 }
 class VirtualFragmentsModel {
+  data;
+  view;
+  raycaster;
+  itemConfig;
+  properties;
+  materials;
+  tiles;
+  boxes;
+  indexes;
+  requests = [];
+  _requestIndex = new EditRequestIndex();
+  _raycastHelper = new RaycastHelper();
+  _coordinatesHelper = new CoordinatesHelper();
+  _highlightHelper = new HighlightHelper();
+  _visibilityHelper = new VisibilityHelper();
+  _geometryHelper = new GeometryHelper();
+  _sectionHelper = new SectionHelper();
+  _itemsHelper = new ItemsHelper();
+  _sequenceHelper = new SequenceHelper(this);
+  _config = {};
+  _modelId;
+  _alignments;
+  _grids;
+  _connection;
+  _reprIdMap = /* @__PURE__ */ new Map();
+  _nextId = 0;
+  _requestsForRedo = [];
   constructor(modelId, data, connection, config) {
-    __publicField(this, "data");
-    __publicField(this, "view");
-    __publicField(this, "raycaster");
-    __publicField(this, "itemConfig");
-    __publicField(this, "properties");
-    __publicField(this, "materials");
-    __publicField(this, "tiles");
-    __publicField(this, "boxes");
-    __publicField(this, "indexes");
-    __publicField(this, "requests", []);
-    __publicField(this, "_requestIndex", new EditRequestIndex());
-    __publicField(this, "_raycastHelper", new RaycastHelper());
-    __publicField(this, "_coordinatesHelper", new CoordinatesHelper());
-    __publicField(this, "_highlightHelper", new HighlightHelper());
-    __publicField(this, "_visibilityHelper", new VisibilityHelper());
-    __publicField(this, "_geometryHelper", new GeometryHelper());
-    __publicField(this, "_sectionHelper", new SectionHelper());
-    __publicField(this, "_itemsHelper", new ItemsHelper());
-    __publicField(this, "_sequenceHelper", new SequenceHelper(this));
-    __publicField(this, "_config", {});
-    __publicField(this, "_modelId");
-    __publicField(this, "_alignments");
-    __publicField(this, "_grids");
-    __publicField(this, "_connection");
-    __publicField(this, "_reprIdMap", /* @__PURE__ */ new Map());
-    __publicField(this, "_nextId", 0);
-    __publicField(this, "_requestsForRedo", []);
-    __publicField(this, "_onTransferMaterial", (data, trans) => {
-      if (!this._connection)
-        return void 0;
-      return this._connection.fetch(data, trans);
-    });
     this._modelId = modelId;
     this._connection = connection;
     this._config = { ...this._config, ...config };
@@ -82420,6 +81635,10 @@ class VirtualFragmentsModel {
     const byteBuffer = new ByteBuffer(uintArray);
     return Model.getRootAsModel(byteBuffer);
   }
+  _onTransferMaterial = (data, trans) => {
+    if (!this._connection) return void 0;
+    return this._connection.fetch(data, trans);
+  };
   setupItemsConfig() {
     const meshes = this.data.meshes();
     const itemsCount = meshes ? meshes.meshesItemsLength() : 0;
@@ -82431,7 +81650,6 @@ class ThreadModelCreator extends ThreadController {
     return MultiThreadingRequestClass.CREATE_MODEL;
   }
   async execute(input) {
-    var _a2, _b2;
     const { modelId } = input;
     const notify = this.createProgressNotifier(modelId);
     const throwIfAborted = () => {
@@ -82445,7 +81663,7 @@ class ThreadModelCreator extends ThreadController {
       notify("decompressing", 1);
       throwIfAborted();
       this.thread.controllerManager.updater.setUpdateDelay(
-        (_b2 = (_a2 = input.config) == null ? void 0 : _a2.multithreading) == null ? void 0 : _b2.threadUpdaterDelay
+        input.config?.multithreading?.threadUpdaterDelay
       );
       const model = await this.createModel(input, notify, throwIfAborted);
       this.finalize(input, model);
@@ -82566,8 +81784,7 @@ class ThreadModelDeleter extends ThreadController {
   async execute(input) {
     const { modelId } = input;
     const model = this.thread.list.get(modelId);
-    if (!model)
-      return;
+    if (!model) return;
     model.dispose();
     this.thread.list.delete(modelId);
   }
@@ -82578,8 +81795,7 @@ class ThreadModelAborter extends ThreadController {
   }
   async execute(input) {
     const { modelId } = input;
-    if (!this.thread.loading.has(modelId))
-      return;
+    if (!this.thread.loading.has(modelId)) return;
     this.thread.aborting.add(modelId);
   }
 }
@@ -82653,36 +81869,18 @@ class ThreadExecutor extends ThreadController {
   safeCopyData(input) {
     for (let i = 0; i < input.parameters.length; i++) {
       const data = input.parameters[i];
-      if (!data)
-        continue;
+      if (!data) continue;
       input.parameters[i] = MultithreadingHelper.data(data);
     }
   }
 }
 class ThreadUpdater {
+  _thread;
+  _updateThreshold = 16;
+  _updateDelay = 128;
+  _running = false;
+  _timeout = null;
   constructor(thread2) {
-    __publicField(this, "_thread");
-    __publicField(this, "_updateThreshold", 16);
-    __publicField(this, "_updateDelay", 128);
-    __publicField(this, "_running", false);
-    __publicField(this, "_timeout", null);
-    __publicField(this, "_tick", () => {
-      this._timeout = null;
-      if (!this._running)
-        return;
-      if (this._thread.list.size === 0) {
-        this._running = false;
-        return;
-      }
-      const updated = this.updateAllModels();
-      const delay = updated ? this._updateDelay : 0;
-      this.schedule(delay);
-    });
-    // Offset into the model list where the next tick starts. Rotating the
-    // start point keeps one model with a long-running cull pass from
-    // eating the whole per-tick time budget every tick and starving the
-    // other models on this worker.
-    __publicField(this, "_nextModelOffset", 0);
     this._thread = thread2;
   }
   // Starts the update loop if it is not already running. Idempotent. Called
@@ -82691,8 +81889,7 @@ class ThreadUpdater {
   // importing the library (e.g. for an IFC conversion task) does not spin a
   // perpetual timer. See #234.
   start() {
-    if (this._running)
-      return;
+    if (this._running) return;
     this._running = true;
     this.schedule(0);
   }
@@ -82713,6 +81910,22 @@ class ThreadUpdater {
   schedule(delay) {
     this._timeout = setTimeout(this._tick, delay);
   }
+  _tick = () => {
+    this._timeout = null;
+    if (!this._running) return;
+    if (this._thread.list.size === 0) {
+      this._running = false;
+      return;
+    }
+    const updated = this.updateAllModels();
+    const delay = updated ? this._updateDelay : 0;
+    this.schedule(delay);
+  };
+  // Offset into the model list where the next tick starts. Rotating the
+  // start point keeps one model with a long-running cull pass from
+  // eating the whole per-tick time budget every tick and starving the
+  // other models on this worker.
+  _nextModelOffset = 0;
   updateAllModels() {
     const start = performance.now();
     let isUpdated = true;
@@ -82738,16 +81951,16 @@ class ThreadUpdater {
   }
 }
 class ThreadControllerManager {
+  thread;
+  modelCreator;
+  raycaster;
+  modelDeleter;
+  modelAborter;
+  viewRefresher;
+  boxFetcher;
+  executor;
+  updater;
   constructor(thread2) {
-    __publicField(this, "thread");
-    __publicField(this, "modelCreator");
-    __publicField(this, "raycaster");
-    __publicField(this, "modelDeleter");
-    __publicField(this, "modelAborter");
-    __publicField(this, "viewRefresher");
-    __publicField(this, "boxFetcher");
-    __publicField(this, "executor");
-    __publicField(this, "updater");
     this.thread = thread2;
     this.modelCreator = new ThreadModelCreator(thread2);
     this.raycaster = new ThreadRaycaster(thread2);
@@ -82760,30 +81973,28 @@ class ThreadControllerManager {
   }
 }
 class FragmentsThread {
-  constructor() {
-    __publicField(this, "actions", {});
-    __publicField(this, "list", /* @__PURE__ */ new Map());
-    /** Set of model IDs currently being loaded (CREATE_MODEL in flight). */
-    __publicField(this, "loading", /* @__PURE__ */ new Set());
-    /** Set of model IDs whose in-flight load should abort at the next yield. */
-    __publicField(this, "aborting", /* @__PURE__ */ new Set());
-    /**
-     * Highest `seq` this worker has seen on any incoming RPC. Each
-     * main → worker message carries a monotonic `seq` set by the
-     * sender (FragmentsConnection.fetch). When the worker emits a
-     * FINISH tile request, it stamps it with this value so the main
-     * thread can resolve `forceUpdateFinish` waiters without polling.
-     *
-     * Lives on the thread (not the model) because seq is global to
-     * the worker — a single FINISH from any model carries the highest
-     * seq the worker has acknowledged, which is what main needs for
-     * the fence semantics ("everything I've sent up to N is done").
-     */
-    __publicField(this, "lastSeenSeq", 0);
-    // It registers all actions from multithreadingRequestClass
-    __publicField(this, "controllerManager", new ThreadControllerManager(this));
-    __publicField(this, "_connection");
-  }
+  actions = {};
+  list = /* @__PURE__ */ new Map();
+  /** Set of model IDs currently being loaded (CREATE_MODEL in flight). */
+  loading = /* @__PURE__ */ new Set();
+  /** Set of model IDs whose in-flight load should abort at the next yield. */
+  aborting = /* @__PURE__ */ new Set();
+  /**
+   * Highest `seq` this worker has seen on any incoming RPC. Each
+   * main → worker message carries a monotonic `seq` set by the
+   * sender (FragmentsConnection.fetch). When the worker emits a
+   * FINISH tile request, it stamps it with this value so the main
+   * thread can resolve `forceUpdateFinish` waiters without polling.
+   *
+   * Lives on the thread (not the model) because seq is global to
+   * the worker — a single FINISH from any model carries the highest
+   * seq the worker has acknowledged, which is what main needs for
+   * the fence semantics ("everything I've sent up to N is done").
+   */
+  lastSeenSeq = 0;
+  // It registers all actions from multithreadingRequestClass
+  controllerManager = new ThreadControllerManager(this);
+  _connection;
   get connection() {
     if (!this._connection) {
       throw new Error("Fragments: Connection not set");
