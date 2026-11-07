@@ -1,0 +1,35 @@
+import { FloatVector } from "./float-vector.mjs";
+class BoundingBox {
+  bb = null;
+  bb_pos = 0;
+  __init(i, bb) {
+    this.bb_pos = i;
+    this.bb = bb;
+    return this;
+  }
+  min(obj) {
+    return (obj || new FloatVector()).__init(this.bb_pos, this.bb);
+  }
+  max(obj) {
+    return (obj || new FloatVector()).__init(this.bb_pos + 12, this.bb);
+  }
+  static sizeOf() {
+    return 24;
+  }
+  static createBoundingBox(builder, min_x, min_y, min_z, max_x, max_y, max_z) {
+    builder.prep(4, 24);
+    builder.prep(4, 12);
+    builder.writeFloat32(max_z);
+    builder.writeFloat32(max_y);
+    builder.writeFloat32(max_x);
+    builder.prep(4, 12);
+    builder.writeFloat32(min_z);
+    builder.writeFloat32(min_y);
+    builder.writeFloat32(min_x);
+    return builder.offset();
+  }
+}
+export {
+  BoundingBox
+};
+//# sourceMappingURL=bounding-box.mjs.map

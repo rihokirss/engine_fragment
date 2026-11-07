@@ -1,0 +1,11 @@
+const SIZEOF_SHORT = 2;
+const SIZEOF_INT = 4;
+const FILE_IDENTIFIER_LENGTH = 4;
+const SIZE_PREFIX_LENGTH = 4;
+export {
+  FILE_IDENTIFIER_LENGTH,
+  SIZEOF_INT,
+  SIZEOF_SHORT,
+  SIZE_PREFIX_LENGTH
+};
+//# sourceMappingURL=constants.mjs.map

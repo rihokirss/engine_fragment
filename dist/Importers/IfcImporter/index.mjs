@@ -1,0 +1,278 @@
+import "../../vendor/flatbuffers/mjs/utils.mjs";
+import "../../vendor/flatbuffers/mjs/encoding.mjs";
+import { Builder } from "../../vendor/flatbuffers/mjs/builder.mjs";
+import { MathUtils } from "three";
+import pako from "../../vendor/pako/dist/pako.esm.mjs";
+import * as WEBIFC from "web-ifc";
+import { DataSet } from "../../Utils/data-set.mjs";
+import { ifcClasses } from "./src/classes.mjs";
+import { IfcGeometryProcessor } from "./src/geometry/index.mjs";
+import { IfcPropertyProcessor } from "./src/properties/property-processor.mjs";
+import { ifcCategoryMap } from "../../Utils/ifc-category-map.mjs";
+import { geometryTypes } from "../../Utils/ifc-geometries-map.mjs";
+import { ifcRelationsMap } from "../../Utils/ifc-relations-map.mjs";
+import { Model } from "../../Schema/model.mjs";
+class IfcImporter {
+  _builder = null;
+  /** Configuration for the web-ifc WASM module
+   * @property {string} path - The path to the web-ifc WASM files
+   * @property {boolean} absolute - Whether the path is absolute or relative
+   */
+  wasm = {
+    path: "/node_modules/web-ifc/",
+    absolute: false
+  };
+  webIfcSettings = {
+    COORDINATE_TO_ORIGIN: true
+  };
+  /**
+   * Include source/retained entity counts and import settings in the model
+   * metadata. Consumers can distinguish missing IFC data from information
+   * deliberately omitted during conversion. Disabled by default.
+   */
+  includeImportSettings = false;
+  /** A set of attribute names to exclude from serialization.
+   */
+  attributesToExclude = /* @__PURE__ */ new Set([
+    "Representation",
+    "ObjectPlacement",
+    "CompositionType",
+    "OwnerHistory"
+  ]);
+  geometryProcessSettings = {
+    // TODO: Test to see if this is the correct threshold
+    // if not applied, some geometries take too long to process
+    threshold: 3e3,
+    precision: 1e6,
+    normalPrecision: 1e7,
+    planePrecision: 1e3,
+    faceThreshold: 0.6,
+    forceTransparentSpaces: true
+  };
+  /**
+   * @summary Defines the relationships between IFC entities.
+   * @description This map defines the relationships between IFC entities, specifying the relationship type,
+   * and the properties that define the relationship in both directions.
+   *
+   * The keys of the map are IFC relationship types (e.g., `IFCRELDEFINESBYPROPERTIES`).
+   * The values are objects that define the properties for relating and related entities.
+   *
+   * - `forRelating`: The property name on the relating entity.
+   * - `forRelated`: The property name on the related entity.
+   */
+  relations = /* @__PURE__ */ new Map([
+    [
+      WEBIFC.IFCRELDEFINESBYPROPERTIES,
+      { forRelating: "DefinesOccurrence", forRelated: "IsDefinedBy" }
+    ],
+    [
+      WEBIFC.IFCRELDEFINESBYTYPE,
+      { forRelating: "ObjectTypeOf", forRelated: "IsDefinedBy" }
+    ],
+    [
+      WEBIFC.IFCRELASSOCIATESMATERIAL,
+      { forRelated: "HasAssociations", forRelating: "AssociatedTo" }
+    ],
+    [
+      WEBIFC.IFCRELAGGREGATES,
+      { forRelated: "Decomposes", forRelating: "IsDecomposedBy" }
+    ],
+    [
+      WEBIFC.IFCRELCONTAINEDINSPATIALSTRUCTURE,
+      { forRelated: "ContainedInStructure", forRelating: "ContainsElements" }
+    ],
+    // Needed for the spatial structure to include IFC4x3 alignment layouts:
+    // alignments attach to the spatial element by reference (not containment)
+    // and nest their horizontal/vertical/referent children via IfcRelNests
+    // (issue #743).
+    [
+      WEBIFC.IFCRELREFERENCEDINSPATIALSTRUCTURE,
+      {
+        forRelated: "ReferencedInStructures",
+        forRelating: "ReferencesElements"
+      }
+    ],
+    [WEBIFC.IFCRELNESTS, { forRelated: "Nests", forRelating: "IsNestedBy" }]
+  ]);
+  /**
+   * @summary A map containing sets of IFC classes, categorized into 'elements' and 'abstract'.
+   * @remarks The 'elements' category contains a set of IFC classes representing physical elements.
+   * The 'abstract' category contains a set of abstract IFC classes, including materials, properties, classifications, etc.
+   */
+  classes = {
+    elements: new DataSet([...ifcClasses.elements]),
+    abstract: new DataSet([
+      ...ifcClasses.base,
+      ...ifcClasses.materials,
+      ...ifcClasses.properties,
+      ...ifcClasses.units,
+      ...ifcClasses.types
+    ])
+  };
+  /**
+   * Whether to include unique attributes from the imported IFC data.
+   */
+  includeUniqueAttributes = false;
+  /**
+   * Whether to include relation names from the imported IFC data.
+   */
+  includeRelationNames = false;
+  /**
+   * Whether to replace the IfcBuildingStorey.Elevation with the absolute storey elevation.
+   * @remarks The value is calculated taking into consideration the relative positions between entities
+   * and it is always given in meters.
+   */
+  replaceStoreyElevation = true;
+  /**
+   * Whether to replace the IfcSite.RefElevation with the absolute site elevation.
+   * @remarks The value is calculated taking into consideration the relative positions between entities
+   * and it is always given in meters.
+   */
+  replaceSiteElevation = true;
+  /**
+   * Whether the generated materials should render both faces (double-sided)
+   * instead of just the front face.
+   * @remarks Some exporters (e.g. certain Revit pipelines) produce geometry
+   * whose winding is not consistent, so front-face-only rendering can hide
+   * those faces. Enable this to render both sides. Defaults to false
+   * (front-face only) to match the previous behavior.
+   */
+  doubleSidedMaterials = false;
+  /**
+   * Whether to import each material's own property sets (`IfcMaterialProperties`
+   * in IFC4, `IfcExtendedMaterialProperties` in IFC2X3).
+   * @remarks Off by default to keep the output lean. These entities link to
+   * their material through a direct `Material` attribute rather than an
+   * `IfcRel*`, so when enabled the importer also synthesizes the inverse
+   * `HasProperties` relation on the material, making the properties reachable as
+   * element -> material -> material properties. See issue #249.
+   */
+  includeMaterialProperties = false;
+  /**
+   * If set, ignores the items that are further away to the origin than this value.
+   * Keep in mind that if your IFC is correctly georreferenced, this value should never
+   * be too high. If it's too high, it's either because your file uses absolute coordinates,
+   * (which is a very bad idea, and usually due to a poor IFC export) or because there are
+   * objects that are very, very far away (very unlikely).
+   */
+  distanceThreshold = 1e5;
+  /**
+   * Whether to read geometry and properties from a single parse of the file.
+   * @remarks Off by default, which parses the file twice: once for geometry,
+   * and once more in a new web-ifc instance for properties. Enabling it keeps
+   * the geometry step's web-ifc instance open for the properties, which skips
+   * the second parse (and the second pass over `readCallback`) and avoids
+   * holding two parsed copies of the file in memory. The output is the same
+   * either way.
+   */
+  parseOnce = false;
+  get builder() {
+    if (!this._builder) {
+      throw new Error("Fragments: Builder not initialized");
+    }
+    return this._builder;
+  }
+  /**
+   * Processes IFC data and converts it into a fragments format.
+   * @param data Configuration object for processing.
+   * @param data.bytes Raw IFC file data as Uint8Array.
+   * @param data.raw Whether to return raw uncompressed data. If false, the output fragments will be smaller.
+   * @param data.readFromCallback Whether to read data from a callback function. Useful for node.js.
+   * @param data.readCallback Callback function to read IFC data. Useful for node.js.
+   */
+  async process(data) {
+    this._builder = new Builder(1024);
+    if (this.includeMaterialProperties) {
+      for (const materialPropertyClass of ifcClasses.materialProperties) {
+        this.classes.abstract.add(materialPropertyClass);
+      }
+    }
+    const geometryProcessor = new IfcGeometryProcessor(this);
+    geometryProcessor.wasm = this.wasm;
+    geometryProcessor.webIfcSettings = this.webIfcSettings;
+    geometryProcessor.keepModelOpen = this.parseOnce;
+    const geomData = { ...data, builder: this.builder };
+    const geoms = await geometryProcessor.process(geomData);
+    const { modelMesh, maxLocalID, localIDs, alignments, grids, ifcAPI } = geoms;
+    const properties = new IfcPropertyProcessor(this, this.builder);
+    properties.wasm = this.wasm;
+    properties.webIfcSettings = this.webIfcSettings;
+    if (ifcAPI) properties.useOpenModel(ifcAPI);
+    const propsArgs = {
+      ...data,
+      geometryProcessedLocalIDs: localIDs,
+      alignments,
+      grids,
+      maxLocalID
+    };
+    const propsData = await properties.process(propsArgs);
+    const {
+      relIndicesVector,
+      relsVector,
+      guidsVector,
+      guidsItemsVector,
+      metadataOffset,
+      localIdsVector,
+      spatialStrutureOffset,
+      attributesVector,
+      categoriesVector,
+      uniqueAttributesVector,
+      relNamesVector,
+      newMaxLocalID
+    } = propsData;
+    const guid = data.id ?? MathUtils.generateUUID();
+    const guidRef = this.builder.createString(guid);
+    Model.startModel(this.builder);
+    Model.addMeshes(this.builder, modelMesh);
+    Model.addMetadata(this.builder, metadataOffset);
+    Model.addAttributes(this.builder, attributesVector);
+    Model.addUniqueAttributes(this.builder, uniqueAttributesVector);
+    Model.addRelationNames(this.builder, relNamesVector);
+    Model.addLocalIds(this.builder, localIdsVector);
+    Model.addCategories(this.builder, categoriesVector);
+    Model.addRelationsItems(this.builder, relIndicesVector);
+    Model.addRelations(this.builder, relsVector);
+    Model.addGuidsItems(this.builder, guidsItemsVector);
+    Model.addGuids(this.builder, guidsVector);
+    Model.addSpatialStructure(this.builder, spatialStrutureOffset);
+    Model.addGuid(this.builder, guidRef);
+    Model.addMaxLocalId(this.builder, newMaxLocalID);
+    const outData = Model.endModel(this.builder);
+    this.builder.finish(outData);
+    const outBytes = this.builder.asUint8Array();
+    this.clean();
+    const content = data.raw ? outBytes : pako.deflate(outBytes);
+    data.progressCallback?.(1, {
+      process: "conversion",
+      state: "finish"
+    });
+    return content;
+  }
+  /**
+   * Adds all attributes to the classes. Use this with precaution because it can increase the size of the output fragments.
+   */
+  addAllAttributes() {
+    for (const categoryString in ifcCategoryMap) {
+      const category = parseInt(categoryString, 10);
+      if (geometryTypes.has(category)) {
+        continue;
+      }
+      this.classes.abstract.add(category);
+    }
+    this.attributesToExclude = /* @__PURE__ */ new Set();
+  }
+  /**
+   * Adds all relations to the relations map. Use this with precaution because it can increase the size of the output fragments.
+   */
+  addAllRelations() {
+    this.relations = new Map(ifcRelationsMap);
+  }
+  clean() {
+    this._builder?.clear();
+    this._builder = null;
+  }
+}
+export {
+  IfcImporter
+};
+//# sourceMappingURL=index.mjs.map

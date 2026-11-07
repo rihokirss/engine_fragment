@@ -1,0 +1,6981 @@
+import * as flatbuffers from 'flatbuffers';
+import { Font } from 'three/examples/jsm/Addons.js';
+import { LineMaterial } from 'three/examples/jsm/Addons.js';
+import { LineMaterialParameters } from 'three/examples/jsm/lines/LineMaterial.js';
+import { ModelLoadCallback } from 'web-ifc';
+import { ProfileSection } from 'web-ifc';
+import * as THREE from 'three';
+import * as WEBIFC from 'web-ifc';
+
+/** Parent-child aggregation relationships between building elements (e.g. roof to slabs). */
+export declare interface AggregateMap {
+    parentToChildren: Map<number, Set<number>>;
+    childToParent: Map<number, number>;
+    aggregateRelIds: Map<number, Set<number>>;
+}
+
+export declare const ALIGNMENT_CATEGORY = "ThatOpenAlignment";
+
+export declare type AlignmentCurve = {
+    points: Float32Array | number[];
+    type: AlignmentCurveType;
+};
+
+export declare enum AlignmentCurveType {
+    NONE = 0,
+    LINES = 1,
+    CLOTHOID = 2,
+    ELLIPSE_ARC = 3,
+    PARABOLA = 4
+}
+
+export declare type AlignmentData = {
+    absolute: AlignmentCurve[];
+    horizontal: AlignmentCurve[];
+    vertical: AlignmentCurve[];
+};
+
+declare type AnyTileBasicData = TileBasicData | TileBasicData[];
+
+declare type AnyTileData = TileData | TileData[];
+
+declare function applyChangesToIds(actions: EditRequest[], ids: number[] | Uint32Array | Set<number>, key: EditKey, addCreatedElements: boolean): number[];
+
+declare function applyChangesToRawData(actions: EditRequest[], rawData: Map<number, any>, type: EditKey, filter?: Set<number>): void;
+
+declare function applyChangesToSpecialData(actions: EditRequest[], key: "METADATA" | "SPATIAL_STRUCTURE"): any;
+
+export declare class Arc {
+    core: WEBIFC.Arc;
+    constructor(api: WEBIFC.IfcAPI);
+    get(api: WEBIFC.IfcAPI, data: ArcData): WEBIFC.Buffers;
+}
+
+export declare type ArcData = {
+    startPosition?: THREE.Vector3;
+    radiusX?: number;
+    radiusY?: number;
+    numSegments?: number;
+    placement?: THREE.Matrix3;
+    start?: number;
+    end?: number;
+    swap?: boolean;
+    endingNormalToCenter?: boolean;
+};
+
+export declare class AsyncEvent<T> {
+    enabled: boolean;
+    add(handler: T extends void ? {
+        (): Promise<void>;
+    } : {
+        (data: T): Promise<void>;
+    }): void;
+    remove(handler: T extends void ? {
+        (): Promise<void>;
+    } : {
+        (data: T): Promise<void>;
+    }): void;
+    trigger: (data?: T) => Promise<void>;
+    reset(): void;
+    private handlers;
+}
+
+export declare class Attribute {
+    bb: flatbuffers.ByteBuffer | null;
+    bb_pos: number;
+    __init(i: number, bb: flatbuffers.ByteBuffer): Attribute;
+    static getRootAsAttribute(bb: flatbuffers.ByteBuffer, obj?: Attribute): Attribute;
+    static getSizePrefixedRootAsAttribute(bb: flatbuffers.ByteBuffer, obj?: Attribute): Attribute;
+    data(index: number): string;
+    data(index: number, optionalEncoding: flatbuffers.Encoding): string | Uint8Array;
+    dataLength(): number;
+    static startAttribute(builder: flatbuffers.Builder): void;
+    static addData(builder: flatbuffers.Builder, dataOffset: flatbuffers.Offset): void;
+    static createDataVector(builder: flatbuffers.Builder, data: flatbuffers.Offset[]): flatbuffers.Offset;
+    static startDataVector(builder: flatbuffers.Builder, numElems: number): void;
+    static endAttribute(builder: flatbuffers.Builder): flatbuffers.Offset;
+    static createAttribute(builder: flatbuffers.Builder, dataOffset: flatbuffers.Offset): flatbuffers.Offset;
+}
+
+/**
+ * Represents attribute data for a model item.
+ */
+export declare type AttributeData = {
+    /** The value of the attribute, which can be any type */
+    value: any;
+    /** Optional type identifier for the attribute value */
+    type?: number;
+};
+
+/**
+ * Interface representing the attributes of a model item.
+ */
+export declare interface Attributes {
+    /** Unique local identifier for the item */
+    localId: number;
+    /** Optional category identifier */
+    category?: number;
+    /** Optional globally unique identifier */
+    guid?: string;
+    /** Additional arbitrary attributes can be added with any name and value */
+    [name: string]: any;
+}
+
+export declare interface AttributesUniqueValuesParams {
+    key?: string;
+    get: RegExp;
+    categories?: RegExp[];
+    attributes?: {
+        aggregation?: QueryAggregation;
+        queries: GetItemsByAttributeParams[];
+    };
+}
+
+/**
+ * Interface representing a change event when attributes are added to a model item.
+ */
+declare interface AttrsAddChange {
+    /** Indicates this is an "added" type change */
+    type: "added";
+    /** Record containing the newly added attribute data */
+    data: Record<string, any>;
+}
+
+/**
+ * Union type representing all possible attribute change types.
+ */
+export declare type AttrsChange = AttrsDeleteChange | AttrsModifyChange | AttrsAddChange;
+
+/**
+ * Interface representing a change event when attributes are deleted from a model item.
+ */
+declare interface AttrsDeleteChange {
+    /** Indicates this is a "deleted" type change */
+    type: "deleted";
+}
+
+/**
+ * Interface representing a change event when attributes are modified in a model item.
+ */
+declare interface AttrsModifyChange {
+    /** Indicates this is a "modified" type change */
+    type: "modified";
+    /** Record containing the newly added attribute data */
+    added: Record<string, any>;
+    /** Array of strings representing the deleted attribute keys */
+    deleted: string[];
+    /** Record containing the modified attribute data */
+    modified: Record<string, any>;
+}
+
+export declare class Axis {
+    bb: flatbuffers.ByteBuffer | null;
+    bb_pos: number;
+    __init(i: number, bb: flatbuffers.ByteBuffer): Axis;
+    static getRootAsAxis(bb: flatbuffers.ByteBuffer, obj?: Axis): Axis;
+    static getSizePrefixedRootAsAxis(bb: flatbuffers.ByteBuffer, obj?: Axis): Axis;
+    wires(index: number, obj?: Wire): Wire | null;
+    wiresLength(): number;
+    order(index: number): number | null;
+    orderLength(): number;
+    orderArray(): Uint32Array | null;
+    parts(index: number): AxisPartClass | null;
+    partsLength(): number;
+    partsArray(): Int8Array | null;
+    wireSets(index: number, obj?: WireSet): WireSet | null;
+    wireSetsLength(): number;
+    circleCurves(index: number, obj?: CircleCurve): CircleCurve | null;
+    circleCurvesLength(): number;
+    static startAxis(builder: flatbuffers.Builder): void;
+    static addWires(builder: flatbuffers.Builder, wiresOffset: flatbuffers.Offset): void;
+    static startWiresVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addOrder(builder: flatbuffers.Builder, orderOffset: flatbuffers.Offset): void;
+    static createOrderVector(builder: flatbuffers.Builder, data: number[] | Uint32Array): flatbuffers.Offset;
+    /**
+     * @deprecated This Uint8Array overload will be removed in the future.
+     */
+    static createOrderVector(builder: flatbuffers.Builder, data: number[] | Uint8Array): flatbuffers.Offset;
+    static startOrderVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addParts(builder: flatbuffers.Builder, partsOffset: flatbuffers.Offset): void;
+    static createPartsVector(builder: flatbuffers.Builder, data: AxisPartClass[]): flatbuffers.Offset;
+    static startPartsVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addWireSets(builder: flatbuffers.Builder, wireSetsOffset: flatbuffers.Offset): void;
+    static createWireSetsVector(builder: flatbuffers.Builder, data: flatbuffers.Offset[]): flatbuffers.Offset;
+    static startWireSetsVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addCircleCurves(builder: flatbuffers.Builder, circleCurvesOffset: flatbuffers.Offset): void;
+    static startCircleCurvesVector(builder: flatbuffers.Builder, numElems: number): void;
+    static endAxis(builder: flatbuffers.Builder): flatbuffers.Offset;
+    static createAxis(builder: flatbuffers.Builder, wiresOffset: flatbuffers.Offset, orderOffset: flatbuffers.Offset, partsOffset: flatbuffers.Offset, wireSetsOffset: flatbuffers.Offset, circleCurvesOffset: flatbuffers.Offset): flatbuffers.Offset;
+}
+
+export declare enum AxisPartClass {
+    NONE = 0,
+    WIRE = 1,
+    WIRE_SET = 2,
+    CIRCLE_CURVE = 3
+}
+
+/**
+ * Base interface for all create edit requests.
+ */
+export declare interface BaseCreateRequest extends BaseEditRequest {
+    localId?: number | string;
+}
+
+/**
+ * Base interface for all edit requests.
+ */
+export declare interface BaseEditRequest {
+    /** The type of the edit request. */
+    type: EditRequestType;
+    /**
+     * The temporary ID of the edit request (optional). This is used to
+     * identify the edit request before having a local id (e.g. when
+     * chaining requests).
+     * */
+    tempId?: string;
+}
+
+/**
+ * Base interface for all update edit requests.
+ */
+export declare interface BaseUpdateRequest extends BaseEditRequest {
+    /** The local ID of the edit request. */
+    localId: number | string;
+}
+
+export declare class Bbox {
+    core: WEBIFC.AABB;
+    constructor(api: WEBIFC.IfcAPI);
+    get(data: BboxData): WEBIFC.Buffers;
+}
+
+export declare type BboxData = {
+    min?: THREE.Vector3;
+    max?: THREE.Vector3;
+};
+
+export declare class BigShellHole {
+    bb: flatbuffers.ByteBuffer | null;
+    bb_pos: number;
+    __init(i: number, bb: flatbuffers.ByteBuffer): BigShellHole;
+    static getRootAsBigShellHole(bb: flatbuffers.ByteBuffer, obj?: BigShellHole): BigShellHole;
+    static getSizePrefixedRootAsBigShellHole(bb: flatbuffers.ByteBuffer, obj?: BigShellHole): BigShellHole;
+    indices(index: number): number | null;
+    indicesLength(): number;
+    indicesArray(): Uint32Array | null;
+    profileId(): number;
+    mutate_profile_id(value: number): boolean;
+    static startBigShellHole(builder: flatbuffers.Builder): void;
+    static addIndices(builder: flatbuffers.Builder, indicesOffset: flatbuffers.Offset): void;
+    static createIndicesVector(builder: flatbuffers.Builder, data: number[] | Uint32Array): flatbuffers.Offset;
+    /**
+     * @deprecated This Uint8Array overload will be removed in the future.
+     */
+    static createIndicesVector(builder: flatbuffers.Builder, data: number[] | Uint8Array): flatbuffers.Offset;
+    static startIndicesVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addProfileId(builder: flatbuffers.Builder, profileId: number): void;
+    static endBigShellHole(builder: flatbuffers.Builder): flatbuffers.Offset;
+    static createBigShellHole(builder: flatbuffers.Builder, indicesOffset: flatbuffers.Offset, profileId: number): flatbuffers.Offset;
+}
+
+export declare class BigShellProfile {
+    bb: flatbuffers.ByteBuffer | null;
+    bb_pos: number;
+    __init(i: number, bb: flatbuffers.ByteBuffer): BigShellProfile;
+    static getRootAsBigShellProfile(bb: flatbuffers.ByteBuffer, obj?: BigShellProfile): BigShellProfile;
+    static getSizePrefixedRootAsBigShellProfile(bb: flatbuffers.ByteBuffer, obj?: BigShellProfile): BigShellProfile;
+    indices(index: number): number | null;
+    indicesLength(): number;
+    indicesArray(): Uint32Array | null;
+    static startBigShellProfile(builder: flatbuffers.Builder): void;
+    static addIndices(builder: flatbuffers.Builder, indicesOffset: flatbuffers.Offset): void;
+    static createIndicesVector(builder: flatbuffers.Builder, data: number[] | Uint32Array): flatbuffers.Offset;
+    /**
+     * @deprecated This Uint8Array overload will be removed in the future.
+     */
+    static createIndicesVector(builder: flatbuffers.Builder, data: number[] | Uint8Array): flatbuffers.Offset;
+    static startIndicesVector(builder: flatbuffers.Builder, numElems: number): void;
+    static endBigShellProfile(builder: flatbuffers.Builder): flatbuffers.Offset;
+    static createBigShellProfile(builder: flatbuffers.Builder, indicesOffset: flatbuffers.Offset): flatbuffers.Offset;
+}
+
+/**
+ * Union type representing all possible material types.
+ */
+export declare type BIMMaterial = LodMaterial | THREE.MeshLambertMaterial;
+
+/**
+ * Union type representing all possible mesh types.
+ */
+export declare type BIMMesh = THREE.Mesh | LODMesh;
+
+export declare class BooleanOperation {
+    core: WEBIFC.BooleanOperator;
+    constructor(api: WEBIFC.IfcAPI);
+    get(api: WEBIFC.IfcAPI, data: BooleanOperationData): WEBIFC.Buffers;
+}
+
+export declare type BooleanOperationData = {
+    type: "DIFFERENCE" | "UNION";
+    target: THREE.Mesh;
+    operands: THREE.Mesh[];
+};
+
+export declare class BoundingBox {
+    bb: flatbuffers.ByteBuffer | null;
+    bb_pos: number;
+    __init(i: number, bb: flatbuffers.ByteBuffer): BoundingBox;
+    min(obj?: FloatVector): FloatVector | null;
+    max(obj?: FloatVector): FloatVector | null;
+    static sizeOf(): number;
+    static createBoundingBox(builder: flatbuffers.Builder, min_x: number, min_y: number, min_z: number, max_x: number, max_y: number, max_z: number): flatbuffers.Offset;
+}
+
+export declare class CircleCurve {
+    bb: flatbuffers.ByteBuffer | null;
+    bb_pos: number;
+    __init(i: number, bb: flatbuffers.ByteBuffer): CircleCurve;
+    aperture(): number;
+    mutate_aperture(value: number): boolean;
+    position(obj?: FloatVector): FloatVector | null;
+    radius(): number;
+    mutate_radius(value: number): boolean;
+    xDirection(obj?: FloatVector): FloatVector | null;
+    yDirection(obj?: FloatVector): FloatVector | null;
+    static sizeOf(): number;
+    static createCircleCurve(builder: flatbuffers.Builder, aperture: number, position_x: number, position_y: number, position_z: number, radius: number, x_direction_x: number, x_direction_y: number, x_direction_z: number, y_direction_x: number, y_direction_y: number, y_direction_z: number): flatbuffers.Offset;
+}
+
+export declare class CircleExtrusion {
+    bb: flatbuffers.ByteBuffer | null;
+    bb_pos: number;
+    __init(i: number, bb: flatbuffers.ByteBuffer): CircleExtrusion;
+    static getRootAsCircleExtrusion(bb: flatbuffers.ByteBuffer, obj?: CircleExtrusion): CircleExtrusion;
+    static getSizePrefixedRootAsCircleExtrusion(bb: flatbuffers.ByteBuffer, obj?: CircleExtrusion): CircleExtrusion;
+    radius(index: number): number | null;
+    radiusLength(): number;
+    radiusArray(): Float64Array | null;
+    axes(index: number, obj?: Axis): Axis | null;
+    axesLength(): number;
+    static startCircleExtrusion(builder: flatbuffers.Builder): void;
+    static addRadius(builder: flatbuffers.Builder, radiusOffset: flatbuffers.Offset): void;
+    static createRadiusVector(builder: flatbuffers.Builder, data: number[] | Float64Array): flatbuffers.Offset;
+    /**
+     * @deprecated This Uint8Array overload will be removed in the future.
+     */
+    static createRadiusVector(builder: flatbuffers.Builder, data: number[] | Uint8Array): flatbuffers.Offset;
+    static startRadiusVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addAxes(builder: flatbuffers.Builder, axesOffset: flatbuffers.Offset): void;
+    static createAxesVector(builder: flatbuffers.Builder, data: flatbuffers.Offset[]): flatbuffers.Offset;
+    static startAxesVector(builder: flatbuffers.Builder, numElems: number): void;
+    static endCircleExtrusion(builder: flatbuffers.Builder): flatbuffers.Offset;
+    static createCircleExtrusion(builder: flatbuffers.Builder, radiusOffset: flatbuffers.Offset, axesOffset: flatbuffers.Offset): flatbuffers.Offset;
+}
+
+export declare class CircularSweep {
+    core: WEBIFC.CircularSweep;
+    constructor(api: WEBIFC.IfcAPI);
+    get(api: WEBIFC.IfcAPI, data: CircularSweepData): WEBIFC.Buffers;
+}
+
+export declare type CircularSweepData = {
+    profilePoints?: number[];
+    directrix?: number[];
+    initNormal?: number[];
+    scale?: number;
+    closed?: boolean;
+    radius?: number;
+    rotate?: boolean;
+};
+
+export declare class Clothoid {
+    core: WEBIFC.Clothoid;
+    constructor(api: WEBIFC.IfcAPI);
+    get(data: ClothoidData): WEBIFC.Buffers;
+}
+
+export declare type ClothoidData = {
+    startPoint?: number[];
+    startDirection?: number;
+    segments?: number;
+    startRadius?: number;
+    endRadius?: number;
+    segmentLength?: number;
+};
+
+declare class Connection {
+    private readonly _handlers;
+    private readonly _handleInput;
+    private _port?;
+    constructor(handleInput: ThreadHandler);
+    fetchMeshCompute(modelId: string, list: any[]): void;
+    fetch(input: any, content?: any[]): Promise<any>;
+    init(port: MessagePort): void;
+    protected initConnection(connection: MessagePort): void;
+    protected fetchConnection(_input: any): Promise<MessagePort>;
+    private executeConnection;
+    private manageOutput;
+    private onInput;
+    private manageConnection;
+    private manageInput;
+}
+
+/**
+ * Interface for create global transform edit requests.
+ */
+export declare interface CreateGlobalTransformRequest extends BaseCreateRequest {
+    type: EditRequestType.CREATE_GLOBAL_TRANSFORM;
+    data: RawGlobalTransformData;
+}
+
+/**
+ * Interface for create index edit requests. Indexes are name-keyed, so
+ * `data.name` identifies the index. Fails silently if an index with the
+ * same name already exists; use UPDATE_INDEX to replace.
+ * @throws IndexValidationError {@link IndexValidationError}
+ */
+export declare interface CreateIndexRequest extends BaseEditRequest {
+    type: EditRequestType.CREATE_INDEX;
+    data: RawIndexData;
+}
+
+/**
+ * Interface for create item edit requests.
+ */
+export declare interface CreateItemRequest extends BaseCreateRequest {
+    type: EditRequestType.CREATE_ITEM;
+    data: RawItemData;
+}
+
+/**
+ * Interface for create local transform edit requests.
+ */
+export declare interface CreateLocalTransformRequest extends BaseCreateRequest {
+    type: EditRequestType.CREATE_LOCAL_TRANSFORM;
+    data: RawTransformData;
+}
+
+/**
+ * Interface for create material edit requests.
+ */
+export declare interface CreateMaterialRequest extends BaseCreateRequest {
+    type: EditRequestType.CREATE_MATERIAL;
+    data: RawMaterial;
+}
+
+/**
+ * Interface for create relation edit requests.
+ */
+export declare interface CreateRelationRequest extends BaseCreateRequest {
+    type: EditRequestType.CREATE_RELATION;
+    data: RawRelationData;
+}
+
+/**
+ * Interface for create representation edit requests.
+ */
+export declare interface CreateRepresentationRequest extends BaseCreateRequest {
+    type: EditRequestType.CREATE_REPRESENTATION;
+    data: RawRepresentation;
+}
+
+/**
+ * Type for create edit requests.
+ */
+export declare type CreateRequest = CreateMaterialRequest | CreateRepresentationRequest | CreateSampleRequest | CreateGlobalTransformRequest | CreateLocalTransformRequest | CreateItemRequest | CreateRelationRequest;
+
+/**
+ * Interface for create sample edit requests.
+ */
+export declare interface CreateSampleRequest extends BaseCreateRequest {
+    type: EditRequestType.CREATE_SAMPLE;
+    data: SampleRequestData;
+}
+
+/** Interface representing the Coordinate Reference System (CRS) data extracted from an IFC model's IFCPROJECTEDCRS and IFCMAPCONVERSION entities. */
+export declare interface CRSData {
+    /** The CRS name/identifier, e.g. "EPSG:3947" */
+    name: string | null;
+    /** Description of the CRS, e.g. "RGF93_CC47" */
+    description: string | null;
+    /** The geodetic datum name, e.g. "RGF93" */
+    geodeticDatum: string | null;
+    /** The vertical datum name */
+    verticalDatum: string | null;
+    /** The map projection name */
+    mapProjection: string | null;
+    /** The map zone identifier */
+    mapZone: string | null;
+    /** The map unit name, e.g. "METRE" */
+    mapUnit: string | null;
+    /** Map conversion parameters from IFCMAPCONVERSION (null if not present) */
+    mapConversion: {
+        /** Easting coordinate of the map origin */
+        eastings: number;
+        /** Northing coordinate of the map origin */
+        northings: number;
+        /** Orthogonal height of the map origin */
+        orthogonalHeight: number;
+        /** X component of the abscissa of the X axis */
+        xAxisAbscissa: number;
+        /** Y component of the ordinate of the X axis */
+        xAxisOrdinate: number;
+        /** Scale factor applied to the map */
+        scale: number;
+    } | null;
+}
+
+/**
+ * Enum representing the current level of detail (LOD) for a mesh.
+ */
+export declare const enum CurrentLod {
+    /** Represents the full geometry of the model */
+    GEOMETRY = 0,
+    /** Represents the wireframe representation of the model */
+    WIRES = 1,
+    /** Represents the invisible representation of the model */
+    INVISIBLE = 2
+}
+
+export declare type CustomDataItem = {
+    data: {
+        value: string;
+        type: string;
+    };
+};
+
+export declare class CylindricalRevolve {
+    core: WEBIFC.CylindricalRevolve;
+    constructor(api: WEBIFC.IfcAPI);
+    get(api: WEBIFC.IfcAPI, data: CylindricalRevolveData): WEBIFC.Buffers;
+}
+
+export declare type CylindricalRevolveData = {
+    transformation?: number[];
+    startAngle?: number;
+    endAngle?: number;
+    minZ?: number;
+    maxZ?: number;
+    segmentCount?: number;
+    radius?: number;
+};
+
+/**
+ * Union type representing all possible data buffer types.
+ */
+export declare type DataBuffer = Float32Array | Uint8ClampedArray | Int32Array | Uint8Array | Uint32Array | Float64Array | Int8Array | Uint16Array | Int16Array;
+
+export declare class DataMap<K, V> extends Map<K, V> {
+    readonly onBeforeSet: Event_2<{
+        key: K;
+        value: V;
+    }>;
+    readonly onItemSet: Event_2<{
+        key: K;
+        value: V;
+    }>;
+    readonly onItemUpdated: Event_2<{
+        key: K;
+        value: V;
+    }>;
+    readonly onBeforeDelete: Event_2<{
+        key: K;
+        value: V;
+    }>;
+    readonly onItemDeleted: Event_2<K>;
+    readonly onCleared: Event_2<unknown>;
+    set eventsEnabled(value: boolean);
+    constructor(iterable?: Iterable<readonly [K, V]> | null | undefined);
+    clear(): void;
+    set(key: K, value: V): this;
+    guard: (key: K, value: V) => boolean;
+    deleteGuard: (key: K, value: V) => boolean;
+    updateGuard: (key: K, value: V) => boolean;
+    delete(key: K): boolean;
+    getKey(item: V): K | undefined;
+    /**
+     * Sets the value in the map with a randomly generated uuidv4 key.
+     * Only use this if your keys are strings
+     *
+     * @param value - The value of the item to set.
+     * @returns The key used.
+     */
+    add(value: V): K;
+    /**
+     * Updates an item in the data map, triggering the corresponding event.
+     *
+     * @param item - The item to update.
+     */
+    update(item: V): void;
+    /**
+     * Deletes elements from the DataMap based on a provided predicate function.
+     *
+     * @param predicate A function that takes a value and its key as arguments and returns a boolean.
+     *                  If the function returns true, the element is deleted.
+     */
+    deleteIf(predicate: (value: V, key: K) => boolean): void;
+    /**
+     * Replaces a key in the DataMap with a new key, transferring the associated value.
+     *
+     * @param oldKey - The key to be replaced.
+     * @param newKey - The new key that will replace the old key.
+     * @param fullReplace - If true, allows replacing an existing key with the new key. If false, the replacement will not occur if the new key already exists in the map. Defaults to false.
+     * @returns True if the key was successfully replaced, false otherwise.
+     */
+    replaceKey(oldKey: K, newKey: K, fullReplace?: boolean): boolean;
+    dispose(): void;
+}
+
+export declare class DataSet<T> extends Set<T> {
+    readonly onUpdated: Event_2<undefined>;
+    readonly onItemAdded: Event_2<T>;
+    readonly onBeforeDelete: Event_2<T>;
+    readonly onItemDeleted: Event_2<unknown>;
+    readonly onCleared: Event_2<unknown>;
+    set eventsEnabled(value: boolean);
+    constructor(iterable?: Iterable<T> | null);
+    clear(): void;
+    add(...value: T[]): this;
+    guard: (value: T) => boolean;
+    deleteGuard: (value: T) => boolean;
+    delete(value: T): boolean;
+    deleteIf(predicate: (value: T) => boolean): void;
+    getIndex(item: T): number;
+    dispose(): void;
+}
+
+/** Decode a raw STEP string body: `''`, `\\`, `\S\c`, `\X\hh`, `\X2\…\X0\`. */
+export declare function decodeStepString(raw: string): string;
+
+/**
+ * Interface for delete global transform edit requests.
+ */
+export declare interface DeleteGlobalTransformRequest extends BaseUpdateRequest {
+    type: EditRequestType.DELETE_GLOBAL_TRANSFORM;
+}
+
+/**
+ * Interface for delete index edit requests. No-op if the named index
+ * doesn't exist.
+ */
+export declare interface DeleteIndexRequest extends BaseEditRequest {
+    type: EditRequestType.DELETE_INDEX;
+    /** Name of the index to delete. */
+    name: string;
+}
+
+/**
+ * Interface for delete item edit requests.
+ */
+export declare interface DeleteItemRequest extends BaseUpdateRequest {
+    type: EditRequestType.DELETE_ITEM;
+}
+
+/**
+ * Interface for delete local transform edit requests.
+ */
+export declare interface DeleteLocalTransformRequest extends BaseUpdateRequest {
+    type: EditRequestType.DELETE_LOCAL_TRANSFORM;
+}
+
+/**
+ * Interface for delete material edit requests.
+ */
+export declare interface DeleteMaterialRequest extends BaseUpdateRequest {
+    type: EditRequestType.DELETE_MATERIAL;
+}
+
+/**
+ * Interface for delete relation edit requests.
+ */
+export declare interface DeleteRelationRequest extends BaseUpdateRequest {
+    type: EditRequestType.DELETE_RELATION;
+}
+
+/**
+ * Interface for delete representation edit requests.
+ */
+export declare interface DeleteRepresentationRequest extends BaseUpdateRequest {
+    type: EditRequestType.DELETE_REPRESENTATION;
+}
+
+/**
+ * Type for delete edit requests.
+ */
+export declare type DeleteRequest = DeleteMaterialRequest | DeleteRepresentationRequest | DeleteSampleRequest | DeleteGlobalTransformRequest | DeleteLocalTransformRequest | DeleteItemRequest | DeleteRelationRequest;
+
+/**
+ * Interface for delete sample edit requests.
+ */
+export declare interface DeleteSampleRequest extends BaseUpdateRequest {
+    type: EditRequestType.DELETE_SAMPLE;
+}
+
+declare const DELTA_MODEL_ID = "-DELTA-MODEL-";
+
+export declare class DoubleVector {
+    bb: flatbuffers.ByteBuffer | null;
+    bb_pos: number;
+    __init(i: number, bb: flatbuffers.ByteBuffer): DoubleVector;
+    x(): number;
+    mutate_x(value: number): boolean;
+    y(): number;
+    mutate_y(value: number): boolean;
+    z(): number;
+    mutate_z(value: number): boolean;
+    static sizeOf(): number;
+    static createDoubleVector(builder: flatbuffers.Builder, x: number, y: number, z: number): flatbuffers.Offset;
+}
+
+/**
+ * Per-tile index-buffer chunk returned by {@link IFragmentsModel.getItemDrawChunks}.
+ * `position` and `size` are parallel arrays: start index and count for each
+ * contiguous run of vertices belonging to the queried items in this tile's
+ * index buffer.
+ */
+declare type DrawChunk = {
+    tileId: number;
+    position: Uint32Array;
+    size: Uint32Array;
+};
+
+declare function edit(model: TFB.Model, requests: ET.EditRequest[], config?: {
+    raw?: boolean;
+    delta?: boolean;
+}): {
+    model: Uint8Array;
+    items: number[];
+};
+
+export declare type EditKey = "MATERIAL" | "GLOBAL_TRANSFORM" | "LOCAL_TRANSFORM" | "SAMPLE" | "ITEM" | "REPRESENTATION" | "RELATION";
+
+/**
+ * The Editor class provides functionality for editing and managing Fragments models. It handles operations like editing model elements, saving changes and managing edit history.
+ */
+export declare class Editor {
+    /**
+     * Event triggered when an edit is made.
+     */
+    onEdit: Event_2<{
+        modelId: string;
+    }>;
+    private _editHelper;
+    private _elementsHelper;
+    constructor(core: FragmentsModels, connection: FragmentsConnection);
+    /**
+     * Edits a Fragments model.
+     * @param modelId - The ID of the model to edit.
+     * @param actions - The actions to perform on the model.
+     * @param config - The configuration for the edit.
+     * @returns The IDs of the elements that were edited.
+     */
+    edit(modelId: string, actions: EditRequest[], config?: {
+        removeRedo: boolean;
+    }): Promise<number[]>;
+    /**
+     * Saves all the edits of the specified Fragments model. Useful for exporting the model with the edits applied. Similar to "Saving" the changes in a BIM app.
+     * @param modelId - The ID of the model to save.
+     * @returns The requests that were saved.
+     */
+    save(modelId: string): Promise<{
+        requests: EditRequest[];
+        undoneRequests: EditRequest[];
+    } | null>;
+    /**
+     * Resets the edits of the specified Fragments model.
+     * @param modelId - The ID of the model to reset.
+     */
+    reset(modelId: string): Promise<void>;
+    /**
+     * Gets the requests of the specified Fragments model. Useful for building a history menu.
+     * @param modelId - The ID of the model to get the requests from.
+     * @returns The requests of the model.
+     */
+    getModelRequests(modelId: string): Promise<{
+        requests: EditRequest[];
+        undoneRequests: EditRequest[];
+    }>;
+    /**
+     * Gets the requests of the specified Fragments model added since an earlier call.
+     * @remarks Reading only what was added keeps a long unsaved session cheap to follow:
+     * every request is copied from the worker once. Pass the `count` and `generation` of the
+     * previous result. If requests were undone, selected, set or reset since, all of them are
+     * returned and `from` is 0. The same happens after `save`, or after the model is disposed
+     * and loaded again with the same ID: the log starts again (`save` leaves it empty) under a
+     * new `generation`, so check `from` before appending to what was read earlier.
+     * @param modelId - The ID of the model to get the requests from.
+     * @param from - The `count` of the previous result (0 the first time).
+     * @param generation - The `generation` of the previous result (-1 the first time).
+     * @returns The requests from `from` on, the request count and the generation of the log.
+     */
+    getModelRequestsSince(modelId: string, from?: number, generation?: number): Promise<EditRequestsSince>;
+    /**
+     * Selects an edit request of the specified Fragments model to set the model in the state it
+     * was after the request was applied.
+     * @param modelId - The ID of the model to select the request from.
+     * @param index - The index of the request to select.
+     * @returns The selected request.
+     */
+    selectRequest(modelId: string, index: number): Promise<void>;
+    /**
+     * Clears all the element edit requests of the specified Fragments model.
+     * @param modelId - The ID of the model to clear the requests from.
+     */
+    clearElementsRequests(modelId: string): (UpdateMaterialRequest | UpdateRepresentationRequest | UpdateSampleRequest | UpdateGlobalTransformRequest | UpdateLocalTransformRequest | UpdateItemRequest | UpdateMaxLocalIdRequest | UpdateRelationRequest | UpdateMetadataRequest | UpdateSpatialStructureRequest | CreateMaterialRequest | CreateRepresentationRequest | CreateSampleRequest | CreateGlobalTransformRequest | CreateLocalTransformRequest | CreateItemRequest | CreateRelationRequest | DeleteMaterialRequest | DeleteRepresentationRequest | DeleteSampleRequest | DeleteGlobalTransformRequest | DeleteLocalTransformRequest | DeleteItemRequest | DeleteRelationRequest | CreateIndexRequest | UpdateIndexRequest | DeleteIndexRequest)[] | null;
+    /**
+     * Creates a material in the specified Fragments model.
+     * @param modelId - The ID of the model to create the material in.
+     * @param material - The material to create.
+     * @returns The created material.
+     */
+    createMaterial(modelId: string, material: THREE.MeshLambertMaterial): string;
+    /**
+     * Creates a local transform in the specified Fragments model.
+     * @param modelId - The ID of the model to create the local transform in.
+     * @param transform - The local transform to create.
+     * @returns The created local transform.
+     */
+    createLocalTransform(modelId: string, transform: THREE.Matrix4): string;
+    /**
+     * Creates a shell in the specified Fragments model.
+     * @param modelId - The ID of the model to create the shell in.
+     * @param geometry - The geometry of the shell to create.
+     * @returns The created shell.
+     */
+    createShell(modelId: string, geometry: THREE.BufferGeometry): string;
+    /**
+     * Creates a circle extrusion in the specified Fragments model.
+     * @param modelId - The ID of the model to create the circle extrusion in.
+     * @param data - The data of the circle extrusion to create.
+     * @returns The created circle extrusion.
+     */
+    createCircleExtrusion(modelId: string, data: RawCircleExtrusion): string;
+    /**
+     * Creates a global transform in the specified Fragments model.
+     * @param modelId - The ID of the model to create the global transform in.
+     * @param transform - The global transform to create.
+     * @param itemId - The ID of the item to create the global transform for.
+     * @returns The created global transform.
+     */
+    createGlobalTransform(modelId: string, transform: THREE.Matrix4, itemId: number | string): string;
+    /**
+     * Creates a sample in the specified Fragments model.
+     * @param modelId - The ID of the model to create the sample in.
+     * @param data - The data of the sample to create.
+     * @returns The created sample.
+     */
+    createSample(modelId: string, data: {
+        localTransform: number | string;
+        representation: number | string;
+        material: number | string;
+        globalTransform: number | string;
+    }): string;
+    /**
+     * Creates an item in the specified Fragments model.
+     * @param modelId - The ID of the model to create the item in.
+     * @param item - The item to create.
+     * @returns The created item.
+     */
+    createItem(modelId: string, item: RawItemData): string;
+    /**
+     * Queues a CREATE_INDEX request on the specified model. The new index is
+     * persisted on the next `applyChanges()` call. See `RawIndexData` for the
+     * supported shapes (keys-only, 1:1, 1:N linear, 1:N nonlinear).
+     *
+     * Live reads via `model.getIndexEntry` see the pending index immediately;
+     * `applyChanges` makes it survive a save/reload cycle.
+     */
+    createIndex(modelId: string, data: RawIndexData): void;
+    /**
+     * Queues an UPDATE_INDEX request. Replaces the index identified by
+     * `data.name` in its entirety. Use `deleteIndex` + `createIndex` if you
+     * want to rename.
+     */
+    updateIndex(modelId: string, data: RawIndexData): void;
+    /**
+     * Queues a DELETE_INDEX request. No-op at flush time if the named index
+     * doesn't exist on the model.
+     */
+    deleteIndex(modelId: string, name: string): void;
+    /**
+     * Sets an item in the specified Fragments model.
+     * @param modelId - The ID of the model to set the item in.
+     * @param item - The item to set.
+     * @returns The set item.
+     */
+    setItem(modelId: string, item: ItemData): void;
+    /**
+     * Relates an item to other items in the specified Fragments model.
+     * @param modelId - The ID of the model to relate the item in.
+     * @param itemId - The ID of the item to relate.
+     * @param relationName - The name of the relation to relate.
+     * @param itemIds - The IDs of the items to relate.
+     * @returns The related items.
+     */
+    relate(modelId: string, itemId: number, relationName: string, itemIds: number[]): Promise<void>;
+    /**
+     * Removes a relation between an item and other items in the specified Fragments model.
+     * @param modelId - The ID of the model to unrelate the item in.
+     * @param itemId - The ID of the item to unrelate.
+     * @param relationName - The name of the relation to unrelate.
+     * @param itemIds - The IDs of the items to unrelate.
+     * @returns The unrelated items.
+     */
+    unrelate(modelId: string, itemId: number, relationName: string, itemIds: number[]): Promise<void>;
+    /**
+     * Gets the elements of the specified Fragments model.
+     * @param modelId - The ID of the model to get the elements from.
+     * @param localIds - The local IDs of the elements to get.
+     * @returns The elements of the model.
+     */
+    getElements(modelId: string, localIds: Iterable<number>): Promise<Element_2[]>;
+    /**
+     * Creates elements in the specified Fragments model.
+     * @param modelId - The ID of the model to create the elements in.
+     * @param elements - The elements to create.
+     * @returns The created elements.
+     */
+    createElements(modelId: string, elements: NewElementData[]): Promise<Element_2[] | null>;
+    /**
+     * Deletes elements in the specified Fragments model.
+     * @param modelId - The ID of the model to delete the elements in.
+     * @param elements - The elements to delete.
+     * @returns The deleted elements.
+     */
+    deleteElements(modelId: string, elements: Element_2[]): void;
+    /**
+     * Applies changes to the specified Fragments model.
+     * @param modelId - The ID of the model to apply the changes to.
+     * @param elements - The elements to apply the changes to.
+     * @returns The applied changes.
+     */
+    applyChanges(modelId: string, elements?: Element_2[]): Promise<number[]>;
+    /**
+     * Deletes any type of data from the specified Fragments model.
+     * @param modelId - The ID of the model to delete the data from.
+     * @param data - The data to delete.
+     * @returns The deleted data.
+     */
+    deleteData(modelId: string, data: {
+        itemIds?: Iterable<number>;
+        materialIds?: Iterable<number>;
+        localTransformIds?: Iterable<number>;
+        representationIds?: Iterable<number>;
+        sampleIds?: Iterable<number>;
+        filterInUse?: boolean;
+    }): Promise<void>;
+    /**
+     * Internal method to update the specified Fragments model. Do not use this method directly.
+     * @param modelId - The ID of the model to update.
+     */
+    _update(modelId: string): Promise<void>;
+}
+
+/**
+ * Type for all edit requests.
+ */
+export declare type EditRequest = UpdateRequest | CreateRequest | DeleteRequest | IndexRequest;
+
+/**
+ * Incremental lookup structures over the pending edit requests of a
+ * VirtualFragmentsModel.
+ *
+ * Property reads used to scan the whole `requests` array once per item, so a
+ * bulk read of N items with E pending requests cost O(N × E). This index keeps
+ * the requests grouped by the localId they target (in push order) plus the
+ * set of deleted items, so each per-item lookup is O(k) in the number of
+ * requests for that item.
+ *
+ * The owner keeps it in sync on push / undo / redo; any operation that
+ * replaces the requests array (reset, history selection, restoring saved
+ * requests) rebuilds it. `sync()` is the safety net for the tracked array
+ * being swapped or mutated behind the index's back.
+ */
+declare class EditRequestIndex {
+    /** Local ids with a pending DELETE_ITEM request. */
+    readonly deletedItems: Set<number>;
+    private _byLocalId;
+    private _deleteCounts;
+    private _source;
+    private _size;
+    /**
+     * Makes sure the index reflects `requests`. Cheap when the tracked array is
+     * unchanged; rebuilds when it was replaced or its length drifted.
+     */
+    sync(requests: EditRequest[]): void;
+    rebuild(requests: EditRequest[]): void;
+    /** Registers a request that was just appended to the tracked array. */
+    push(request: EditRequest): void;
+    /** Unregisters a request that was just removed from the tracked array. */
+    pop(request: EditRequest): void;
+    /** Newest pending request of one of the given types targeting `localId`. */
+    latest<T extends EditRequestType>(localId: number | string, ...types: T[]): RequestOfType<T> | undefined;
+    /** Oldest pending request of one of the given types targeting `localId`. */
+    first<T extends EditRequestType>(localId: number | string, ...types: T[]): RequestOfType<T> | undefined;
+    private localIdOf;
+}
+
+/**
+ * The requests of a model added since an earlier read (see `Editor.getModelRequestsSince`).
+ */
+export declare interface EditRequestsSince {
+    /**
+     * Pass it to the next call. It changes when requests are undone, selected, set or reset, and
+     * when the model is saved or loaded again. It is an arbitrary non-negative integer.
+     */
+    generation: number;
+    /** The index of the first returned request: the given `from`, or 0 when all are returned. */
+    from: number;
+    /** The number of requests of the model. Pass it as `from` to the next call. */
+    count: number;
+    /** The requests from `from` on. */
+    requests: EditRequest[];
+}
+
+/**
+ * Types of edit requests.
+ */
+export declare enum EditRequestType {
+    CREATE_MATERIAL = 0,
+    CREATE_REPRESENTATION = 1,
+    CREATE_SAMPLE = 2,
+    CREATE_GLOBAL_TRANSFORM = 3,
+    CREATE_LOCAL_TRANSFORM = 4,
+    CREATE_ITEM = 5,
+    CREATE_RELATION = 6,
+    UPDATE_MATERIAL = 7,
+    UPDATE_REPRESENTATION = 8,
+    UPDATE_SAMPLE = 9,
+    UPDATE_GLOBAL_TRANSFORM = 10,
+    UPDATE_LOCAL_TRANSFORM = 11,
+    UPDATE_ITEM = 12,
+    UPDATE_MAX_LOCAL_ID = 13,
+    UPDATE_RELATION = 14,
+    UPDATE_METADATA = 15,
+    UPDATE_SPATIAL_STRUCTURE = 16,
+    DELETE_MATERIAL = 17,
+    DELETE_REPRESENTATION = 18,
+    DELETE_SAMPLE = 19,
+    DELETE_GLOBAL_TRANSFORM = 20,
+    DELETE_LOCAL_TRANSFORM = 21,
+    DELETE_ITEM = 22,
+    DELETE_RELATION = 23,
+    CREATE_INDEX = 24,
+    UPDATE_INDEX = 25,
+    DELETE_INDEX = 26
+}
+
+/**
+ * Names of the edit request types (e.g. to display in a history UI).
+ */
+export declare const EditRequestTypeNames: Record<EditRequestType, string>;
+
+export declare class EditUtils {
+    static edit: typeof edit;
+    static solveIds: typeof solveIds;
+    static newModel: typeof newModel;
+    static applyChangesToRawData: typeof applyChangesToRawData;
+    static applyChangesToSpecialData: typeof applyChangesToSpecialData;
+    static applyChangesToIds: typeof applyChangesToIds;
+    static getModelFromBuffer: typeof FF.getModelFromBuffer;
+    static getSampleData: typeof FF.getSampleData;
+    static getTransformData: typeof FF.getTransformData;
+    static getRelationData: typeof FF.getRelationData;
+    static getMaterialData: typeof FF.getMaterialData;
+    static getRepresentationData: typeof FF.getRepresentationData;
+    static getShellData: typeof FF.getShellData;
+    static getMaterialsIds: typeof FF.getMaterialsIds;
+    static getMaterials: typeof FF.getMaterials;
+    static getRepresentationsIds: typeof FF.getRepresentationsIds;
+    static getRepresentations: typeof FF.getRepresentations;
+    static getLocalTransformsIds: typeof FF.getLocalTransformsIds;
+    static getLocalTransforms: typeof FF.getLocalTransforms;
+    static getGlobalTransformsIds: typeof FF.getGlobalTransformsIds;
+    static getGlobalTransforms: typeof FF.getGlobalTransforms;
+    static getSamplesIds: typeof FF.getSamplesIds;
+    static getSamples: typeof FF.getSamples;
+    static getItemsIds: typeof FF.getItemsIds;
+    static getItems: typeof FF.getItems;
+    static getGlobalTranformsIdsOfItems: typeof FF.getGlobalTranformsIdsOfItems;
+    static getElementsData: typeof FF.getElementsData;
+    static getItemSnapData: typeof FF.getItemSnapData;
+    static getGeometryIndicesFromRepresentations: typeof FF.getGeometryIndicesFromRepresentations;
+    static getRootModelId: typeof FF.getRootModelId;
+    static getSerializedAttributes: typeof FF.getSerializedAttributes;
+    static itemDataToRawItemData: typeof FF.itemDataToRawItemData;
+    static DELTA_MODEL_ID: string;
+}
+
+declare class Element_2 {
+    readonly localId: number;
+    readonly model: FragmentsModel;
+    readonly core: ElementData;
+    config: ElementConfig;
+    private updateRequests;
+    private createRequests;
+    private removeRequests;
+    private _elementChanged;
+    get elementChanged(): boolean;
+    constructor(id: number, data: ElementData, model: FragmentsModel);
+    getRequests(): EditRequest[] | null;
+    delete(): void;
+    getData(): Promise<ItemData>;
+    getGlobalTransformId(): number;
+    disposeMeshes(meshes: THREE.Group, config?: {
+        disposeGeometry?: boolean;
+        disposeMaterial?: boolean;
+    }): void;
+    getMeshes(): Promise<THREE.Group<THREE.Object3DEventMap>>;
+    setMeshes(meshes: THREE.Group): Promise<void>;
+    createSamples(samples: RawSample[]): void;
+    deleteSamples(ids: number[]): void;
+    updateSamples(): Promise<void>;
+}
+export { Element_2 as Element }
+
+/**
+ * The default {@link IfcSplitterConfig.elementTypes}.
+ * Exported so it can be extended rather than replaced.
+ */
+export declare const ELEMENT_TYPES: readonly ["IFCWALL", "IFCWALLSTANDARDCASE", "IFCWALLELEMENTEDCASE", "IFCSLAB", "IFCSLABSTANDARDCASE", "IFCSLABELEMENTEDCASE", "IFCBEAM", "IFCBEAMSTANDARDCASE", "IFCCOLUMN", "IFCCOLUMNSTANDARDCASE", "IFCDOOR", "IFCDOORSTANDARDCASE", "IFCWINDOW", "IFCWINDOWSTANDARDCASE", "IFCROOF", "IFCSTAIR", "IFCSTAIRFLIGHT", "IFCRAMP", "IFCRAMPFLIGHT", "IFCCURTAINWALL", "IFCCOVERING", "IFCRAILING", "IFCPLATE", "IFCPLATESTANDARDCASE", "IFCMEMBER", "IFCMEMBERSTANDARDCASE", "IFCFOOTING", "IFCPILE", "IFCFURNISHINGELEMENT", "IFCSANITARYTERMINAL", "IFCFLOWSEGMENT", "IFCFLOWTERMINAL", "IFCFLOWCONTROLLER", "IFCFLOWFITTING", "IFCFLOWMOVINGDEVICE", "IFCFLOWSTORAGEDEVICE", "IFCFLOWTREATMENTDEVICE", "IFCENERGYCONVERSIONDEVICE", "IFCDISTRIBUTIONFLOWELEMENT", "IFCDISTRIBUTIONCONTROLELEMENT", "IFCDISTRIBUTIONELEMENT", "IFCDISTRIBUTIONPORT", "IFCBUILDINGELEMENTPROXY", "IFCBUILDINGELEMENTPART", "IFCOPENINGELEMENT", "IFCSPACE", "IFCTRANSPORTELEMENT", "IFCVIRTUALELEMENT", "IFCSHADINGDEVICE", "IFCCHIMNEY", "IFCGEOGRAPHICELEMENT", "IFCPROXY", "IFCMECHANICALFASTENER"];
+
+export declare type ElementConfig = {
+    data: {
+        attributesDefault: true;
+        relations: {
+            [name: string]: {
+                attributes: boolean;
+                relations: boolean;
+            };
+        };
+    };
+};
+
+/**
+ * Container of all the data of an element of a fragments model.
+ */
+export declare type ElementData = {
+    /** The samples of the elements. */
+    samples: {
+        [id: number]: RawSample;
+    };
+    /** The local transforms of the elements. */
+    localTransforms: {
+        [id: number]: RawTransformData;
+    };
+    /** The global transforms of the elements. */
+    globalTransforms: {
+        [id: number]: RawGlobalTransformData;
+    };
+    /** The representations of the elements. */
+    representations: {
+        [id: number]: RawRepresentation;
+    };
+    /** The materials of the elements. */
+    materials: {
+        [id: number]: RawMaterial;
+    };
+};
+
+declare namespace ET {
+    export {
+        isIndexRequest,
+        RawMaterial,
+        RawItemData,
+        RawRelationData,
+        RawMetadataData,
+        RawTransformData,
+        RawGlobalTransformData,
+        RawSample,
+        RawCircleExtrusion,
+        RawShell,
+        RawRepresentation,
+        ElementData,
+        NewElementData,
+        EditRequestType,
+        EditRequestTypeNames,
+        EditKey,
+        BaseEditRequest,
+        BaseUpdateRequest,
+        UpdateMaterialRequest,
+        UpdateRepresentationRequest,
+        SampleRequestData,
+        UpdateSampleRequest,
+        UpdateGlobalTransformRequest,
+        UpdateLocalTransformRequest,
+        UpdateItemRequest,
+        UpdateMaxLocalIdRequest,
+        UpdateRelationRequest,
+        UpdateMetadataRequest,
+        UpdateSpatialStructureRequest,
+        BaseCreateRequest,
+        CreateSampleRequest,
+        CreateMaterialRequest,
+        CreateRepresentationRequest,
+        CreateGlobalTransformRequest,
+        CreateLocalTransformRequest,
+        CreateItemRequest,
+        CreateRelationRequest,
+        DeleteMaterialRequest,
+        DeleteRepresentationRequest,
+        DeleteSampleRequest,
+        DeleteGlobalTransformRequest,
+        DeleteLocalTransformRequest,
+        DeleteItemRequest,
+        DeleteRelationRequest,
+        RawIndexData,
+        IndexValidationError,
+        CreateIndexRequest,
+        UpdateIndexRequest,
+        DeleteIndexRequest,
+        UpdateRequest,
+        CreateRequest,
+        DeleteRequest,
+        IndexRequest,
+        EditRequest,
+        EditRequestsSince
+    }
+}
+
+declare class Event_2<T> {
+    enabled: boolean;
+    add(handler: T extends void ? {
+        (): void;
+    } : {
+        (data: T): void;
+    }): void;
+    remove(handler: T extends void ? {
+        (): void;
+    } : {
+        (data: T): void;
+    }): void;
+    trigger: (data?: T) => void;
+    reset(): void;
+    private handlers;
+}
+export { Event_2 as Event }
+
+export declare function extractArgsString(raw: string | undefined): string | null;
+
+export declare function extractLineMeta(raw: string): LineMeta | null;
+
+export declare function extractRefs(raw: string, skipId?: number): number[];
+
+export declare class Extrusion {
+    core: WEBIFC.Extrusion;
+    constructor(api: WEBIFC.IfcAPI);
+    get(api: WEBIFC.IfcAPI, data: ExtrusionData): WEBIFC.Buffers;
+}
+
+export declare type ExtrusionData = {
+    profilePoints?: number[];
+    profileHoles?: number[][];
+    direction?: number[];
+    cuttingPlaneNormal?: number[];
+    cuttingPlanePosition?: number[];
+    length?: number;
+    cap?: boolean;
+};
+
+declare namespace FF {
+    export {
+        getRootModelId,
+        getModelFromBuffer,
+        getSampleData,
+        getTransformData,
+        getRelationData,
+        getMaterialData,
+        getRepresentationData,
+        getShellData,
+        getCircleExtrusionData,
+        getMaterialsIds,
+        getMaterials,
+        getRepresentationsIds,
+        getRepresentations,
+        getGeometryIndicesFromRepresentations,
+        getSerializedAttributes,
+        itemDataToRawItemData,
+        getLocalTransformsIds,
+        getLocalTransforms,
+        getGlobalTransformsIds,
+        getGlobalTransforms,
+        getSamplesIds,
+        getSamples,
+        getItemsIds,
+        getItems,
+        getGlobalTranformsIdsOfItems,
+        getElementsData,
+        getItemSnapData,
+        DELTA_MODEL_ID
+    }
+}
+
+declare type Filter = (data: any) => boolean;
+
+export declare class FloatVector {
+    bb: flatbuffers.ByteBuffer | null;
+    bb_pos: number;
+    __init(i: number, bb: flatbuffers.ByteBuffer): FloatVector;
+    x(): number;
+    mutate_x(value: number): boolean;
+    y(): number;
+    mutate_y(value: number): boolean;
+    z(): number;
+    mutate_z(value: number): boolean;
+    static sizeOf(): number;
+    static createFloatVector(builder: flatbuffers.Builder, x: number, y: number, z: number): flatbuffers.Offset;
+}
+
+declare interface FontConfig {
+    /**
+     * @see {@link Font.generateShapes}
+     * @default 0.2
+     */
+    size: number;
+    /**
+     * @see {@link Font.generateShapes}
+     * @default "ltr"
+     */
+    direction: "ltr" | "rtl" | "tb";
+    /**
+     * Number of segments per shape. Expects a `Integer`.
+     * @see {@link THREE.ShapeGeometry}
+     * @default 12
+     */
+    curveSegments: number;
+    /**
+     * Label offset from line's tip, negative values will offset label onto line.
+     * When using negative values that may exceed the axis line,
+     * you may want to set the label's material `side` to `THREE.DoubleSide`.
+     * @default 0.5
+     */
+    offset: number;
+}
+
+/**
+ * The name of this package, used to identify it as the generator of the
+ * models it creates.
+ */
+export declare const FRAGMENTS_GENERATOR = "@thatopen/fragments";
+
+/**
+ * The version of this package. It's injected at build time from package.json
+ * (see the `define` option in vite.config.ts), so it's always in sync with
+ * the published version. When the code runs unbundled and the define is not
+ * applied (e.g. tsx scripts), it falls back to "unknown".
+ */
+export declare const FRAGMENTS_VERSION: string;
+
+declare class FragmentsConnection extends Connection {
+    private readonly _data;
+    private readonly _classicWorker;
+    private readonly _maxWorkers;
+    private readonly _threadGroups;
+    private readonly _defaultCap;
+    get maxWorkers(): number;
+    get threadGroups(): Record<string, number>;
+    /**
+     * Number of workers currently hosting at least one model. Used to
+     * split the global graphic-memory budget evenly between workers
+     * (each worker tracks its tile-cache consumption independently).
+     */
+    get activeThreadCount(): number;
+    constructor(handleInput: ThreadHandler, threadPath: string, options?: FragmentsConnectionOptions);
+    delete(model: string): void;
+    /**
+     * Looks up the threadGroup the user assigned at load() time. Returns
+     * undefined for default-pool models. Used by FragmentsModels to expose
+     * `model.threadGroup` to consumers.
+     */
+    getModelThreadGroup(modelId: string): string | undefined;
+    /**
+     * Records the threadGroup for an upcoming load. Called by FragmentsModels
+     * before issuing the first request for that model so the routing in
+     * setupNewThread sees the right group.
+     */
+    setModelThreadGroup(modelId: string, group: string | undefined): void;
+    invoke(model: string, method: string, args?: any[]): Promise<any>;
+    /**
+     * Tag every outbound request with a monotonic `seq`. The worker
+     * tracks the highest seq it has processed and stamps emitted
+     * `FINISH` tile requests with it; main uses the stamp to resolve
+     * `forceUpdateFinish` waiters without polling. Only set if not
+     * already present so internal callers can override (none currently
+     * do, but keeps the contract explicit).
+     *
+     * Done at the connection level rather than per-helper so every
+     * RPC type — EXECUTE, REFRESH_VIEW, GET_BOXES, etc. — is covered
+     * uniformly.
+     */
+    fetch(input: any, content?: any[]): Promise<any>;
+    protected fetchConnection(input: any): Promise<MessagePort>;
+    /**
+     * Either spawns a new worker (if this group/pool still has reserved
+     * capacity) or routes the load to the least-busy existing worker in the
+     * same pool. Cross-pool spillover is intentionally not allowed: a "data"
+     * load never lands on a "geometry" worker and vice versa, and default
+     * loads never use a reserved worker.
+     */
+    private setupNewThread;
+    /**
+     * Creates a `MessageChannel` to establish a bidirectional
+     * communication link between the main thread and the worker.
+     * - `port1` is kept on the main thread
+     * - `port2` is transferred to the worker via `postMessage`
+     * @param newThread
+     */
+    private setupThread;
+    private newThread;
+}
+
+declare interface FragmentsConnectionOptions {
+    classicWorker?: boolean;
+    /**
+     * Effective max worker cap. Defaults to navigator.hardwareConcurrency - 3,
+     * floored at 2. Sum of declared `threadGroups` sizes must leave at least
+     * one slot for the default pool.
+     */
+    maxWorkers?: number;
+    /**
+     * Reserved worker capacity per named group. Lazy: workers are spawned on
+     * demand, not eagerly. A model loaded with a matching `threadGroup`
+     * always lands on its group's pool; a default-pool load never lands on a
+     * reserved worker.
+     */
+    threadGroups?: Record<string, number>;
+}
+
+export declare class FragmentsIfcUtils {
+    /**
+     * The absolute placement of `item`, in three.js coordinates.
+     * @param unitsFactor - Pass a precomputed {@link getUnitsFactor} to avoid
+     * recalculating it.
+     * @param modelId - The web-ifc model `item` belongs to.
+     */
+    static getAbsolutePlacement(webIfc: WEBIFC.IfcAPI, item: any, unitsFactor?: number, modelId?: number): THREE.Matrix4;
+    /**
+     * The factor that converts the model's length unit to metres.
+     * @param modelId - The web-ifc model to read the units of.
+     */
+    static getUnitsFactor(ifcApi: WEBIFC.IfcAPI, modelId?: number): number;
+    private static getAbsolutePlacementRecursively;
+}
+
+/**
+ * The main class for managing a 3D model loaded from a fragments file. Handles geometry, materials, visibility, highlighting, sections, and more. This class orchestrates multiple specialized managers to handle different aspects of the model like mesh management, item data, raycasting, etc. It maintains the overall state and provides the main interface for interacting with the model. The model data is loaded and processed asynchronously across multiple threads.
+ */
+export declare class FragmentsModel implements IFragmentsModel<true> {
+    /**
+     * A map of attribute changes that have occurred in the model.
+     * The key is the local ID of the item, and the value is the change.
+     */
+    readonly attrsChanges: Map<number, AttrsChange>;
+    /**
+     * A map of relation changes that have occurred in the model.
+     * The key is the local ID of the item, and the value is the change.
+     */
+    readonly relsChanges: Map<number, RelsModifyChange>;
+    /**
+     * The connection to the threads that handle the model data.
+     */
+    readonly threads: FragmentsConnection;
+    /**
+     * A map of tiles that have been loaded for the model.
+     * The key is the tile ID, and the value is the tile.
+     */
+    readonly tiles: DataMap<string | number, BIMMesh>;
+    /**
+     * Event triggered after a view update cycle finishes processing.
+     * Listeners receive this FragmentsModel instance, allowing queries
+     * like {@link getItemsByVisibility} to retrieve seen/unseen elements.
+     */
+    readonly onViewUpdated: Event_2<FragmentsModel>;
+    /**
+     * The localIds of the items held by at least one live tile of this
+     * model. Updated automatically as tiles are created and deleted by
+     * the mesh manager; an item held by several tiles stays until the
+     * last of them is deleted. Tiles live while they are loaded, so this
+     * is not a per-frame frustum test: an item hidden with `setVisible`
+     * or out of view stays here until its tiles are deleted.
+     */
+    readonly visibleItems: Set<number>;
+    /**
+     * The object that represents the model in the Three.js scene.
+     */
+    object: THREE.Object3D<THREE.Object3DEventMap>;
+    /**
+     * The graphics quality of the model. It ranges from 0 (lowest) to 1 (highest).
+     */
+    graphicsQuality: number;
+    deltaModelId: string | null;
+    private readonly _boxManager;
+    private readonly _itemsManager;
+    private readonly _coordinatesManager;
+    private readonly _setupManager;
+    private readonly _viewManager;
+    private readonly _raycastManager;
+    private readonly _visibilityManager;
+    private readonly _highlightManager;
+    private readonly _sectionManager;
+    private readonly _dataManager;
+    private readonly _sequenceManager;
+    private readonly _bbox;
+    private readonly _alignmentsManager;
+    private readonly _gridsManager;
+    private readonly _meshManager;
+    private readonly _editManager;
+    private readonly _editor;
+    private _isProcessing;
+    private _isLoaded;
+    private _frozen;
+    private _isSetup;
+    private static _deltaModelId;
+    private _parentModelId;
+    /**
+     * The ID of the model.
+     */
+    get modelId(): string;
+    /**
+     * The bounding box of the whole model.
+     */
+    get box(): THREE.Box3;
+    /**
+     * Whether the model is busy loading data.
+     */
+    get isBusy(): boolean;
+    /**
+     * Whether the model should stop updating..
+     */
+    get frozen(): boolean;
+    /**
+     * Whether the model should stop updating..
+     */
+    set frozen(value: boolean);
+    /**
+     * The event that is triggered when the clipping planes are needed in the thread.
+     * Set this method to pass your Three.js clipping planes to the model.
+     *
+     * @deprecated Pass the planes with the `clippingPlanes` option of
+     * {@link FragmentsModels.load}, or call {@link useClippingPlanes} after
+     * loading. This callback keeps working; whichever of the two was set last
+     * is the one the model uses.
+     */
+    get getClippingPlanesEvent(): () => THREE.Plane[];
+    /**
+     * The event that is triggered when the clipping planes are needed in the thread.
+     * Set this method to pass your Three.js clipping planes to the model.
+     *
+     * @deprecated Pass the planes with the `clippingPlanes` option of
+     * {@link FragmentsModels.load}, or call {@link useClippingPlanes} after
+     * loading. This callback keeps working; whichever of the two was set last
+     * is the one the model uses.
+     */
+    set getClippingPlanesEvent(value: () => THREE.Plane[]);
+    /**
+     * The clipping planes the model culls against, in world space. This is the
+     * array passed to {@link useClippingPlanes} (or the `clippingPlanes` load
+     * option) itself, not a copy.
+     */
+    get clippingPlanes(): THREE.Plane[];
+    get camera(): THREE.PerspectiveCamera | THREE.OrthographicCamera | null;
+    get isDeltaModel(): any;
+    get parentModelId(): string | null;
+    /**
+     * The thread group this model was loaded into, or `undefined` if it was
+     * loaded into the default pool. Set once at load time, never changes.
+     */
+    readonly threadGroup: string | undefined;
+    /**
+     * The constructor of the fragments model. Don't use this directly. Use the {@link FragmentsModels.load} instead.
+     */
+    constructor(modelId: string, meshManager: MeshManager, threads: FragmentsConnection, editor: Editor, threadGroup?: string);
+    /**
+     * Dispose the model. Use this when you're done with the model.
+     * If you use the {@link FragmentsModels.dispose} method, this will be called automatically for all models.
+     *
+     * @param options.keepInScene - If true, frees the model's worker slot,
+     *   registry entries and shared MaterialManager slot but leaves the THREE
+     *   object, tiles, materials in `list`, alignments and grids in place.
+     *   Caller must finalize the visual cleanup later via
+     *   {@link finalizeDispose}. Used by `editor.save()` to swap in a freshly
+     *   loaded model without a blank frame.
+     */
+    dispose(options?: {
+        keepInScene?: boolean;
+    }): Promise<void>;
+    /**
+     * Finalize a deferred dispose. Removes the THREE object from its parent,
+     * tears down tile meshes (geometry only — materials are shared via the
+     * MaterialManager and may be reused by a replacement model under the
+     * same modelId), and disposes the model's alignments and grids.
+     *
+     * Only call this after `dispose({ keepInScene: true })`. The tile map
+     * is cleared with events disabled to bypass the onBeforeDelete listener
+     * registered in the constructor (which would otherwise dispose tile
+     * materials).
+     */
+    finalizeDispose(): void;
+    /**
+     * Get the spatial structure of the model.
+     */
+    getSpatialStructure(): Promise<SpatialTreeItem>;
+    /**
+     * Get the local IDs corresponding to the specified GUIDs.
+     * @param guids - Array of GUIDs to look up.
+     */
+    getLocalIdsByGuids(guids: string[]): Promise<(number | null)[]>;
+    /**
+     * Translate internal `itemId`s into user-facing `localId`s, preserving
+     * order. Used by GPU-readback pickers that recover item ids from the
+     * per-vertex `id` attribute and need to map back to the public id
+     * space.
+     */
+    getLocalIdsFromItemIds(itemIds: Iterable<number>): Promise<number[]>;
+    /**
+     * Get all the categories of the model.
+     */
+    getCategories(): Promise<string[]>;
+    /**
+     * Get the names of every user-defined index stored on this model. See the
+     * `ModelIndex` schema for the supported shapes.
+     */
+    getIndexNames(): Promise<string[]>;
+    /**
+     * Describe the shape of a named index without performing any lookups.
+     * Returns `null` if no index with that name exists.
+     */
+    getIndexInfo(name: string): Promise<IndexInfo | null>;
+    /**
+     * Get the keys of an index. Useful for keys-only indexes (membership tests,
+     * iteration) but valid for any mode. Number keys come back as a
+     * `Uint32Array`, string keys as `string[]`.
+     */
+    getIndexKeys<K extends string | number>(name: string): Promise<IndexArrayType<K> | null>;
+    /**
+     * Get key at given index.
+     * Useful for keys-only indexes but valid for any mode.
+     */
+    getIndexKey<K extends string | number>(name: string, index: number): Promise<K | null>;
+    /**
+     * Get the values of an index. Useful for inverse lookups.
+     */
+    getIndexValues<V extends string | number>(name: string): Promise<V[] | null>;
+    /**
+     * Test whether a key exists in the named index without resolving its value.
+     */
+    hasIndexEntry<K extends string | number>(name: string, key: K): Promise<boolean>;
+    /**
+     * Forward lookup of a single entry in the named index. The return shape
+     * depends on the index mode (see {@link IndexEntry}).
+     */
+    getIndexEntry<K extends string | number, V extends IndexEntry>(name: string, key: K): Promise<V | null>;
+    /**
+     * Inverse lookup. For an index with forward direction `key -> value`,
+     * returns every key that maps to `value`. The inverse map is built lazily
+     * on first call and cached for the model's lifetime.
+     */
+    getInverseIndexEntry<K extends string | number, V extends string | number>(name: string, value: K): Promise<IndexArrayType<V> | null>;
+    getItemsWithGeometryCategories(): Promise<(string | null)[]>;
+    /**
+     * Get all the items of the model that have geometry.
+     */
+    getItemsWithGeometry(): Promise<Item[]>;
+    /**
+     * Get all the items ids of the model that have geometry.
+     */
+    getItemsIdsWithGeometry(): Promise<number[]>;
+    /**
+     * Get the metadata of the model.
+     */
+    getMetadata<T extends Record<string, any> = Record<string, any>>(): Promise<T>;
+    /**
+     * Get the Coordinate Reference System (CRS) data of the model, if available.
+     * Returns null if the source IFC file did not contain IFCPROJECTEDCRS
+     * or IFCCOORDINATEREFERENCESYSTEM entities.
+     */
+    getCRS(): Promise<CRSData | null>;
+    /**
+     * Get the GUIDs corresponding to the specified local IDs.
+     * @param localIds - Array of local IDs to look up.
+     */
+    getGuidsByLocalIds(localIds: number[]): Promise<(string | null)[]>;
+    /**
+     * Get the buffer of the model.
+     * @param raw - Whether to get the raw buffer. If false, it will be compressed.
+     */
+    getBuffer(raw?: boolean): Promise<ArrayBuffer>;
+    /**
+     * Get a buffer containing only the specified items and their associated geometry.
+     * @param localIds - The local IDs of the items to include.
+     * @param raw - Whether to get the raw buffer. If false, it will be compressed.
+     */
+    getSubsetBuffer(localIds: number[], raw?: boolean): Promise<any>;
+    /**
+     * Get all the items of the model that belong to the specified category.
+     * @param category - The category to look up.
+     */
+    getItemsOfCategories(categories: RegExp[]): Promise<{
+        [category: string]: number[];
+    }>;
+    getGuids(): Promise<string[]>;
+    /**
+     * Get all the local IDs of the model.
+     */
+    getLocalIds(): Promise<number[]>;
+    /**
+     * Retrieves items based on the specified query parameters.
+     *
+     * @param params - The query parameters used to filter and retrieve items.
+     * @param config - Optional query configuration.
+     * @returns A promise that resolves to the items matching the query.
+     */
+    getItemsByQuery(params: ItemsQueryParams, config?: ItemsQueryConfig): Promise<number[]>;
+    getItemsMaterialDefinition(localIds: number[]): Promise<{
+        definition: MaterialDefinition;
+        localIds: number[];
+    }[]>;
+    /**
+     * Retrieves the geometry data for the specified local IDs.
+     *
+     * The returned data is structured as an array of arrays of `MeshData`,
+     * which contains the necessary information to reconstruct a `THREE.BufferGeometry`.
+     *
+     * @param localIds - An array of local IDs for which the geometry data is requested.
+     * @param lod - The level of detail for the geometry (optional).
+     */
+    getItemsGeometry(localIds: number[], lod?: CurrentLod): Promise<MeshData[][]>;
+    getGeometries(ids: number[]): Promise<MeshData[]>;
+    /**
+     * Retrieves the total volume of items based on their local IDs.
+     *
+     * @param localIds An array of local IDs representing the items.
+     * @returns A promise that resolves to the total volume of the specified items.
+     */
+    getItemsVolume(localIds: number[]): Promise<number>;
+    /**
+     * Retrieves the names of all attributes associated with the model.
+     *
+     * @returns A promise that resolves to an array of strings, where each string is the name of an attribute.
+     */
+    getAttributeNames(): Promise<string[]>;
+    /**
+     * Retrieves the attribute values associated with the model.
+     *
+     * @returns A promise that resolves to an array of attribute values.
+     */
+    getAttributeValues(): Promise<any[]>;
+    getAttributesUniqueValues(params: AttributesUniqueValuesParams[]): Promise<Record<string, {
+        value: any;
+        localIds: number[];
+    }[]>>;
+    /**
+     * Retrieves the attribute types associated with the model.
+     *
+     * @returns A promise that resolves to an array of attribute types.
+     */
+    getAttributeTypes(): Promise<string[]>;
+    /**
+     * Retrieves the names of all relations associated with this model.
+     *
+     * @returns A promise that resolves to an array of strings, where each string is the name of a relation.
+     */
+    getRelationNames(): Promise<string[]>;
+    /**
+     * Get the maximum local ID of the model.
+     */
+    getMaxLocalId(): Promise<number>;
+    /**
+     * Get an item by its ID.
+     * @param id - The ID of the item to look up.
+     */
+    getItem(id: Identifier): Item;
+    /**
+     * Get the spatial structure children of the specified items.
+     * @param ids - The IDs of the items to look up.
+     */
+    getItemsChildren(ids: Identifier[]): Promise<number[]>;
+    /**
+     * Get all the data of the specified items.
+     *
+     * By default, the API returns the item’s built-in attributes only.
+     * Relations are not traversed unless explicitly enabled via the `config`
+     * parameter.
+     *
+     * @param ids - The IDs of the items to look up.
+     * @param config - The configuration of the items data. By default, all
+     * built-in attributes are returned and no relations are loaded.
+     *
+     * @example
+     * // Retrieve all built-in attributes and all related entities (full graph)
+     * await getItemsData(ids, {
+     *   attributesDefault: true,
+     *   relationsDefault: { attributes: true, relations: true },
+     * });
+     *
+     * @example
+     * // Retrieve built-in attributes and Property Sets only (via IsDefinedBy)
+     * await getItemsData(ids, {
+     *   attributesDefault: true,
+     *   relations: {
+     *     IsDefinedBy: { attributes: true, relations: true },
+     *     DefinesOccurrence: { attributes: false, relations: false },
+     *   },
+     * });
+     */
+    getItemsData(ids: Identifier[], config?: Partial<ItemsDataConfig>): Promise<ItemData[]>;
+    /**
+     * Get the absolute positions of the specified items.
+     * @param localIds - The local IDs of the items to look up.
+     */
+    getPositions(localIds?: number[]): Promise<THREE.Vector3[]>;
+    /**
+     * Gets coordinates of the model.
+     */
+    getCoordinates(): Promise<number[]>;
+    /**
+     * Retrieves the coordination matrix for the current model.
+     *
+     * This method utilizes the `_coordinatesManager` to compute and return a
+     * `THREE.Matrix4` object based on the original model coordinates.
+     */
+    getCoordinationMatrix(): Promise<THREE.Matrix4>;
+    /**
+     * Get the merged bounding box of the specified items.
+     * @param localIds - The local IDs of the items to look up.
+     */
+    getMergedBox(localIds: number[]): Promise<THREE.Box3>;
+    /**
+     * Get the individual bounding boxes of the specified items.
+     * @param localIds - The local IDs of the items to look up.
+     */
+    getBoxes(localIds?: number[]): Promise<THREE.Box3[]>;
+    /**
+     * Get the absolute alignments of the model (if any).
+     */
+    getAlignments(): Promise<THREE.Group<THREE.Object3DEventMap>>;
+    /**
+     * Get the horizontal alignments of the model (if any).
+     */
+    getHorizontalAlignments(): Promise<THREE.Group<THREE.Object3DEventMap>>;
+    /**
+     * Get the vertical alignments of the model (if any).
+     */
+    getVerticalAlignments(): Promise<THREE.Group<THREE.Object3DEventMap>>;
+    /**
+     * Get the civil alignment styles of the model (if any).
+     */
+    getAlignmentStyles(): Promise<{
+        interior: THREE.PointsMaterial;
+        exterior: THREE.PointsMaterial;
+        clear(): void;
+        delete(key: AlignmentCurveType): boolean;
+        forEach(callbackfn: (value: LineMaterial, key: AlignmentCurveType, map: Map<AlignmentCurveType, LineMaterial>) => void, thisArg?: any): void;
+        get(key: AlignmentCurveType): LineMaterial | undefined;
+        has(key: AlignmentCurveType): boolean;
+        set(key: AlignmentCurveType, value: LineMaterial): Map<AlignmentCurveType, LineMaterial>;
+        size: number;
+        entries(): IterableIterator<[AlignmentCurveType, LineMaterial]>;
+        keys(): IterableIterator<AlignmentCurveType>;
+        values(): IterableIterator<LineMaterial>;
+        [Symbol.iterator](): IterableIterator<[AlignmentCurveType, LineMaterial]>;
+        [Symbol.toStringTag]: string;
+    }>;
+    /**
+     * Get the grids of the model (if any).
+     *
+     * Returns a `THREE.Group` with one child per grid (each child is a `THREE.Group`
+     * that carries `userData.id = localId` and `userData.kind = "grid"`).
+     *
+     * Each grid's children are `THREE.Group` instances with `userData.kind = "axis"`,
+     * acting as an axis container.
+     * A `THREE.LINE` instance with `userData.kind = "line"` is appended to it.
+     *
+     * When opting in to showing labels, two `THREE.SHAPE` instances with
+     * `userData.kind = "label"` and `userData.index` (the label's index, `0` or `1`)
+     * are appended to the axis container.
+     *
+     * All grid's descendants (`"axis"`, `"line"`, `"label"`) carry `userData.tag` (the axis label value)
+     * and `userData.axis` (`"uAxes"`, `"vAxes"`, or `"wAxes"`).
+     */
+    getGrids(config?: GridsConfig): Promise<THREE.Group<THREE.Object3DEventMap>>;
+    /**
+     * The shared material used to render every grid axis line.
+     * Mutating its properties (color, opacity, dash sizes, etc.) updates all
+     * rendered grid lines immediately. Use `setGridMaterial` to swap to a
+     * different material instance.
+     */
+    getGridMaterial(): THREE.LineBasicMaterial;
+    /**
+     * Replace the shared grid material. The previous material is disposed
+     * after the swap.
+     */
+    setGridMaterial(material: THREE.LineBasicMaterial): void;
+    /**
+     * The shared material used to render every grid axis label.
+     * Mutating its properties (color, opacity, dash sizes, etc.) updates all
+     * rendered grid labels immediately. Use `setGridLabelMaterial` to swap to a
+     * different material instance.
+     */
+    getGridLabelMaterial(): THREE.Material;
+    /**
+     * Replace the shared grid label material. The previous material is disposed
+     * after the swap.
+     */
+    setGridLabelMaterial(material: THREE.Material): void;
+    /**
+     * Sets a camera for the model. The model will use it to load tiles dinamically depending on the users view
+     * (e.g. hiding items that are not in the view, setting the LOD to far away items, etc).
+     * @param camera - The camera to use.
+     */
+    useCamera(camera: THREE.PerspectiveCamera | THREE.OrthographicCamera): void;
+    /**
+     * Sets the clipping planes the model culls against, in world space. Pass
+     * the same array your renderer clips with (e.g. `renderer.clippingPlanes`):
+     * the model keeps the reference and reads it on every view refresh, so
+     * adding, removing or moving planes in place is picked up without calling
+     * this again. Assigning a new array to `renderer.clippingPlanes` is not:
+     * call this again with the new array.
+     * @param planes - The clipping planes to use.
+     */
+    useClippingPlanes(planes: THREE.Plane[]): void;
+    /**
+     * Sets the LOD / culling mode of the model.
+     * @param lodMode - The LOD / culling mode to set.
+     */
+    setLodMode(lodMode: LodMode): Promise<void>;
+    /**
+     * Performs a rectangle raycast on the model.
+     * @param data - The data of the rectangle raycast.
+     */
+    rectangleRaycast(data: RectangleRaycastData): Promise<RectangleRaycastResult | null>;
+    /**
+     * Performs a raycast on the model.
+     * @param data - The data of the raycast.
+     */
+    raycast(data: RaycastData): Promise<RaycastResult | null>;
+    /**
+     * Performs a raycast on the model and returns all the results.
+     * @param data - The data of the raycast.
+     */
+    raycastAll(data: RaycastData): Promise<RaycastResult[] | null>;
+    /**
+     * Performs a raycast on the model with snapping.
+     * @param data - The data of the raycast.
+     */
+    raycastWithSnapping(data: SnappingRaycastData): Promise<RaycastResult[] | null>;
+    /**
+     * Sets the visibility of the specified items.
+     * @param localIds - The local IDs of the items to set the visibility of.
+     * @param visible - Whether the items should be visible.
+     */
+    setVisible(localIds: number[] | undefined, visible: boolean): Promise<void>;
+    /**
+     * Toggles the visibility of the specified items.
+     * @param localIds - The local IDs of the items to toggle the visibility of.
+     */
+    toggleVisible(localIds?: number[]): Promise<void>;
+    /**
+     * Gets the items by visibility.
+     * @param visible - Whether the items should be visible.
+     */
+    getItemsByVisibility(visible: boolean): Promise<number[]>;
+    /**
+     * Gets the items by visibility.
+     * @param localIds - The local IDs of the items to get the visibility of.
+     */
+    getVisible(localIds: number[]): Promise<boolean[]>;
+    /**
+     * Resets the visibility of all items.
+     */
+    resetVisible(): Promise<void>;
+    /**
+     * Highlights the specified items.
+     * @param localIds - The local IDs of the items to highlight. If undefined, all items will be highlighted.
+     * @param highlightMaterial - The material to use for the highlight.
+     */
+    highlight(localIds: number[] | undefined, highlightMaterial: MaterialDefinition): Promise<void>;
+    /**
+     * Applies a color to the specified items while preserving original material properties.
+     * @param localIds - The local IDs of the items to color. If undefined, all items will be colored.
+     * @param color - The color to apply.
+     */
+    setColor(localIds: number[] | undefined, color: MaterialDefinition["color"]): Promise<void>;
+    /**
+     * Resets the color of the specified items to their original color while preserving other highlight properties (like opacity).
+     * @param localIds - The local IDs of the items to reset color for. If undefined, all items will be affected.
+     */
+    resetColor(localIds: number[] | undefined): Promise<void>;
+    /**
+     * Applies an opacity to the specified items while preserving original material properties (like color).
+     * @param localIds - The local IDs of the items to change opacity for. If undefined, all items will be affected.
+     * @param opacity - The opacity to apply (0 to 1).
+     */
+    setOpacity(localIds: number[] | undefined, opacity: number): Promise<void>;
+    /**
+     * Resets the opacity of the specified items to their original opacity while preserving other highlight properties (like color).
+     * @param localIds - The local IDs of the items to reset opacity for. If undefined, all items will be affected.
+     */
+    resetOpacity(localIds: number[] | undefined): Promise<void>;
+    /**
+     * Ghosts (x-rays) items through a per-model GPU state texture, with no
+     * per-item recolor, so it scales to millions of elements. Ghosted surfaces
+     * are desaturated and drawn with a screen-door (see
+     * `FragmentsModels.setGhostOpacity`). Replaces the previous ghost set. It is
+     * renderer state only: highlights, visibility, picking and the worker are
+     * not touched.
+     * @param localIds - The key set. With `invert=false`, these items are
+     *   ghosted; with `invert=true`, everything EXCEPT these is ghosted. Pass the
+     *   SMALL side (e.g. the selection); the table is sized by it.
+     * @param invert - Ghost the complement of `localIds` instead.
+     */
+    setGhostItems(localIds: number[], invert?: boolean): Promise<void>;
+    /**
+     * Un-ghosts the given items in place (makes them NOT ghosted), leaving the
+     * rest of the ghost state intact. Pair with visibility: showing an item
+     * should also clear its ghost. No-op if no ghost is active.
+     * @param localIds - The items to un-ghost.
+     */
+    unsetGhostItems(localIds: number[]): Promise<void>;
+    /** Clears the ghost (x-ray) of this model, restoring the full material. */
+    clearGhost(): void;
+    /**
+     * The internal item ids of the given localIds (a worker round-trip). These
+     * are the ids the geometry carries per vertex, which GPU lookups such as the
+     * ghost key on. LocalIds with no item are left out.
+     * @param localIds - The local IDs to convert.
+     */
+    getItemIdsByLocalIds(localIds: number[]): Promise<(number | null)[]>;
+    private ghostItemIds;
+    /**
+     * Gets the highlight of the specified items.
+     * @param localIds - The local IDs of the items to get the highlight of. If undefined, it will return the highlight of all items.
+     */
+    getHighlight(localIds?: number[]): Promise<MaterialDefinition[]>;
+    /**
+     * Resets the highlight of the specified items.
+     * @param localIds - The local IDs of the items to reset the highlight of. If undefined, it will reset the highlight of all items.
+     */
+    resetHighlight(localIds?: number[]): Promise<void>;
+    /**
+     * Gets the item IDs of the items that are highlighted.
+     */
+    getHighlightItemIds(): Promise<number[]>;
+    /**
+     * Gets the section (edges and fills) between the model and a given clipping plane.
+     * @param plane - The plane to get the section of.
+     * @param localIds - The local IDs of the items to get the section of. If undefined, it will return the section of all items.
+     */
+    getSection(plane: THREE.Plane, localIds?: number[]): Promise<ModelSection>;
+    /**
+     * Gets all the materials IDs of the model.
+     */
+    getMaterialsIds(): Promise<number[]>;
+    /**
+     * Gets the materials of the model.
+     * @param localIds - The local IDs of the materials to get. If undefined, it will return all materials.
+     */
+    getMaterials(localIds?: Iterable<number>): Promise<Map<number, RawMaterial>>;
+    /**
+     * Gets all the representations IDs of the model.
+     */
+    getRepresentationsIds(): Promise<number[]>;
+    /**
+     * Gets the representations of the model.
+     * @param localIds - The local IDs of the representations to get. If undefined, it will return all representations.
+     */
+    getRepresentations(localIds?: Iterable<number>): Promise<Map<number, RawRepresentation>>;
+    /**
+     * Gets all the local transforms IDs of the model.
+     */
+    getLocalTransformsIds(): Promise<number[]>;
+    /**
+     * Gets the local transforms of the model.
+     * @param localIds - The local IDs of the local transforms to get. If undefined, it will return all local transforms.
+     */
+    getLocalTransforms(localIds?: Iterable<number>): Promise<Map<number, RawTransformData>>;
+    /**
+     * Gets all the global transforms IDs of the model.
+     */
+    getGlobalTransformsIds(): Promise<number[]>;
+    /**
+     * Gets the global transforms of the model.
+     * @param localIds - The local IDs of the global transforms to get. If undefined, it will return all global transforms.
+     */
+    getGlobalTransforms(localIds?: Iterable<number>): Promise<Map<number, RawGlobalTransformData>>;
+    /**
+     * Gets all the samples IDs of the model.
+     */
+    getSamplesIds(): Promise<number[]>;
+    /**
+     * Gets the samples of the model.
+     * @param localIds - The local IDs of the samples to get. If undefined, it will return all samples.
+     */
+    getSamples(localIds?: Iterable<number>): Promise<Map<number, RawSample>>;
+    /**
+     * Returns per-tile index-buffer chunks for the given items. Each entry
+     * carries a tile id and parallel `position` / `size` Uint32Arrays giving
+     * the start index and index count of every contiguous run of vertices
+     * belonging to one of `localIds` in that tile's index buffer.
+     *
+     * Lets a renderer clone a tile mesh sharing its `geometry.attributes`
+     * and `index`, then call `geometry.addGroup(position[i], size[i], 0)`
+     * for each chunk to draw only the matching slices. No highlight
+     * material slot is allocated; the call is read-only.
+     */
+    getItemDrawChunks(localIds: Iterable<number>): Promise<{
+        tileId: number;
+        position: Uint32Array;
+        size: Uint32Array;
+    }[]>;
+    /**
+     * Gets all the items IDs of the model.
+     */
+    getItemsIds(): Promise<number[]>;
+    /**
+     * Gets the items of the model.
+     * @param localIds - The local IDs of the items to get. If undefined, it will return all items.
+     */
+    getItems(localIds?: Iterable<number>): Promise<Map<number, RawItemData>>;
+    /**
+     * Gets the relations of the model.
+     * @param localIds - The local IDs of the relations to get. If undefined, it will return all relations.
+     */
+    getRelations(localIds?: number[]): Promise<Map<number, RawRelationData>>;
+    /**
+     * Gets the global transforms IDs of the items of the model.
+     * @param ids - The local IDs of the items to get the global transforms IDs of.
+     */
+    getGlobalTranformsIdsOfItems(ids: number[]): Promise<number[]>;
+    /**
+     * Gets the edited elements of the model.
+     */
+    getEditedElements(): Promise<number[]>;
+    /**
+     * Processes a sequence of actions in the worker and computes the result based on the provided input.
+     *
+     * @param result - The type of item information to compute, used to select the appropriate result function.
+     * @param fromItems - An array of selection types, each corresponding to an items selector function.
+     * @param input - The initial input data to be processed by the sequence of actions.
+     * @returns The computed result after processing the sequence of actions, or `null` if the result function is not found.
+     * @experimental
+     */
+    getSequenced<T extends ItemInformationType, U extends ItemSelectionType>(result: T, fromItems: U[], inputs?: {
+        selector?: Partial<Record<U, SelectionInputType<U>>>;
+        result?: ResultInputType<T>;
+    }): Promise<InformationResultType<T>>;
+    handleRequest(request: any): Promise<void>;
+    /**
+     * Internal method to call a method of the model on its worker. Don't use
+     * this directly.
+     */
+    _invoke(method: string, args?: any[]): Promise<any>;
+    /**
+     * Internal method to get the delta model holding this model's edits, if
+     * it is loaded. Don't use this directly.
+     */
+    _getDeltaModel(): FragmentsModel | undefined;
+    _getElements(localIds: Iterable<number>): Promise<Element_2[]>;
+    /**
+     * Fast snap-only fetch keyed by **itemId**. See
+     * `EditManager.getItemSnapData`. Internal — picker / SnapResolver
+     * consume this. App code should keep using `_getElements` (localId).
+     */
+    _getItemSnapData(itemId: number): Promise<ElementData | null>;
+    /**
+     * Internal method to finish processing. Don't use this directly.
+     */
+    _finishProcessing(): void;
+    _setDeltaModel(modelId: string): void;
+    /**
+     * Internal method to refresh the view of the model. You shouldn't call this directly. Instead, use {@link FragmentsModels.update}.
+     */
+    _refreshView(force?: boolean): Promise<void>;
+    /**
+     * Internal method to set up the model. Don't use this directly.
+     */
+    _setup(data: ArrayBuffer | Uint8Array, raw?: boolean, config?: VirtualModelConfig): Promise<void>;
+    /**
+     * Internal method to edit the model. Don't use this directly.
+     * @param requests - The requests to edit the model.
+     */
+    _edit(requests: EditRequest[]): Promise<{
+        deltaModelBuffer: Uint8Array;
+        ids: number[];
+    }>;
+    /**
+     * Internal method to reset the model. Don't use this directly.
+     */
+    _reset(): Promise<void>;
+    /**
+     * Internal method to save the model. Don't use this directly.
+     */
+    _save(): Promise<Uint8Array>;
+    /**
+     * Internal method to get the requests of the model. Don't use this directly.
+     */
+    _getRequests(): Promise<{
+        requests: EditRequest[];
+        undoneRequests: EditRequest[];
+    }>;
+    /**
+     * Internal method to get the requests added since an earlier call. Don't use this directly.
+     * @param from - The `count` the earlier call returned.
+     * @param generation - The `generation` the earlier call returned.
+     */
+    _getRequestsSince(from: number, generation: number): Promise<EditRequestsSince>;
+    /**
+     * Internal method to set the requests of the model. Don't use this directly.
+     * @param data - The data to set the requests of the model.
+     */
+    _setRequests(data: {
+        requests?: EditRequest[];
+        undoneRequests?: EditRequest[];
+    }): Promise<void>;
+    /**
+     * Internal method to select a request of the model. Don't use this directly.
+     * @param index - The index of the request to select.
+     */
+    _selectRequest(index: number): Promise<void>;
+}
+
+/**
+ * The main class for managing multiple 3D models loaded from fragments files. Handles loading, disposing, updating, raycasting, highlighting and coordinating multiple FragmentsModel instances. This class acts as the main entry point for working with fragments models. A FragmentsModels instance needs a worker to process fragments off the main thread. The recommended way to obtain the worker URL is via the static FragmentsModels.getWorker method, which fetches the version-matched worker from unpkg. Check the method docs for more info.
+ */
+export declare class FragmentsModels {
+    private static _workerURL;
+    private static _workerPromise;
+    /**
+     * Fetches the fragments worker from unpkg for the exact version of this
+     * `@thatopen/fragments` package and returns a blob URL you can pass to the
+     * `FragmentsModels` constructor. The result is cached, so calling this
+     * method more than once is cheap.
+     *
+     * This is the recommended way to obtain the worker URL — it guarantees the
+     * worker version matches the library version and requires no copying of
+     * files into your project.
+     *
+     * @example
+     * ```ts
+     * const workerURL = await FragmentsModels.getWorker();
+     * const fragments = new FragmentsModels(workerURL);
+     * ```
+     *
+     * @returns A blob URL pointing to the fragments worker script.
+     */
+    static getWorker(): Promise<string>;
+    /**
+     * Event triggered when a model is loaded.
+     * @event
+     * @type {Event<FragmentsModel>}
+     */
+    readonly onModelLoaded: Event_2<FragmentsModel>;
+    /**
+     * The manager that handles all loaded fragments models.
+     * Provides functionality to:
+     * - Store and retrieve models by ID
+     * - Track model loading/unloading
+     * - Coordinate updates across models
+     * - Handle model disposal
+     */
+    models: MeshManager;
+    /** Settings that control the behavior of the FragmentsModels system */
+    settings: {
+        /** Whether to automatically coordinate model positions relative to the first loaded model */
+        autoCoordinate: boolean;
+        /** Maximum rate (in milliseconds) at which visual updates are performed */
+        maxUpdateRate: number;
+        /** Graphics quality level - 0 is low quality, 1 is high quality */
+        graphicsQuality: number;
+        /**
+         * @deprecated The polling-based force-flush implementation has
+         * been replaced by a sequence-fence one (`forceUpdateFinish`
+         * resolves the moment a FINISH stamped with the relevant seq
+         * arrives). These knobs are no longer read; kept only to avoid
+         * breaking apps that set them.
+         */
+        forceUpdateRate: number;
+        /** @deprecated See {@link forceUpdateRate}. */
+        forceUpdateBuffer: number;
+        /**
+         * Interval in milliseconds to flush queued mesh requests from thread to
+         * main thread. Set this once at FragmentsModels construction; changing
+         * it after a model has been loaded has no effect on already-loaded
+         * models (they keep the value they were created with).
+         *
+         * Default 16 ms (one frame at 60 Hz). The previous 64 ms default
+         * left tile updates sitting in the worker's outflow buffer for up
+         * to ~1 frame longer than necessary; lowering it tightens the
+         * latency between worker work and visible result on every
+         * interaction. Apps with very heavy worker output may want to
+         * raise this to reduce postMessage frequency.
+         */
+        meshConnectionRate: number;
+        /**
+         * Number of queued mesh requests that triggers an immediate flush.
+         * Same setup-time semantics as {@link meshConnectionRate}. Default
+         * 4 — bursts of work flush within a frame instead of being
+         * pinned to the rate timer.
+         */
+        meshConnectionThreshold: number;
+        /**
+         * Delay in milliseconds between worker-side update loops when work is
+         * complete. Note: each worker has a single shared update loop, so when
+         * multiple models share a worker (default round-robin pool, or any
+         * `threadGroup`), the most recently loaded model's value applies to
+         * every model on that worker. Set this once at FragmentsModels
+         * construction and treat it as a global tuning knob.
+         *
+         * Default 32 ms (~30 Hz). The previous 128 ms default left the
+         * worker idling for up to ~8 frames between iterations, which on
+         * interactive workloads showed up as visible lag between RPC and
+         * visual settle. Apps with low-end CPUs may want to raise it to
+         * reduce idle-loop overhead.
+         */
+        threadUpdaterDelay: number;
+    };
+    /** Coordinates of the first loaded model, used for coordinate system alignment */
+    baseCoordinates: number[] | null;
+    /** The editor instance for managing model edits and changes */
+    editor: Editor;
+    private readonly _connection;
+    private _progressCallbacks;
+    private _isDisposed;
+    private _autoRedrawInterval;
+    private _lastUpdate;
+    private _pendingForcedUpdate;
+    private _pendingForcedTimer;
+    private _pendingForcedResolve;
+    /**
+     * Creates a new FragmentsModels instance.
+     *
+     * The recommended way to obtain the worker URL is via {@link FragmentsModels.getWorker},
+     * which fetches the version-matched worker from unpkg. See its docs for an example.
+     *
+     * @param workerURL - The URL of the worker script that will handle the fragments processing. If omitted, it falls back to the worker bundled with the package (only works with bundlers that can resolve `new URL("./Worker/worker.mjs", import.meta.url)`).
+     * @param options - Optional configuration.
+     */
+    constructor(workerURL?: string, options?: FragmentsModelsOptions);
+    /**
+     * Effective max worker cap for this instance. Surfaces the value derived
+     * from `navigator.hardwareConcurrency - 3` (floored at 2) or the explicit
+     * `maxWorkers` override passed to the constructor.
+     */
+    get maxWorkers(): number;
+    /**
+     * Reserved worker capacity per named thread group, as declared at init.
+     * Empty object if no groups were declared.
+     */
+    get threadGroups(): Record<string, number>;
+    private _ghostOpacity;
+    /**
+     * How visible a ghosted element is (see {@link FragmentsModel.setGhostItems}),
+     * 0 (gone) to 1 (as drawn): the fraction of its pixels kept, 0.28 by
+     * default. One value for every model, changed at any time; what is ghosted
+     * now is drawn again with it. A renderer that draws on demand needs its next
+     * frame asked for.
+     * @param alpha - The fraction of a ghosted surface's pixels kept, 0 to 1.
+     */
+    setGhostOpacity(alpha: number): void;
+    /**
+     * Goes back to the default ghost opacity (0.28); {@link ghostOpacity} reads
+     * null again.
+     */
+    resetGhostOpacity(): void;
+    /** The value last given to {@link setGhostOpacity}, or null while the default stands. */
+    get ghostOpacity(): number | null;
+    /**
+     * Loads a fragments model from an ArrayBuffer.
+     * @param buffer - The ArrayBuffer containing the fragments data to load.
+     * @param options - Configuration options for loading the model.
+     * @param options.modelId - Unique identifier for the model.
+     * @param options.camera - Optional camera to use for model culling and LOD.
+     * @param options.clippingPlanes - Optional clipping planes (world space) to cull against. The array is kept by reference and read on every view refresh; see {@link FragmentsModel.useClippingPlanes}.
+     * @param options.raw - Whether the buffer is raw (uncompressed) or deflated. If omitted, it is auto-detected from the buffer (see {@link isRawBuffer}).
+     * @param options.userData - Optional custom data to attach to the model.
+     * @param options.virtualModelConfig - Optional configuration for virtual model setup.
+     * @returns Promise resolving to the loaded FragmentsModel instance.
+     */
+    load(buffer: ArrayBuffer | Uint8Array, options: {
+        modelId: string;
+        camera?: THREE.PerspectiveCamera | THREE.OrthographicCamera;
+        clippingPlanes?: THREE.Plane[];
+        raw?: boolean;
+        userData?: Record<string, any>;
+        virtualModelConfig?: VirtualModelConfig;
+        /** Optional callback for receiving loading progress updates. */
+        onProgress?: (event: LoadProgressEvent) => void;
+        /**
+         * Routes the model to a thread group declared at init time. Models
+         * sharing a group also share workers, isolated from other groups and
+         * from the default pool. Throws if the group was not declared.
+         */
+        threadGroup?: string;
+    }): Promise<FragmentsModel>;
+    /**
+     * Disposes of all models managed by this FragmentsModels instance.
+     * After calling this method, the FragmentsModels instance should not be used anymore.
+     */
+    dispose(): Promise<void>;
+    /**
+     * Disposes of a specific model by its ID.
+     * @param modelId - The unique identifier of the model to dispose.
+     */
+    disposeModel(modelId: string): Promise<void>;
+    /**
+     * Aborts an in-flight `load()` for the given model ID. The pending `load()`
+     * promise will reject with a `LoadAbortedError` and any partial state
+     * (on both the main thread and the worker) is disposed.
+     *
+     * Has no effect if the model finished loading or isn't currently loading.
+     *
+     * @param modelId - The unique identifier of the model to abort.
+     */
+    abort(modelId: string): void;
+    /**
+     * Updates all models managed by this FragmentsModels instance.
+     * @param force - If true, it will force all the models to finish all the pending requests.
+     */
+    update(force?: boolean): Promise<void>;
+    private performUpdate;
+    /**
+     * (Re)schedules the next automatic update. The view-change gating
+     * means an idle scene produces no worker messages and thus no
+     * FINISH-driven update events, so the loop sustains itself with
+     * this timer instead. Skipped when disposed or no models exist —
+     * the next model load (or any mesh update event) restarts it.
+     */
+    private scheduleNextUpdate;
+    private manageRequest;
+    private newUpdateEvent;
+    private newRequestEvent;
+}
+
+export declare interface FragmentsModelsOptions {
+    /**
+     * If true, creates classic (non-module) workers. Use together with `toClassicWorker()`.
+     */
+    classicWorker?: boolean;
+    /**
+     * Effective max worker cap. Defaults to `navigator.hardwareConcurrency - 3`, floored at 2. Set explicitly for CI environments or when you know your workload.
+     */
+    maxWorkers?: number;
+    /**
+     * Reserved worker capacity per named thread group. Workers are spawned lazily (nothing is spawned until the first load targets a pool). A model loaded with `threadGroup: "x"` always lands on group "x"'s pool; default-pool loads never touch a reserved worker. The sum of group sizes must leave at least one slot for the default pool, otherwise init throws.
+     */
+    threadGroups?: Record<string, number>;
+}
+
+declare namespace GE {
+    export {
+        ExtrusionData,
+        Extrusion,
+        ProfileType,
+        ProfileData,
+        Profile,
+        BooleanOperationData,
+        BooleanOperation,
+        ArcData,
+        Arc,
+        BboxData,
+        Bbox,
+        CircularSweepData,
+        CircularSweep,
+        CylindricalRevolveData,
+        CylindricalRevolve,
+        ParabolaData,
+        Parabola,
+        RevolveData,
+        Revolve,
+        SweepData,
+        Sweep,
+        WallData,
+        Wall,
+        ClothoidData,
+        Clothoid
+    }
+}
+
+/**
+ * The geometry engine is responsible for generating geometry using web-ifc. It provides a high-level API to generate common BIM shapes like extrusions, sweeps, walls, and profiles.
+ */
+export declare class GeometryEngine {
+    /**
+     * The WebIFC API instance that contains the geometry engine.
+     */
+    api: WEBIFC.IfcAPI;
+    private _arc;
+    private _parabola;
+    private _extrusion;
+    private _profile;
+    private _booleanOperation;
+    private _bbox;
+    private _circularSweep;
+    private _clothoid;
+    private _cylindricalRevolve;
+    private _revolve;
+    private _sweep;
+    private _wall;
+    /**
+     * Creates a new geometry engine instance.
+     * @param api - The WebIFC API instance that contains the geometry engine.
+     */
+    constructor(api: WEBIFC.IfcAPI);
+    /**
+     * Generates an extrusion geometry from the given data.
+     * @param geometry - The geometry to store the result.
+     * @param data - The data to generate the extrusion.
+     */
+    getExtrusion(geometry: THREE.BufferGeometry, data: GE.ExtrusionData): void;
+    /**
+     * Generates a sweep geometry from the given data.
+     * @param geometry - The geometry to store the result.
+     * @param data - The data to generate the sweep.
+     */
+    getSweep(geometry: THREE.BufferGeometry, data: GE.SweepData): void;
+    /**
+     * Generates a wall geometry from the given data.
+     * @param geometry - The geometry to store the result.
+     * @param data - The data to generate the wall.
+     */
+    getWall(geometry: THREE.BufferGeometry, data: GE.WallData): void;
+    /**
+     * Generates a profile geometry from the given data.
+     * @param geometry - The geometry to store the result.
+     * @param data - The data to generate the profile.
+     */
+    getProfile(geometry: THREE.BufferGeometry, data: GE.ProfileData): void;
+    /**
+     * Generates a boolean operation geometry from the given data.
+     * @param geometry - The geometry to store the result.
+     * @param data - The data to generate the boolean operation.
+     */
+    getBooleanOperation(geometry: THREE.BufferGeometry, data: GE.BooleanOperationData): void;
+    /**
+     * Generates a bounding box geometry from the given data.
+     * @param geometry - The geometry to store the result.
+     * @param data - The data to generate the bounding box.
+     */
+    getBbox(geometry: THREE.BufferGeometry, data: GE.BboxData): void;
+    /**
+     * Generates a circular sweep geometry from the given data.
+     * @param geometry - The geometry to store the result.
+     * @param data - The data to generate the circular sweep.
+     */
+    getCircularSweep(geometry: THREE.BufferGeometry, data: GE.CircularSweepData): void;
+    /**
+     * Generates a revolve geometry from the given data.
+     * @param geometry - The geometry to store the result.
+     * @param data - The data to generate the revolve.
+     */
+    getRevolve(geometry: THREE.BufferGeometry, data: GE.RevolveData): void;
+    /**
+     * Generates a cylindrical revolve geometry from the given data.
+     * @param geometry - The geometry to store the result.
+     * @param data - The data to generate the cylindrical revolve.
+     */
+    getCylindricalRevolve(geometry: THREE.BufferGeometry, data: GE.CylindricalRevolveData): void;
+    /**
+     * Generates an arc geometry from the given data.
+     * @param geometry - The geometry to store the result.
+     * @param data - The data to generate the arc.
+     */
+    getArc(geometry: THREE.BufferGeometry, data: GE.ArcData): void;
+    /**
+     * Generates a parabola geometry from the given data.
+     * @param geometry - The geometry to store the result.
+     * @param data - The data to generate the parabola.
+     */
+    getParabola(geometry: THREE.BufferGeometry, data: GE.ParabolaData): void;
+    /**
+     * Generates a clothoid geometry from the given data.
+     * @param geometry - The geometry to store the result.
+     * @param data - The data to generate the clothoid.
+     */
+    getClothoid(geometry: THREE.BufferGeometry, data: GE.ClothoidData): void;
+    /**
+     * Generates profile points from the given data.
+     * @param data - The data to generate the profile points.
+     * @returns The profile points.
+     */
+    getProfilePoints(data: GE.ProfileData): number[];
+    /**
+     * Transforms points from the given data.
+     * @param points - The points to transform.
+     * @param transform - The transform to apply to the points.
+     * @returns The transformed points.
+     */
+    transformPoints(points: number[], transform: THREE.Matrix4): number[];
+    private applyMesh;
+    private applyCurve;
+}
+
+export declare type GeometryProcessSettings = {
+    /**
+     * Maximum number of vertices to try to define a brep shell. If the number of vertices is greater than the threshold, the geometry will be saved as raw data, consuming more space.
+     */
+    threshold: number;
+    /**
+     * Precision of the vertices when computing breps.
+     */
+    precision: number;
+    /**
+     * Precision of the normals when computing breps.
+     */
+    normalPrecision: number;
+    /**
+     * Precision of the plane constants for coplanarity when computing breps.
+     */
+    planePrecision: number;
+    /**
+     * The threshold use to distinguish hard and smooth faces.
+     */
+    faceThreshold: number;
+    /**
+     * The thresholds use to distinguish hard and smooth faces for each category. It overrides the global faceThreshold.
+     */
+    categoryFaceThresholds?: Map<number, number>;
+    /**
+     * Whether to force ifc spaces to be transparent.
+     */
+    forceTransparentSpaces: boolean;
+    /**
+     * Whether to process IfcRelSpaceBoundary2ndLevel entities and generate meshes from their IfcConnectionSurfaceGeometry.
+     */
+    processIfcRelSpaceBoundarySecondLevel?: boolean;
+};
+
+/**
+ * A Set of unique numbers representing different types of IFC geometries.
+ */
+export declare const geometryTypes: Set<number>;
+
+export declare class GeomsFbUtils {
+    static ushortMaxValue: number;
+    static round(value: number, precision: number): number;
+    static floor(value: number, precision: number): number;
+    static ceil(value: number, precision: number): number;
+    static getAABB(vertices: Float32Array | number[], precision?: number): {
+        min: {
+            x: number;
+            y: number;
+            z: number;
+        };
+        max: {
+            x: number;
+            y: number;
+            z: number;
+        };
+    };
+    static transformFromMatrix(matrix: THREE.Matrix4, transform?: RawTransformData): RawTransformData;
+    static matrixFromTransform(transform: RawTransformData): THREE.Matrix4;
+    static bboxFromCircleExtrusion(data: RawCircleExtrusion): number[];
+    static representationFromGeometry(newRepresentation: THREE.BufferGeometry<THREE.NormalBufferAttributes>, repr?: RawRepresentation, settings?: GeometryProcessSettings): RawRepresentation;
+    static getRawShellData(index: Uint32Array, position: Float32Array, bbox: {
+        min: {
+            x: number;
+            y: number;
+            z: number;
+        };
+        max: {
+            x: number;
+            y: number;
+            z: number;
+        };
+    }, settings: GeometryProcessSettings, category?: number): ShellData;
+    static getShellData(geometry: {
+        position: Float32Array;
+        normals: Float32Array;
+        index: Uint32Array;
+        raw: boolean;
+        settings: GeometryProcessSettings;
+        category?: number;
+    }): ShellData;
+    private static computeShellFaceIds;
+    private static makeDecimal;
+}
+
+declare function getCircleExtrusionData(circleExtrusion: TFB.CircleExtrusion): ET.RawCircleExtrusion;
+
+declare function getElementsData(vModel: VirtualFragmentsModel, ids: Iterable<number>): {
+    [id: number]: ET.ElementData;
+};
+
+declare function getGeometryIndicesFromRepresentations(model: TFB.Model, ids?: Iterable<number>): {
+    shellsIndices: Set<number>;
+    rebarsIndices: Set<number>;
+};
+
+declare function getGlobalTranformsIdsOfItems(model: TFB.Model, ids: number[]): number[];
+
+declare function getGlobalTransforms(model: TFB.Model, ids?: Iterable<number>): Map<number, ET.RawGlobalTransformData>;
+
+declare function getGlobalTransformsIds(model: TFB.Model): never[] | Uint32Array;
+
+declare function getItems(model: TFB.Model, itemIds?: Iterable<number>): Map<number, ET.RawItemData>;
+
+export declare type GetItemsByAttributeParams = {
+    name: RegExp;
+    value?: RegExp | RegExp[] | number | boolean;
+    type?: RegExp;
+    negate?: boolean;
+    itemIds?: number[];
+};
+
+export declare type GetItemsByRelationParams = {
+    /** Relation tag on the *source* item (e.g. "IsDefinedBy") */
+    name: string;
+    /** Set of *target* item localIds that must appear in the chosen relation */
+    targetItemIds?: Set<number>;
+    /** Optional subset of candidate *source* items; if omitted all items are scanned. */
+    sourceItemIds?: Iterable<number>;
+};
+
+declare function getItemsIds(model: TFB.Model): Uint32Array;
+
+/**
+ * Fast snap-only fetch keyed by **itemId** (the FlatBuffer's
+ * `sample.item()` index, also the key for `boxes.sampleOf`). Returns
+ * just the data the snap resolver needs — samples, localTransforms,
+ * globalTransforms, and SHELL representations. Skips materials and
+ * any non-SHELL representations that the snap path ignores.
+ *
+ * Why a separate fetch instead of `getElementsData(localId)`: that
+ * function walks every sample in the model (`for i < samplesLength()`)
+ * and filters by localId. On a model with millions of samples a single
+ * fetch costs ~1 s regardless of how few items you ask for. Here we
+ * use the existing `boxes.sampleOf(itemId)` reverse index — already
+ * built — to jump straight to the relevant samples in O(1), then
+ * decode just those (~10 samples for a typical item). Drops first-snap
+ * latency on big models from ~1 s to a few ms.
+ */
+declare function getItemSnapData(vModel: VirtualFragmentsModel, itemId: number): ET.ElementData | null;
+
+declare function getLocalTransforms(model: TFB.Model, ids?: Iterable<number>): Map<number, ET.RawTransformData>;
+
+declare function getLocalTransformsIds(model: TFB.Model): never[] | Uint32Array;
+
+declare function getMaterialData(material: TFB.Material): ET.RawMaterial;
+
+declare function getMaterials(model: TFB.Model, ids?: Iterable<number>): Map<number, ET.RawMaterial>;
+
+declare function getMaterialsIds(model: TFB.Model): never[] | Uint32Array;
+
+declare function getModelFromBuffer(bytes: Uint8Array, raw: boolean): TFB.Model;
+
+/**
+ * Recursively converts a Flatbuffers object into a plain JavaScript object. This function traverses the prototype chain of the Flatbuffers object and extracts all properties and their values, handling both primitive values and nested objects/arrays.
+ */
+export declare function getObject(obj: any, result: any): void;
+
+/**
+ * Provenance data stamped into the metadata of every model this library
+ * creates, so any fragments file records which package and version generated
+ * it (see ThatOpen/engine_fragment#273).
+ */
+export declare function getProvenanceMetadata(): {
+    generator: string;
+    version: string;
+};
+
+declare function getRelationData(relation: TFB.Relation): ET.RawRelationData;
+
+declare function getRepresentationData(representation: TFB.Representation): ET.RawRepresentation;
+
+declare function getRepresentations(model: TFB.Model, ids?: Iterable<number>): Map<number, ET.RawRepresentation>;
+
+declare function getRepresentationsIds(model: TFB.Model): never[] | Uint32Array;
+
+declare function getRootModelId(modelId: string): string;
+
+declare function getSampleData(sample: TFB.Sample): ET.RawSample;
+
+declare function getSamples(model: TFB.Model, ids?: Iterable<number>): Map<number, ET.RawSample>;
+
+declare function getSamplesIds(model: TFB.Model): never[] | Uint32Array;
+
+declare function getSerializedAttributes(attributes: ItemData): string[];
+
+declare function getShellData(shell: TFB.Shell): ET.RawShell;
+
+declare function getTransformData(lt: TFB.Transform): {
+    position: number[];
+    xDirection: number[];
+    yDirection: number[];
+};
+
+export declare const GRID_CATEGORY = "ThatOpenGrid";
+
+export declare type GridAxisData = {
+    tag: string;
+    curve: number[];
+};
+
+export declare type GridData = {
+    id: number;
+    /**
+     * The IFC GlobalId of the grid. Optional because `GridsController` rebuilds
+     * this type with `JSON.parse` from the "data" attribute of already-exported
+     * .frag files, which carry no guid, and because IFCGRID entities with an
+     * unset GlobalId produce no guid either.
+     */
+    guid?: string;
+    /**
+     * The IFC Name of the grid. Optional because it is optional in the schema,
+     * and because data serialized before this field existed carries none.
+     */
+    name?: string;
+    transform: number[];
+    uAxes: GridAxisData[];
+    vAxes: GridAxisData[];
+    wAxes: GridAxisData[];
+    /**
+     * Grid axes whose curve type the importer cannot represent yet (only
+     * point-list curves like IFCPOLYLINE and IFCINDEXEDPOLYCURVE are supported;
+     * e.g. IFCCIRCLE, IFCLINE or IFCTRIMMEDCURVE axes end up here, and so does an
+     * IFCINDEXEDPOLYCURVE with an IFCARCINDEX segment). Optional so data
+     * serialized before this field existed still matches the type.
+     */
+    unsupportedAxes?: {
+        tag: string;
+        curveType: string;
+    }[];
+};
+
+export declare class GridReader {
+    private readonly _webIfc;
+    private readonly _modelId;
+    constructor(webIfc: WEBIFC.IfcAPI, modelId: number);
+    /**
+     * Reads every IFCGRID of the model. A grid or an axis that cannot be read is
+     * left out and returned in `errors`, for the caller to report its own way;
+     * it never fails the read.
+     */
+    read(): {
+        value: GridData[];
+        errors: GridReadError[];
+    };
+    /**
+     * The axes of `ifcGrid` under `ifcKey`, and in `errors` those whose curve it
+     * cannot represent.
+     */
+    private getGridAxes;
+    /**
+     * The 0-based indices an indexed polycurve runs through its point list in:
+     * its `Segments` when it has them, which may revisit, skip or reverse
+     * points, and every point in turn when it has none. `null` when a segment
+     * is an arc, which would need tessellating.
+     */
+    private getPointOrder;
+    private getCurveTypeName;
+}
+
+/** Something {@link GridReader.read} skipped, or worked around, in a model. */
+export declare type GridReadError = 
+/** The grid has no ObjectPlacement; it was read at the identity placement. */
+    {
+    kind: "noPlacement";
+    gridId: number;
+}
+/** Axes the grid was read without; they are also its `unsupportedAxes`. */
+| {
+    kind: "unsupportedAxes";
+    gridId: number;
+    axes: UnsupportedAxis[];
+}
+/** The grid could not be read, and is left out. */
+| {
+    kind: "unreadableGrid";
+    gridId: number;
+    cause: unknown;
+}
+/** The model's grids could not be listed, so none were read. */
+| {
+    kind: "unreadableModel";
+    cause: unknown;
+};
+
+declare interface GridsConfig {
+    labels?: LabelConfig;
+}
+
+/** Per-group output data: the set of IFC entity IDs to include and any rewritten relationship lines. */
+export declare interface GroupData {
+    /**
+     * The `groupId` this data was resolved for — the value passed to `split`'s
+     * `outputPath` callback. Carried explicitly rather than implied by position,
+     * because groups that end up with no elements produce no entry at all.
+     */
+    groupId: number;
+    fileIds: Set<number>;
+    rewrittenLines: Map<number, string>;
+    elementCount: number;
+    totalIds: number;
+    filePath: string;
+}
+
+/**
+ * Type representing a unique identifier for a model item. This can be either a string or a number.
+ */
+export declare type Identifier = string | number;
+
+/**
+ * Maps every parsed IFC id to the groups whose output file must contain it.
+ *
+ * Laid out CSR-style — `starts` slices into a flat `members` array — rather
+ * than as one bit per group in a `Uint32Array`, so the number of groups is not
+ * capped at 32. Lookup is a `subarray` view: O(1) and allocation-free, which
+ * matters because the write pass calls it once per data line.
+ *
+ * `starts` has one entry per parsed line (its slot), not one per possible id,
+ * so it is sized by the file and not by the highest id in it.
+ */
+declare class IdGroupIndex {
+    private readonly starts;
+    private readonly members;
+    private readonly slots;
+    constructor(groupsData: GroupData[], slots: IdSlots);
+    /**
+     * Positions in `groupsData` of the groups that include `id`, ascending.
+     * Empty if none.
+     */
+    groupsOf(id: number): Uint32Array;
+}
+
+/**
+ * Maps an IFC id to a dense slot (0, 1, 2... in insertion order).
+ *
+ * Everything the splitter keeps per line hangs off the slot, so its cost
+ * follows the number of lines in the file and never the size of their ids: a
+ * file is free to number its three entities #1, #2 and #1000000000000.
+ *
+ * Ids in the range a well-formed file uses (not far past the number of lines)
+ * resolve through a flat table, which is as fast as indexing by id. Ids beyond
+ * that range go to a map, so an outlier costs one entry instead of a table
+ * that reaches up to it.
+ */
+declare class IdSlots {
+    /** Smallest size of the flat table, in ids. */
+    private static readonly MIN_DIRECT;
+    /** How many ids per stored line the flat table may span. */
+    private static readonly DIRECT_IDS_PER_LINE;
+    /** Slot + 1 for each id below `direct.length`. 0 means no slot. */
+    private direct;
+    /** Slot of each id the flat table does not reach. */
+    private readonly sparse;
+    private count;
+    get size(): number;
+    /** The slot of `id`, or -1 if it has none. */
+    get(id: number): number;
+    /** The slot of `id`, assigning the next free one if it has none. */
+    add(id: number): number;
+    private directLimit;
+    private grow;
+}
+
+/**
+ * A map that associates each unique integer identifier (IFC Entity ID) with its corresponding category name. This map is used to map IFC entities to their respective categories for easier identification and processing.
+ */
+export declare const ifcCategoryMap: {
+    [key: number]: string;
+};
+
+export declare const ifcClasses: {
+    base: Set<number>;
+    units: Set<number>;
+    materials: Set<number>;
+    materialProperties: Set<number>;
+    properties: Set<number>;
+    types: Set<number>;
+    elements: Set<number>;
+};
+
+/**
+
+ *
+ * @example
+ * ```ts
+ * let blob: Blob;
+ *
+ * // node
+ * blob = await fs.openAsBlob(path, { type: "text/plain" });
+ *
+ * const ifcStream = blob
+ *   .stream()
+ *   .pipeThrough(new IfcDecoderStream());
+ *
+ * for await (const line of ifcStream) {
+ *   // parse line
+ * }
+ * ```
+ */
+export declare class IfcDecoderStream extends TransformStream<Uint8Array, string> {
+    constructor(encoding?: string);
+}
+
+export declare const ifcGeometriesMap: Set<number>;
+
+/**
+ * An objet to convert IFC files into fragments.
+ */
+export declare class IfcImporter {
+    private _builder;
+    /** Configuration for the web-ifc WASM module
+     * @property {string} path - The path to the web-ifc WASM files
+     * @property {boolean} absolute - Whether the path is absolute or relative
+     */
+    wasm: {
+        path: string;
+        absolute: boolean;
+    };
+    webIfcSettings: WEBIFC.LoaderSettings;
+    /**
+     * Include source/retained entity counts and import settings in the model
+     * metadata. Consumers can distinguish missing IFC data from information
+     * deliberately omitted during conversion. Disabled by default.
+     */
+    includeImportSettings: boolean;
+    /** A set of attribute names to exclude from serialization.
+     */
+    attributesToExclude: Set<string>;
+    geometryProcessSettings: GeometryProcessSettings;
+    /**
+     * @summary Defines the relationships between IFC entities.
+     * @description This map defines the relationships between IFC entities, specifying the relationship type,
+     * and the properties that define the relationship in both directions.
+     *
+     * The keys of the map are IFC relationship types (e.g., `IFCRELDEFINESBYPROPERTIES`).
+     * The values are objects that define the properties for relating and related entities.
+     *
+     * - `forRelating`: The property name on the relating entity.
+     * - `forRelated`: The property name on the related entity.
+     */
+    relations: Map<number, {
+        forRelating: string;
+        forRelated: string;
+    }>;
+    /**
+     * @summary A map containing sets of IFC classes, categorized into 'elements' and 'abstract'.
+     * @remarks The 'elements' category contains a set of IFC classes representing physical elements.
+     * The 'abstract' category contains a set of abstract IFC classes, including materials, properties, classifications, etc.
+     */
+    classes: {
+        elements: DataSet<number>;
+        abstract: DataSet<number>;
+    };
+    /**
+     * Whether to include unique attributes from the imported IFC data.
+     */
+    includeUniqueAttributes: boolean;
+    /**
+     * Whether to include relation names from the imported IFC data.
+     */
+    includeRelationNames: boolean;
+    /**
+     * Whether to replace the IfcBuildingStorey.Elevation with the absolute storey elevation.
+     * @remarks The value is calculated taking into consideration the relative positions between entities
+     * and it is always given in meters.
+     */
+    replaceStoreyElevation: boolean;
+    /**
+     * Whether to replace the IfcSite.RefElevation with the absolute site elevation.
+     * @remarks The value is calculated taking into consideration the relative positions between entities
+     * and it is always given in meters.
+     */
+    replaceSiteElevation: boolean;
+    /**
+     * Whether the generated materials should render both faces (double-sided)
+     * instead of just the front face.
+     * @remarks Some exporters (e.g. certain Revit pipelines) produce geometry
+     * whose winding is not consistent, so front-face-only rendering can hide
+     * those faces. Enable this to render both sides. Defaults to false
+     * (front-face only) to match the previous behavior.
+     */
+    doubleSidedMaterials: boolean;
+    /**
+     * Whether to import each material's own property sets (`IfcMaterialProperties`
+     * in IFC4, `IfcExtendedMaterialProperties` in IFC2X3).
+     * @remarks Off by default to keep the output lean. These entities link to
+     * their material through a direct `Material` attribute rather than an
+     * `IfcRel*`, so when enabled the importer also synthesizes the inverse
+     * `HasProperties` relation on the material, making the properties reachable as
+     * element -> material -> material properties. See issue #249.
+     */
+    includeMaterialProperties: boolean;
+    /**
+     * If set, ignores the items that are further away to the origin than this value.
+     * Keep in mind that if your IFC is correctly georreferenced, this value should never
+     * be too high. If it's too high, it's either because your file uses absolute coordinates,
+     * (which is a very bad idea, and usually due to a poor IFC export) or because there are
+     * objects that are very, very far away (very unlikely).
+     */
+    distanceThreshold: number | null;
+    /**
+     * Whether to read geometry and properties from a single parse of the file.
+     * @remarks Off by default, which parses the file twice: once for geometry,
+     * and once more in a new web-ifc instance for properties. Enabling it keeps
+     * the geometry step's web-ifc instance open for the properties, which skips
+     * the second parse (and the second pass over `readCallback`) and avoids
+     * holding two parsed copies of the file in memory. The output is the same
+     * either way.
+     */
+    parseOnce: boolean;
+    private get builder();
+    /**
+     * Processes IFC data and converts it into a fragments format.
+     * @param data Configuration object for processing.
+     * @param data.bytes Raw IFC file data as Uint8Array.
+     * @param data.raw Whether to return raw uncompressed data. If false, the output fragments will be smaller.
+     * @param data.readFromCallback Whether to read data from a callback function. Useful for node.js.
+     * @param data.readCallback Callback function to read IFC data. Useful for node.js.
+     */
+    process(data: ProcessData): Promise<Uint8Array>;
+    /**
+     * Adds all attributes to the classes. Use this with precaution because it can increase the size of the output fragments.
+     */
+    addAllAttributes(): void;
+    /**
+     * Adds all relations to the relations map. Use this with precaution because it can increase the size of the output fragments.
+     */
+    addAllRelations(): void;
+    private clean;
+}
+
+/**
+ * Parses the ISO 10303-21 statements of an IFC file into web-ifc entities,
+ * matching the shape `IfcAPI.GetLine` returns (attributes hold typed value
+ * wrappers, refs are `{ type: 5, value }` handles, omitted attributes are
+ * `null`). Statements may span physical lines, share a line, or be
+ * interleaved with `/* ... *\/` comments and blank lines. Entity types
+ * outside the file's declared schema are skipped, like web-ifc does.
+ * The stream errors on corrupted statements and on input that ends before
+ * `END-ISO-10303-21;`, so truncated files are not mistaken for complete ones.
+ *
+ * @example
+ * ```ts
+ * let blob: Blob;
+ *
+ * // node
+ * blob = await fs.openAsBlob(path, { type: "text/plain" });
+ *
+ * const ifcStream = blob
+ *   .stream()
+ *   .pipeThrough(new IfcDecoderStream())
+ *   .pipeThrough(new IfcParserStream());
+ *
+ * for await (const entity of ifcStream) {
+ *   const localId = entity.expressID;
+ *   const type = entity.type;
+ * }
+ * ```
+ */
+export declare class IfcParserStream extends TransformStream<string, WEBIFC.IfcLineObject> {
+    constructor();
+}
+
+export declare const ifcRelationsMap: Map<number, {
+    forRelating: string;
+    forRelated: string;
+}>;
+
+/**
+ * Splits large IFC files into smaller valid IFC files, or extracts a set of
+ * building elements into a new one, streaming the input so the whole file
+ * never has to be held as text in memory.
+ *
+ * Each output file is a valid IFC containing its share of elements plus all
+ * shared infrastructure (spatial structure, geometry, materials, properties).
+ * Coupled elements (wall + opening + door, roof + slabs) are kept together.
+ *
+ * File access goes through an {@link IfcSplitterIO}, so the same class works in
+ * Node.js, in the browser or against any other storage.
+ */
+export declare class IfcSplitter {
+    protected readonly io: IfcSplitterIO;
+    protected readonly config: IfcSplitterResolvedConfig;
+    protected readonly eventTarget: EventTarget;
+    /**
+     * @param ifcSplitterIO - How to read the input file and write the output
+     * files.
+     * @param config - Which IFC types to treat as elements and spatial structure,
+     * and how to read relationship lists. Defaults apply to anything left out.
+     */
+    constructor(ifcSplitterIO: IfcSplitterIO, config?: IfcSplitterConfig);
+    /**
+     * Fires from `split` and `extract` each time a stage finishes, with the time
+     * it took.
+     */
+    readonly onProgress: Event_2<IfcSplitterProgressEvent>;
+    /**
+     * Fires from `split` once the content of every output file is resolved, just
+     * before the files are written.
+     */
+    readonly onSplitsResolved: Event_2<IfcSplitterGroupsEvent>;
+    /**
+     * Fires from `extract` when an id is missing or has a wrong type
+     */
+    readonly onExtractWarning: Event_2<IfcSplitterWarningEvent>;
+    /**
+     * Split an IFC file into N roughly equal groups of building elements.
+     *
+     * Each output file is a valid IFC containing its share of elements plus all
+     * shared infrastructure (spatial structure, geometry, materials, properties).
+     * Coupled elements (wall + opening + door, roof + slabs) are kept together.
+     *
+     * @param inputPath - Absolute or relative path to the source IFC file.
+     * @param numGroups - Number of output files to produce. Not capped by the
+     * splitter, but note that the write pass holds one open writer per non-empty
+     * group, so the practical ceiling is the process' file descriptor limit.
+     * @param outputPath - Given `groupId` returns output file path.
+     * @returns a map keyed by {@link GroupData.groupId} with the path of each
+     * written file and the IFC ids it contains. Empty groups have no entry.
+     * @throws {RangeError} if `numGroups` is not a positive integer.
+     */
+    split(inputPath: string, numGroups: number, outputPath: (groupId: number) => string): Promise<Map<number, {
+        path: string;
+        ids: Set<number>;
+    }>>;
+    /**
+     * Extract specific building elements from an IFC file into a new IFC file.
+     *
+     * Produces a single valid IFC containing only the requested elements and all
+     * of their dependencies (geometry, materials, styles, property sets).
+     * Void/fill coupling (wall + opening + door/window) and aggregation
+     * (roof + slabs, stair + flights) are automatically expanded so the output
+     * stays structurally consistent.
+     *
+     * @param inputPath  - Absolute or relative path to the source IFC file.
+     * @param elementIds - Array of IFC entity IDs (`#id`) for the building elements to extract. Non-element or missing IDs are skipped, each reported through {@link onExtractWarning}.
+     * @param outputPath - Path for the output IFC file.
+     * @returns the IFC ids written to the output file.
+     * @throws {Error} if none of `elementIds` resolves to a building element. No
+     * output file is produced in that case.
+     */
+    extract(inputPath: string, elementIds: number[], outputPath: string): Promise<Set<number>>;
+    /**
+     * Reads an IFC file into its header lines, footer lines and an index of
+     * every data line by id. This is the first stage of `split` and `extract`.
+     * @param filePath - Path of the IFC file, read through the
+     * {@link IfcSplitterIO}.
+     */
+    parseIfc(filePath: string): Promise<ParseResult>;
+    /**
+     * Chunked file reader — replaces readline (3-5x faster)
+     * @param filePath - Path of the file, read through the {@link IfcSplitterIO}.
+     * @param callback - Called with each line, awaited before the next one.
+     */
+    forEachLine(filePath: string, callback: (line: string) => void | Promise<void>): Promise<void>;
+    protected writeSplitOutput(inputPath: string, header: string[], footer: string[], groupsData: GroupData[], idGroups: IdGroupIndex): Promise<void>;
+    /**
+     * Open one writer per non-empty group and prime it with the header. If any
+     * writer fails to open, the ones already opened are aborted before rethrowing.
+     */
+    private openGroupWriters;
+    protected emitProgressEvent(stage: IfcSplitterStage, start: number): void;
+}
+
+/**
+ * Options of an {@link IfcSplitter}. Every field is optional and falls back to
+ * the exported default, so a config only needs what it changes.
+ */
+export declare interface IfcSplitterConfig {
+    /**
+     * Upper-case IFC types treated as splittable building elements. Only these
+     * are distributed across groups by `split` and accepted by `extract`.
+     * @default {@link ELEMENT_TYPES}
+     */
+    elementTypes?: string[];
+    /**
+     * Upper-case IFC types of the spatial structure, written to every output
+     * file.
+     * @default {@link SPATIAL_TYPES}
+     */
+    spatialTypes?: string[];
+    /**
+     * Given an upper-case IFC relationship type, the index of the argument that
+     * holds its list of related objects. Return `undefined` for types without
+     * one.
+     * @see {@link listIdxByType}
+     * @returns the index of the argument to parse as a ref list
+     */
+    listArgIndex?: (ifcType: string) => number | undefined;
+}
+
+/**
+ * Payload of {@link IfcSplitter.onSplitsResolved}, fired once `split` knows
+ * what goes into each output file and before any file is written.
+ */
+export declare interface IfcSplitterGroupsEvent {
+    /**
+     * One entry per **non-empty** group, ascending by {@link GroupData.groupId}.
+     * A `split` into more groups than there are element clusters simply yields
+     * fewer entries than `numGroups` — use `groupId` to correlate, not the index.
+     */
+    data: GroupData[];
+}
+
+/**
+ * The file access an {@link IfcSplitter} reads its input and writes its output
+ * through. It replaces the Node.js `fs` and `path` dependencies of earlier
+ * versions, so the splitter runs in any environment that can provide these
+ * two streams for a path.
+ */
+export declare interface IfcSplitterIO {
+    /**
+     * Opens an IFC file for reading.
+     * @param path
+     * @throws if {@link path} doesn't exist
+     * @returns a {@link ReadableStream} streaming ifc lines
+     */
+    readableStream(path: string): Promise<ReadableStream<string>>;
+    /**
+     * Opens an output file for writing. The splitter writes each output path
+     * once, so implementations should create the file or replace it.
+     * @param path
+     * @returns a {@link WritableStream} able to write ifc lines
+     */
+    writableStream(path: string): Promise<WritableStream<string>>;
+}
+
+/** Payload of {@link IfcSplitter.onProgress}, fired when a stage finishes. */
+export declare interface IfcSplitterProgressEvent {
+    /** The stage that just finished. */
+    stage: IfcSplitterStage;
+    /** How long the stage took, in milliseconds. */
+    timeElapsed: number;
+}
+
+declare interface IfcSplitterResolvedConfig {
+    /**
+     * @see {@link IfcSplitterConfig.elementTypes}
+     */
+    elementTypes: Set<string>;
+    /**
+     * @see {@link IfcSplitterConfig.spatialTypes}
+     */
+    spatialTypes: Set<string>;
+    /**
+     * @see {@link IfcSplitterConfig.listArgIndex}
+     */
+    listArgIndex: (ifcType: string) => number | undefined;
+}
+
+/** A stage of `split` or `extract`, reported through {@link IfcSplitter.onProgress}. */
+export declare type IfcSplitterStage = "parse" | "spatial" | "void-fill" | "style-maps" | "classify" | "aggregate" | "cluster" | "distribute" | "relations" | "resolve" | "build-index" | "write";
+
+/** Payload of {@link IfcSplitter.onExtractWarning}, fired for each skipped id. */
+export declare interface IfcSplitterWarningEvent {
+    /** Human readable reason the id was skipped. */
+    message: string;
+    /** The skipped id and, if it exists in the file, its IFC type. */
+    context: {
+        id: number;
+        type?: string;
+    };
+}
+
+export declare interface IFragmentsModel<Async extends boolean = false> extends IModelData<Async>, IRawModelData<Async>, IModelGeometry<Async>, IModelIndex<Async>, IModelSerializer<Async> {
+    readonly modelId: string;
+    dispose(): Promisify<void, Async>;
+}
+
+declare interface IModelData<Async extends boolean> {
+    getSpatialStructure(): Promisify<SpatialTreeItem, Async>;
+    getCategories(): Promisify<string[], Async>;
+    getMetadata<T extends Record<string, any>>(): Promisify<T, Async>;
+    getCRS(): Promisify<CRSData | null, Async>;
+    getMaxLocalId(): Promisify<number, Async>;
+    getLocalIds(): Promisify<number[], Async>;
+    getLocalIdsByGuids(guids: string[]): Promisify<(number | null)[], Async>;
+    getGuidsByLocalIds(localIds: number[]): Promisify<(string | null)[], Async>;
+    getLocalIdsFromItemIds(itemIds: Iterable<number>): Promisify<number[], Async>;
+    getItemsIdsWithGeometry(): Promisify<number[], Async>;
+    getItemsOfCategories(categories: RegExp[]): Promisify<Record<string, number[]>, Async>;
+    getItemsChildren(ids: Identifier[]): Promisify<number[], Async>;
+    /**
+     * MISALIGNMENT: SingleThreaded declares `ids: number[]`; FragmentsModel uses
+     * the broader `ids: Identifier[]` (`string | number`).
+     */
+    getItemsData(ids: Identifier[], config?: Partial<ItemsDataConfig>): Promisify<ItemData[], Async>;
+    getItemsByQuery(params: ItemsQueryParams, config?: ItemsQueryConfig): Promisify<number[], Async>;
+}
+
+declare interface IModelGeometry<Async extends boolean> {
+    getItemsGeometry(localIds: number[], lod?: CurrentLod): Promisify<MeshData[][], Async>;
+    getItemsVolume(localIds: number[]): Promisify<number, Async>;
+    getItemDrawChunks(localIds: Iterable<number>): Promisify<DrawChunk[], Async>;
+    getSection(plane: THREE.Plane, localIds?: number[]): Promisify<ModelSection, Async>;
+    getPositions(localIds?: number[]): Promisify<{
+        x: number;
+        y: number;
+        z: number;
+    }[], Async>;
+    getCoordinates(): Promisify<number[], Async>;
+}
+
+/** User-defined indexes, see {@link VirtualIndexesController}. */
+declare interface IModelIndex<Async extends boolean> {
+    getIndexNames(): Promisify<string[], Async>;
+    getIndexInfo(name: string): Promisify<IndexInfo | null, Async>;
+    getIndexKeys<K extends string | number>(name: string): Promisify<IndexArrayType<K> | null, Async>;
+    getIndexKey<K extends string | number>(name: string, index: number): Promisify<K | null, Async>;
+    getIndexValues<V extends string | number>(name: string): Promisify<V[] | null, Async>;
+    hasIndexEntry<K extends string | number>(name: string, key: K): Promisify<boolean, Async>;
+    getIndexEntry<K extends string | number, V extends IndexEntry>(name: string, key: K): Promisify<V | null, Async>;
+    getInverseIndexEntry<K extends string | number, V extends string | number>(name: string, value: K): Promisify<IndexArrayType<V> | null, Async>;
+}
+
+/** Binary serialization of the full model or an item subset. */
+declare interface IModelSerializer<Async extends boolean> {
+    getBuffer(raw?: boolean): Promisify<ArrayBufferLike | Uint8Array, Async>;
+    getSubsetBuffer(localIds: number[], raw?: boolean): Promisify<ArrayBufferLike | Uint8Array, Async>;
+}
+
+export declare type IndexArrayType<T extends string | number> = T extends string ? string[] : T extends number ? Uint32Array : never;
+
+/**
+ * Forward-lookup result for a single key in a {@link IndexInfo}.
+ *
+ * Shape depends on the index mode: `null` for keys-only, the scalar value for
+ * `oneToOne`, or a `Uint32Array` view (number values) / `string[]` (string
+ * values) for the 1:N modes. The `Uint32Array` is a zero-copy view over the
+ * underlying buffer; do not mutate it.
+ */
+export declare type IndexEntry = string | number | Uint32Array | string[];
+
+/**
+ * Snapshot of an index's shape. Returned by `getIndexInfo` so callers can
+ * branch on the mode without re-inspecting the underlying buffer.
+ */
+export declare interface IndexInfo {
+    /** Index identifier, unique within the model. */
+    name: string;
+    /** Storage shape of the index. */
+    mode: IndexMode;
+    /** Whether keys are stored as strings or numbers. */
+    keyType: IndexKeyType;
+    /** Whether values are stored as strings, numbers, or absent (keys-only). */
+    valueType: IndexValueType;
+    /** Number of keys in the index. */
+    size: number;
+}
+
+/** Key type of a user-defined model index. */
+export declare type IndexKeyType = "string" | "number";
+
+/**
+ * Storage shape of a user-defined model index. Detected once per index from
+ * the populated vectors and exposed via {@link IndexInfo}.
+ *
+ * - `keysOnly`: only keys are stored. The index acts as a sorted set; values
+ *   are queried via `hasIndexEntry` / iterated via `getIndexKeys`.
+ * - `oneToOne`: each key maps to exactly one value.
+ * - `oneToNLinear`: each key maps to a contiguous slice of values.
+ * - `oneToNNonLinear`: each key maps to an arbitrary slice (slices may
+ *   overlap or reorder, e.g. flattened descendant trees).
+ */
+export declare type IndexMode = "keysOnly" | "oneToOne" | "oneToNLinear" | "oneToNNonLinear";
+
+/**
+ * Type for index edit requests. Indexes are name-keyed (no localId), so
+ * they live in their own union and are merged into the top-level
+ * `EditRequest` type alongside the others.
+ */
+export declare type IndexRequest = CreateIndexRequest | UpdateIndexRequest | DeleteIndexRequest;
+
+export declare interface IndexValidationError extends Error {
+    cause: {
+        type: "invalid-length";
+        key: "values" | "end" | "start";
+        expected: number;
+        actual: number;
+    } | {
+        type: "invalid-bounds";
+        errors: {
+            index: number;
+            start: number;
+            end: number;
+        }[];
+    } | {
+        type: "invalid-number";
+        key: "keys" | "values";
+        errors: {
+            index: number;
+            value: number;
+        }[];
+    };
+}
+
+/** Value type of a user-defined model index. `none` for keys-only indexes. */
+export declare type IndexValueType = "string" | "number" | "none";
+
+/**
+ * Type representing the result of an information query for a specific item type.
+ * @template T - The type of item information to query.
+ */
+export declare type InformationResultType<T extends ItemInformationType> = MappedInformationResult[T];
+
+/**
+ * Inverse-lookup result. For an index with forward direction `key -> value`,
+ * the inverse maps `value -> set of keys`. Keys come back as `Uint32Array`
+ * for number-keyed indexes and `string[]` for string-keyed ones.
+ */
+export declare type InverseIndexEntry = Uint32Array | string[] | null;
+
+/**
+ * Low-level access to the FlatBuffer tables: materials, representations,
+ * transforms, samples, items, and relations.
+ */
+declare interface IRawModelData<Async extends boolean> {
+    getMaterialsIds(): Promisify<number[], Async>;
+    getMaterials(ids?: Iterable<number>): Promisify<Map<number, RawMaterial>, Async>;
+    getRepresentationsIds(): Promisify<number[], Async>;
+    getRepresentations(ids?: Iterable<number>): Promisify<Map<number, RawRepresentation>, Async>;
+    getLocalTransformsIds(): Promisify<number[], Async>;
+    getLocalTransforms(ids?: Iterable<number>): Promisify<Map<number, RawTransformData>, Async>;
+    getGlobalTransformsIds(): Promisify<number[], Async>;
+    getGlobalTransforms(ids?: Iterable<number>): Promisify<Map<number, RawGlobalTransformData>, Async>;
+    getSamplesIds(): Promisify<number[], Async>;
+    getSamples(ids?: Iterable<number>): Promisify<Map<number, RawSample>, Async>;
+    getItemsIds(): Promisify<number[], Async>;
+    getItems(ids?: Iterable<number>): Promisify<Map<number, RawItemData>, Async>;
+    getRelations(ids?: number[]): Promisify<Map<number, RawRelationData>, Async>;
+    getGlobalTranformsIdsOfItems(ids: number[]): Promisify<number[], Async>;
+}
+
+/**
+ * Discriminator for index edit requests. Use to skip them in code paths that
+ * assume every request carries a `localId`.
+ */
+export declare function isIndexRequest(request: BaseEditRequest): request is IndexRequest;
+
+/**
+ * Returns whether `bytes` is a raw (uncompressed) fragments buffer rather than
+ * a pako/zlib-deflated one, by inspecting the first two bytes.
+ *
+ * A deflated fragments buffer is a zlib stream: byte 0's low nibble is the
+ * deflate compression method (8) and `(byte0 << 8 | byte1)` is a multiple of 31
+ * (the zlib header check). A raw fragments buffer is a flatbuffer, whose leading
+ * 32-bit root offset does not satisfy that. This lets `load` and the model
+ * constructors accept either form without the caller tracking which it is.
+ *
+ * In the extremely unlikely case a raw buffer's first two bytes happen to look
+ * like a zlib header, pass `raw` explicitly to override the detection.
+ *
+ * Performance note: a raw (uncompressed) model is the fastest to load. Only
+ * deflate a fragments buffer when you persist it to disk or send it over the
+ * network. Inflating and deflating on every load, with no transport in between,
+ * just wastes CPU.
+ */
+export declare function isRawBuffer(bytes: Uint8Array): boolean;
+
+/** Represents a single item in a Fragments model, providing methods to access and retrieve its attributes, relations, geometry, and data. */
+declare class Item {
+    /**
+     * The FragmentsModel instance that this item belongs to.
+     */
+    readonly model: FragmentsModel;
+    /**
+     * Creates a new Item instance.
+     * @param model - The FragmentsModel instance that this item belongs to.
+     * @param id - The identifier for the item, which can be either a number or a string.
+     */
+    constructor(model: FragmentsModel, id: Identifier);
+    private _localId;
+    /**
+     * Gets the local ID of the item.
+     */
+    getLocalId(): Promise<number | null>;
+    private _attributes;
+    /**
+     * Gets all the attributes of the item.
+     */
+    getAttributes(): Promise<ItemAttributes | null>;
+    private _relations;
+    /**
+     * Gets all the relations of the item to other items.
+     */
+    getRelations(): Promise<ItemRelations | null>;
+    private _guid;
+    /**
+     * Gets the GUID of the item.
+     */
+    getGuid(): Promise<string | null>;
+    private _category;
+    /**
+     * Gets the category of the item.
+     */
+    getCategory(): Promise<string | null>;
+    private _geometry;
+    getGeometry(): Promise<ItemGeometry | null>;
+    /**
+     * Gets all the data of the item.
+     */
+    getData(collector?: number[]): Promise<{
+        [x: string]: any;
+    }>;
+}
+
+/**
+ * Interface representing the attributes of an item in a Fragments model.
+ */
+export declare interface ItemAttribute {
+    /** The value of the attribute, which can be any type */
+    value: any;
+    /** Optional type identifier for the attribute value */
+    type?: string;
+}
+
+/** A Map that represents a collection of attributes for an item in a Fragments model. */
+declare class ItemAttributes extends Map<string, AttributeData> {
+    /**
+     * A map of local IDs to their corresponding attribute changes.
+     * This is used to track changes to the attributes over time.
+     */
+    tracker: Map<number, AttrsChange> | null;
+    /**
+     * The local ID of the item.
+     */
+    localId: number;
+    /**
+     * Gets the attributes as a plain javascript object.
+     */
+    get object(): Record<string, any>;
+    /**
+     * Creates a new ItemAttributes instance.
+     * @param localId - The local ID of the item.
+     * @param iterable - An optional iterable of key-value pairs to initialize the map with.
+     */
+    constructor(localId: number, iterable?: Iterable<readonly [string, AttributeData]> | null | undefined);
+    /**
+     * A function that acts as a guard for adding items to the set.
+     * It determines whether a given value should be allowed to be added to the set.
+     *
+     * @param key - The key of the entry to be checked against the guard.
+     * @param value - The value of the entry to be checked against the guard.
+     * @returns A boolean indicating whether the value should be allowed to be added to the set.
+     *          By default, this function always returns true, allowing all values to be added.
+     *          You can override this behavior by providing a custom implementation.
+     */
+    guard: (key: string, value: AttributeData) => boolean;
+    /**
+     * Sets an attribute in the map.
+     * @param key - The key of the attribute to set.
+     * @param attr - The attribute data to set.
+     * @returns The updated map.
+     */
+    set(key: string, attr: AttributeData): this;
+    /**
+     * Sets the value of an attribute in the map.
+     * @param key - The key of the attribute to set.
+     * @param value - The value of the attribute to set.
+     * @returns The updated map.
+     */
+    setValue(key: string, value: any): this;
+    /**
+     * Sets the type of an attribute in the map.
+     * @param key - The key of the attribute to set.
+     * @param type - The type of the attribute to set.
+     * @returns The updated map.
+     */
+    setType(key: string, type: number): this;
+    /**
+     * Deletes an attribute from the map.
+     * @param key - The key of the attribute to delete.
+     * @returns The updated map.
+     */
+    delete(key: string): boolean;
+    /**
+     * Gets the value of an attribute from the map.
+     * @param key - The key of the attribute to get.
+     */
+    getValue(key: string): any;
+    /**
+     * Gets the type of an attribute from the map.
+     * @param key - The key of the attribute to get.
+     */
+    getType(key: string): number | undefined;
+}
+
+/**
+ * Enum representing the configuration class for an item in a Fragments model.
+ */
+export declare enum ItemConfigClass {
+    /** Represents the visibility configuration for an item */
+    VISIBLE = 0
+}
+
+declare class ItemConfigController {
+    readonly size: number;
+    private _data;
+    private _highlightData;
+    constructor(size: number);
+    getHighlight(id: number): number;
+    setHighlight(id: number, highlightId: number): void;
+    clearHighlight(): void;
+    hasAnyHighlight(): boolean;
+    visible(id: number): boolean;
+    setVisible(id: number, visible: boolean): void;
+    clearVisible(): void;
+}
+
+/**
+ * Interface representing the data of an item in a Fragments model.
+ */
+export declare interface ItemData {
+    [name: string]: ItemAttribute | ItemData[];
+}
+
+declare function itemDataToRawItemData(item: ItemData): ET.RawItemData;
+
+/**
+ * Represents the geometry of an item in a Fragments model.
+ */
+declare class ItemGeometry {
+    /**
+     * The model that the geometry belongs to.
+     */
+    readonly model: FragmentsModel;
+    /**
+     * The local ID of the item.
+     */
+    localId: number;
+    /**
+     * Creates a new ItemGeometry instance.
+     * @param model - The model that the geometry belongs to.
+     * @param localId - The local ID of the item.
+     */
+    constructor(model: FragmentsModel, localId: number);
+    get(): Promise<MeshData[]>;
+    private _indices;
+    /**
+     * Gets the indices of the item.
+     */
+    getIndices(): Promise<Uint8Array[] | Uint16Array[] | Uint32Array[] | null>;
+    private _transform;
+    /**
+     * Gets the transform of the item.
+     */
+    getTransform(): Promise<THREE.Matrix4[] | null>;
+    private _normals;
+    /**
+     * Gets the normals of the item.
+     */
+    getNormals(): Promise<Int16Array[] | null>;
+    private _positions;
+    /**
+     * Gets the positions of the item.
+     */
+    getPositions(): Promise<Float32Array[] | Float64Array[] | null>;
+    private _vertices;
+    /**
+     * Gets the vertices of the item.
+     */
+    getVertices(): Promise<THREE.Vector3[][] | null>;
+    private _triangles;
+    /**
+     * Gets the triangles of the item.
+     */
+    getTriangles(): Promise<THREE.Triangle[][] | null>;
+    private _position;
+    /**
+     * Gets the position of the item.
+     */
+    getPosition(): Promise<THREE.Vector3[] | null>;
+    private _box;
+    /**
+     * Gets the box of the item.
+     */
+    getBox(): Promise<THREE.Box3[] | null>;
+    /**
+     * Sets the visibility of the item.
+     * @param visible - Whether the item should be visible.
+     */
+    setVisibility(visible: boolean): Promise<void>;
+    /**
+     * Gets the visibility of the item.
+     */
+    getVisibility(): Promise<boolean>;
+}
+
+/**
+ * Union type representing all possible item information types.
+ */
+export declare type ItemInformationType = "data" | "attributes" | "relations" | "guid" | "category" | "geometry" | "visibility" | "highlight" | "mergedBoxes" | "children";
+
+/** A Map that stores and manages relations between items in a Fragments model, keyed by relation name with Sets of related item IDs as values. */
+declare class ItemRelations extends Map<string, Set<number>> {
+    /**
+     * A map that tracks the changes to the relations of the item.
+     */
+    tracker: Map<number, RelsChange> | null;
+    /**
+     * The local ID of the item.
+     */
+    localId: number;
+    private get itemChanges();
+    /**
+     * Creates a new ItemRelations instance.
+     * @param localId - The local ID of the item.
+     * @param iterable - An optional iterable of key-value pairs to initialize the map with.
+     */
+    constructor(localId: number, iterable?: Iterable<readonly [string, Set<number>]> | null | undefined);
+    /**
+     * A function that acts as a guard for adding items to the set.
+     * It determines whether a given value should be allowed to be added to the set.
+     *
+     * @param key - The key of the entry to be checked against the guard.
+     * @param value - The value of the entry to be checked against the guard.
+     * @returns A boolean indicating whether the value should be allowed to be added to the set.
+     *          By default, this function always returns true, allowing all values to be added.
+     *          You can override this behavior by providing a custom implementation.
+     */
+    guard: (key: string, value: Set<number>) => boolean;
+    /**
+     * Sets a new relation in the map.
+     * @param key - The key of the relation.
+     * @param value - The value of the relation.
+     * @returns The ItemRelations instance.
+     */
+    set(key: string, value: Set<number>): this;
+    /**
+     * Adds a new item to a target relation.
+     * @param key - The key of the relation.
+     * @param item - The item to add to the relation.
+     */
+    add(key: string, item: number): boolean;
+    /**
+     * Removes an item from a target relation.
+     * @param key - The key of the relation.
+     * @param item - The item to remove from the relation.
+     * @returns A boolean indicating whether the item was removed from the relation.
+     */
+    remove(key: string, item: number): boolean;
+    /**
+     * Deletes a relation from the map.
+     * @param key - The key of the relation to delete.
+     */
+    delete(key: string): boolean;
+    /**
+     * An event handler that is called when items are requested.
+     */
+    onItemsRequested: ((ids: number[], includeRelations?: boolean) => Promise<Item[]>) | null;
+    /**
+     * Gets the items of a relation.
+     * @param key - The key of the relation.
+     */
+    getItems(key: string): Promise<Item[] | null>;
+}
+
+/**
+ * Interface representing the configuration for item data in a Fragments model.
+ */
+export declare interface ItemsDataConfig {
+    /**
+     * An array of attribute names to include in the item data.
+     */
+    attributes?: string[];
+    /**
+     * A boolean indicating whether to include default attributes in the item data.
+     */
+    attributesDefault: boolean;
+    /**
+     * A record of relation names to their configuration.
+     */
+    relations?: Record<string, {
+        attributes: boolean;
+        relations: boolean;
+    }>;
+    /**
+     * The default configuration for relations.
+     */
+    relationsDefault: {
+        attributes: boolean;
+        relations: boolean;
+    };
+}
+
+/**
+ * Union type representing all possible item selection types.
+ */
+export declare type ItemSelectionType = "withCondition" | "ofCategory" | "withGeometry" | "children" | "withVisiblity" | "highlighted";
+
+export declare interface ItemsQueryConfig {
+    localIds?: number[];
+}
+
+export declare type ItemsQueryParams = {
+    categories?: RegExp[];
+    attributes?: {
+        aggregation?: QueryAggregation;
+        queries: GetItemsByAttributeParams[];
+    };
+    relation?: {
+        name: string;
+        query?: ItemsQueryParams;
+    };
+};
+
+declare type LabelConfig = {
+    show: true;
+    /**
+     * Three {@link Font} instance
+     *
+     * Convert font file to json: https://gero3.github.io/facetype.js/
+     *
+     * @example
+     * import { Font, FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
+     *
+     * const font = await new Promise<Font>((resolve, reject) =>
+     *   new FontLoader().load(
+     *     new URL("./assets/font.json", import.meta.url).href,
+     *     resolve,
+     *     undefined,
+     *     reject
+     *   )
+     * );
+     */
+    font: Font;
+    config?: Partial<FontConfig>;
+} | {
+    show?: false;
+};
+
+/**
+ * The maximum value for a 2-byte unsigned integer.
+ */
+export declare const limitOf2Bytes = 65536;
+
+declare class LineIndex {
+    /**
+     * The id -> slot table. It outlives {@link free}: the write pass still needs
+     * it to find the groups of each line.
+     */
+    readonly slots: IdSlots;
+    /** Every id that has a line, ascending. Available after {@link finalize}. */
+    ids: ArrayLike<number> & Iterable<number>;
+    private _typeIntern;
+    specialRaws: Map<number, string>;
+    private _ids;
+    private _types;
+    private _refStart;
+    private _refLen;
+    private _refBuf;
+    private _refBufUsed;
+    set(id: number, type: string, refs: number[], raw: string): void;
+    /**
+     * Switches reference storage to doubles the first time a reference does not
+     * fit 32 bits, instead of letting it wrap. Files that never do it keep
+     * paying four bytes per reference.
+     */
+    private widenRefBuf;
+    finalize(): void;
+    has(id: number): boolean;
+    getType(id: number): string | undefined;
+    getRefs(id: number): RefBuffer | null;
+    getRaw(id: number): string | undefined;
+    getAll(types: Set<string>): Set<number>;
+    free(): void;
+}
+
+export declare interface LineMeta {
+    id: number;
+    type: string;
+}
+
+/**
+ * Returns the argument index at which a given IFC type stores its list of
+ * "related objects". Getting this wrong causes the rewriter to read the wrong
+ * field, end up with an empty list, and skip the line entirely — dropping all
+ * its transitive dependencies (property sets, materials, styles, etc.) from
+ * the split output.
+ *
+ * The default {@link IfcSplitterConfig.listArgIndex}. Exported so an override
+ * can delegate to it for the types it doesn't care about.
+ */
+export declare const listIdxByType: (type: string) => number;
+
+/**
+ * Error thrown when a model load is aborted via `FragmentsModels.abort()`.
+ */
+export declare class LoadAbortedError extends Error {
+    constructor(modelId: string);
+}
+
+/**
+ * Progress event emitted during model loading.
+ */
+export declare type LoadProgressEvent = {
+    /** The model this progress event belongs to. */
+    modelId: string;
+    /** Current loading stage. */
+    stage: "decompressing" | "parsing" | "generating" | "done";
+    /** Progress within the current stage, from 0 to 1. */
+    progress: number;
+};
+
+declare const enum LodClass {
+    NONE = 0,
+    AABB = 1,
+    CUSTOM = 2
+}
+
+declare class LODGeometry extends THREE.InstancedBufferGeometry {
+    isLODGeometry: boolean;
+    isFiltered(): boolean;
+    constructor();
+    computeBoundingBox(): void;
+    applyMatrix4(matrix: THREE.Matrix4): this;
+    computeBoundingSphere(): void;
+    getItemFilter(): THREE.InstancedBufferAttribute;
+    getItemLast(): THREE.InterleavedBufferAttribute;
+    getItemFirst(): THREE.InterleavedBufferAttribute;
+    private applyTransformToBuffers;
+    private updateBounds;
+}
+
+declare class LODManager {
+    private _materials;
+    private readonly white;
+    constructor(materials: MaterialManager);
+    createMesh(geometry: THREE.BufferGeometry, request: any): LODMesh;
+    updateVisibility(mesh: LODMesh, status: any): void;
+    applyHighlight(mesh: LODMesh, request: any): void;
+    processMesh(mesh: BIMMesh, request: any): void;
+    private deleteAttributeEvent;
+}
+
+declare class LodMaterial extends THREE.ShaderMaterial {
+    readonly isLodMaterial = true;
+    readonly isLineMaterial = true;
+    get lodSize(): THREE.Vector2;
+    set lodColor(color: THREE.Color);
+    set lodSize(value: THREE.Vector2);
+    get lodColor(): THREE.Color;
+    set lodOpacity(value: number);
+    get lodOpacity(): number;
+    set highlightColor(color: THREE.Color);
+    get highlightColor(): THREE.Color;
+    set highlightOpacity(value: number);
+    get highlightOpacity(): number;
+    constructor(parameters: LineMaterialParameters);
+}
+
+declare class LODMesh extends THREE.Mesh {
+    geometry: LODGeometry;
+    material: LodMaterial[];
+    constructor(geometry: LODGeometry, material: LodMaterial[]);
+}
+
+/**
+ * Enum representing the mode of the LOD / culling system.
+ */
+export declare enum LodMode {
+    /** Hides invisible items, displays far away items as LOD geometry, displays close items as full geometry */
+    DEFAULT = 0,
+    /** Displays all items as full geometry */
+    ALL_VISIBLE = 1,
+    /** Hides invisible items, displays the rest as full geometry */
+    ALL_GEOMETRY = 2
+}
+
+/**
+ * Interface representing the result of an information query for a specific item type.
+ * @template T - The type of item information to query.
+ */
+export declare interface MappedInformationResult {
+    /**
+     * An array of attribute records for the item.
+     * Each record contains a string key and a value of type any.
+     */
+    attributes: (Record<string, {
+        value: any;
+        type?: string;
+    }> | null)[];
+    /**
+     * An array of category strings for the item.
+     */
+    category: string[];
+    /**
+     * An array of child item IDs for the item.
+     */
+    children: number[];
+    /**
+     * An array of data records for the item.
+     */
+    data: ItemData[];
+    /**
+     * An array of geometry data for the item.
+     */
+    geometry: MeshData[][];
+    /**
+     * An array of GUID strings for the item.
+     */
+    guid: (string | null)[];
+    /**
+     * An array of highlight materials for the item.
+     */
+    highlight: MaterialDefinition[];
+    /**
+     * An array of relation records for the item.
+     */
+    relations: (Record<string, number[]> | null)[];
+    /**
+     * An array of visibility flags for the item.
+     */
+    visibility: boolean[];
+    /**
+     * The merged bounding box for the item.
+     */
+    mergedBoxes: THREE.Box3;
+}
+
+/**
+ * Interface representing the input for a result query in a Fragments model.
+ * @template T - The type of item information to query.
+ */
+export declare interface MappedResultInput {
+    /**
+     * A partial configuration for item data.
+     */
+    data: Partial<ItemsDataConfig>;
+}
+
+/**
+ * Interface representing the input for a selection query in a Fragments model.
+ */
+export declare interface MappedSelectionInput {
+    /**
+     * The category of the item to select.
+     */
+    ofCategory: string;
+}
+
+export declare class Material {
+    bb: flatbuffers.ByteBuffer | null;
+    bb_pos: number;
+    __init(i: number, bb: flatbuffers.ByteBuffer): Material;
+    r(): number;
+    mutate_r(value: number): boolean;
+    g(): number;
+    mutate_g(value: number): boolean;
+    b(): number;
+    mutate_b(value: number): boolean;
+    a(): number;
+    mutate_a(value: number): boolean;
+    renderedFaces(): RenderedFaces;
+    mutate_rendered_faces(value: RenderedFaces): boolean;
+    stroke(): Stroke;
+    mutate_stroke(value: Stroke): boolean;
+    static sizeOf(): number;
+    static createMaterial(builder: flatbuffers.Builder, r: number, g: number, b: number, a: number, rendered_faces: RenderedFaces, stroke: Stroke): flatbuffers.Offset;
+}
+
+export declare interface MaterialData {
+    data: MaterialDefinition;
+    transparent?: boolean;
+    instancing?: boolean;
+}
+
+/**
+ * Interface representing the definition of a material.
+ */
+export declare type MaterialDefinition = {
+    /** The color of the material */
+    color: THREE.Color;
+    /** The faces rendered by the material */
+    renderedFaces: RenderedFaces;
+    /** The opacity of the material */
+    opacity: number;
+    /** Whether the material is transparent */
+    transparent: boolean;
+    /**
+     * Internal flag to preserve base material properties when applying highlights.
+     * When true, only explicitly set properties (like color or opacity) are applied.
+     */
+    preserveOriginalMaterial?: boolean;
+    /** An optional custom ID for the material */
+    customId?: string;
+    /**
+     * Whether to have depth test enabled when rendering this material.
+     * @default true
+     */
+    depthTest?: boolean;
+    /**
+     * Whether to write to the depth buffer. Set to false for transparent objects
+     * that shouldn't occlude other geometry
+     * @default true
+     */
+    depthWrite?: boolean;
+    /**
+     * Depth-bias factor mapped to THREE's polygonOffsetFactor. When either
+     * this or polygonOffsetUnits is a non-zero number, polygonOffset is
+     * enabled on the produced material. Useful to resolve z-fighting between
+     * exactly coplanar faces (e.g. an element sitting exactly on the surface
+     * that hosts it).
+     * @default 0 (no depth bias)
+     */
+    polygonOffsetFactor?: number;
+    /**
+     * Depth-bias units mapped to THREE's polygonOffsetUnits. When either
+     * this or polygonOffsetFactor is a non-zero number, polygonOffset is
+     * enabled on the produced material.
+     * @default 0 (no depth bias)
+     */
+    polygonOffsetUnits?: number;
+    /** The local ID of the material */
+    localId?: number;
+    /**
+     * Internal array tracking which properties were explicitly set by the caller.
+     * Used with preserveOriginalMaterial to avoid overwriting original material
+     * properties with default values during serialization.
+     */
+    _explicitProps?: string[];
+};
+
+declare class MaterialManager {
+    readonly list: DataMap<number, BIMMaterial>;
+    /**
+     * When true, SHELL surfaces and LOD lines emit their view normal + faceId to
+     * extra MRT attachments alongside their shaded colour (see capture-emission.ts
+     * and LodShaders.fragment), so a deferred renderer can capture colour and
+     * geometry in a single scene pass. Off by default; ordinary rendering is
+     * unaffected, and nothing is installed on any material until it is first
+     * turned on.
+     */
+    private _captureEmission;
+    private readonly _ghost;
+    private readonly _modelMaterialMapping;
+    private readonly _definitions;
+    private readonly _idGenerator;
+    private readonly white;
+    static resetColors(definitions: MaterialDefinition[]): void;
+    /** Whether SHELL / LOD materials are currently emitting capture attachments. */
+    get captureEmission(): boolean;
+    /**
+     * Turns single-pass capture emission on/off for every live SHELL surface and
+     * LOD line material, and for any created afterwards. A deferred renderer
+     * enables this before its capture pass so colour + view normal + faceId land
+     * in one scene draw.
+     *
+     * The first time it is turned on, the capture injection is installed on the
+     * live SHELL materials (inert again once turned off); until then no material
+     * carries it, so an app that never uses a deferred renderer compiles exactly
+     * the same programs as before.
+     */
+    setCaptureEmission(enabled: boolean): void;
+    /**
+     * The size in pixels of the target the next capture draws into, so no
+     * surface can come out thinner than a pixel in it (see `setCapturePixels` in
+     * capture-emission.ts). `(0, 0)` turns that off.
+     */
+    setCapturePixels(width: number, height: number): void;
+    /**
+     * The ghost record of a model, created on first use. Creating it links every
+     * live material of the model (installing the inert ghost injection on its
+     * SHELL materials); materials created afterwards are linked in `new`.
+     */
+    private ghostRecord;
+    /** Links one material of a model to that model's ghost state. */
+    private linkGhost;
+    private applyGhostUniforms;
+    /**
+     * Flips a LOD material's GHOST_LOD define (a plain define swap, like the LOD
+     * capture-emission toggle: the GLSL is always present, gated on the define).
+     * The TSL twin swaps its output node instead.
+     */
+    private setLodGhost;
+    private newGhostTexture;
+    /**
+     * Ghost (x-ray) a key set of INTERNAL ITEM ids (dense), keyed directly into
+     * an R8 texture. `invert=false` ghosts the items in `itemIds`; `invert=true`
+     * ghosts everything EXCEPT them. Replaces the previous ghost set of the
+     * model. The caller (FragmentsModel.setGhostItems) converts localId to
+     * itemId first.
+     */
+    setGhostItems(modelId: string, itemIds: Iterable<number>, invert?: boolean): void;
+    /**
+     * Un-ghost a key set of INTERNAL ITEM ids in place, leaving the rest of the
+     * ghost state intact. Mutates the existing state texture, so it scales.
+     * Mode-aware: non-invert clears the item's flag (drop from the ghosted set);
+     * invert SETS it (add to the kept set so it stops being faded). If nothing
+     * remains ghosted the overlay disables itself. The caller
+     * (FragmentsModel.unsetGhostItems) converts localId to itemId first.
+     */
+    unsetGhostItems(modelId: string, itemIds: Iterable<number>): void;
+    /** Clears the ghost overlay of `modelId`, restoring the full material. */
+    clearGhost(modelId: string): void;
+    dispose(modelId: string): void;
+    /**
+     * Release a model's slot in the per-model definitions and mapping tables
+     * without disposing the underlying THREE materials in `list`. Used by
+     * `editor.save()` so a fresh model can register under the same modelId
+     * while the outgoing model's tiles still render normally.
+     */
+    releaseModelSlot(modelId: string): void;
+    get(data: MaterialDefinition, request: any): BIMMaterial;
+    /**
+     * Appends material definitions for a model. `firstId`, when given, is the
+     * id the worker assigned to `materials[0]`; definitions at or above it are
+     * ones the worker has reclaimed (see #299) and are replaced.
+     */
+    addDefinitions(modelID: string, materials: MaterialDefinition[], firstId?: number): void;
+    createHighlights(mesh: BIMMesh, request: any): THREE.Material[];
+    getHighlightProps(highlightIndex: number, originalIndex: number, modelId: string): MaterialDefinition | undefined;
+    getFromRequest(request: any): BIMMaterial;
+    private newLODMaterial;
+    /**
+     * Flips a LOD line material's capture-emission define. The GLSL is always
+     * present but inert (LodShaders.fragment, gated on CAPTURE_EMISSION); the
+     * define decides whether the extra MRT outputs are written. A LOD material
+     * owns its shader source, so the toggle is a plain define swap.
+     */
+    private setLodCaptureEmission;
+    /**
+     * Under three.webgpu, hands the faceId to a WebGPU postproduction through
+     * the material's MRT. The 24-bit faceId already rides the geometry's `color`
+     * attribute (it is what the WebGL capture reads). A WebGPU scene pass that
+     * declares a `face` channel gets it from here, because three merges a
+     * material's `mrtNode` over the pass MRT; WebGL ignores the property.
+     *
+     * `targetAwareMRT` only writes the channels the current target has, so the
+     * same material still compiles in targets with no `face` texture (a plain
+     * render target, a shadow pass). Alpha 0: a translucent shell blends the id
+     * by it and leaves the id of the surface behind in place, as the WebGL
+     * capture does for its translucent phase; an opaque shell writes it as is.
+     */
+    private setupFaceMrt;
+    private getParameters;
+    private new;
+    private addMaterialToModel;
+    private processHighlight;
+    private getUniqueMaterial;
+}
+
+/**
+ * Interface representing the data of a mesh.
+ */
+export declare type MeshData = {
+    /** The transformation matrix of the mesh */
+    transform: THREE.Matrix4;
+    /** The sample ID of the mesh */
+    sampleId?: number;
+    /** The indices of the mesh */
+    indices?: Uint8Array | Uint16Array | Uint32Array;
+    /** The positions of the mesh */
+    positions?: Float32Array | Float64Array;
+    /** The normals of the mesh */
+    normals?: Int16Array;
+    /** The local ID of the mesh */
+    localId?: number;
+    /** The representation ID of the mesh */
+    representationId?: number;
+};
+
+export declare class Meshes {
+    bb: flatbuffers.ByteBuffer | null;
+    bb_pos: number;
+    __init(i: number, bb: flatbuffers.ByteBuffer): Meshes;
+    static getRootAsMeshes(bb: flatbuffers.ByteBuffer, obj?: Meshes): Meshes;
+    static getSizePrefixedRootAsMeshes(bb: flatbuffers.ByteBuffer, obj?: Meshes): Meshes;
+    coordinates(obj?: Transform): Transform | null;
+    meshesItems(index: number): number | null;
+    meshesItemsLength(): number;
+    meshesItemsArray(): Uint32Array | null;
+    samples(index: number, obj?: Sample): Sample | null;
+    samplesLength(): number;
+    representations(index: number, obj?: Representation): Representation | null;
+    representationsLength(): number;
+    materials(index: number, obj?: Material): Material | null;
+    materialsLength(): number;
+    circleExtrusions(index: number, obj?: CircleExtrusion): CircleExtrusion | null;
+    circleExtrusionsLength(): number;
+    shells(index: number, obj?: Shell): Shell | null;
+    shellsLength(): number;
+    localTransforms(index: number, obj?: Transform): Transform | null;
+    localTransformsLength(): number;
+    globalTransforms(index: number, obj?: Transform): Transform | null;
+    globalTransformsLength(): number;
+    materialIds(index: number): number | null;
+    materialIdsLength(): number;
+    materialIdsArray(): Uint32Array | null;
+    representationIds(index: number): number | null;
+    representationIdsLength(): number;
+    representationIdsArray(): Uint32Array | null;
+    sampleIds(index: number): number | null;
+    sampleIdsLength(): number;
+    sampleIdsArray(): Uint32Array | null;
+    localTransformIds(index: number): number | null;
+    localTransformIdsLength(): number;
+    localTransformIdsArray(): Uint32Array | null;
+    globalTransformIds(index: number): number | null;
+    globalTransformIdsLength(): number;
+    globalTransformIdsArray(): Uint32Array | null;
+    static startMeshes(builder: flatbuffers.Builder): void;
+    static addCoordinates(builder: flatbuffers.Builder, coordinatesOffset: flatbuffers.Offset): void;
+    static addMeshesItems(builder: flatbuffers.Builder, meshesItemsOffset: flatbuffers.Offset): void;
+    static createMeshesItemsVector(builder: flatbuffers.Builder, data: number[] | Uint32Array): flatbuffers.Offset;
+    /**
+     * @deprecated This Uint8Array overload will be removed in the future.
+     */
+    static createMeshesItemsVector(builder: flatbuffers.Builder, data: number[] | Uint8Array): flatbuffers.Offset;
+    static startMeshesItemsVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addSamples(builder: flatbuffers.Builder, samplesOffset: flatbuffers.Offset): void;
+    static startSamplesVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addRepresentations(builder: flatbuffers.Builder, representationsOffset: flatbuffers.Offset): void;
+    static startRepresentationsVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addMaterials(builder: flatbuffers.Builder, materialsOffset: flatbuffers.Offset): void;
+    static startMaterialsVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addCircleExtrusions(builder: flatbuffers.Builder, circleExtrusionsOffset: flatbuffers.Offset): void;
+    static createCircleExtrusionsVector(builder: flatbuffers.Builder, data: flatbuffers.Offset[]): flatbuffers.Offset;
+    static startCircleExtrusionsVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addShells(builder: flatbuffers.Builder, shellsOffset: flatbuffers.Offset): void;
+    static createShellsVector(builder: flatbuffers.Builder, data: flatbuffers.Offset[]): flatbuffers.Offset;
+    static startShellsVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addLocalTransforms(builder: flatbuffers.Builder, localTransformsOffset: flatbuffers.Offset): void;
+    static startLocalTransformsVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addGlobalTransforms(builder: flatbuffers.Builder, globalTransformsOffset: flatbuffers.Offset): void;
+    static startGlobalTransformsVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addMaterialIds(builder: flatbuffers.Builder, materialIdsOffset: flatbuffers.Offset): void;
+    static createMaterialIdsVector(builder: flatbuffers.Builder, data: number[] | Uint32Array): flatbuffers.Offset;
+    /**
+     * @deprecated This Uint8Array overload will be removed in the future.
+     */
+    static createMaterialIdsVector(builder: flatbuffers.Builder, data: number[] | Uint8Array): flatbuffers.Offset;
+    static startMaterialIdsVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addRepresentationIds(builder: flatbuffers.Builder, representationIdsOffset: flatbuffers.Offset): void;
+    static createRepresentationIdsVector(builder: flatbuffers.Builder, data: number[] | Uint32Array): flatbuffers.Offset;
+    /**
+     * @deprecated This Uint8Array overload will be removed in the future.
+     */
+    static createRepresentationIdsVector(builder: flatbuffers.Builder, data: number[] | Uint8Array): flatbuffers.Offset;
+    static startRepresentationIdsVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addSampleIds(builder: flatbuffers.Builder, sampleIdsOffset: flatbuffers.Offset): void;
+    static createSampleIdsVector(builder: flatbuffers.Builder, data: number[] | Uint32Array): flatbuffers.Offset;
+    /**
+     * @deprecated This Uint8Array overload will be removed in the future.
+     */
+    static createSampleIdsVector(builder: flatbuffers.Builder, data: number[] | Uint8Array): flatbuffers.Offset;
+    static startSampleIdsVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addLocalTransformIds(builder: flatbuffers.Builder, localTransformIdsOffset: flatbuffers.Offset): void;
+    static createLocalTransformIdsVector(builder: flatbuffers.Builder, data: number[] | Uint32Array): flatbuffers.Offset;
+    /**
+     * @deprecated This Uint8Array overload will be removed in the future.
+     */
+    static createLocalTransformIdsVector(builder: flatbuffers.Builder, data: number[] | Uint8Array): flatbuffers.Offset;
+    static startLocalTransformIdsVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addGlobalTransformIds(builder: flatbuffers.Builder, globalTransformIdsOffset: flatbuffers.Offset): void;
+    static createGlobalTransformIdsVector(builder: flatbuffers.Builder, data: number[] | Uint32Array): flatbuffers.Offset;
+    /**
+     * @deprecated This Uint8Array overload will be removed in the future.
+     */
+    static createGlobalTransformIdsVector(builder: flatbuffers.Builder, data: number[] | Uint8Array): flatbuffers.Offset;
+    static startGlobalTransformIdsVector(builder: flatbuffers.Builder, numElems: number): void;
+    static endMeshes(builder: flatbuffers.Builder): flatbuffers.Offset;
+    static createMeshes(builder: flatbuffers.Builder, coordinatesOffset: flatbuffers.Offset, meshesItemsOffset: flatbuffers.Offset, samplesOffset: flatbuffers.Offset, representationsOffset: flatbuffers.Offset, materialsOffset: flatbuffers.Offset, circleExtrusionsOffset: flatbuffers.Offset, shellsOffset: flatbuffers.Offset, localTransformsOffset: flatbuffers.Offset, globalTransformsOffset: flatbuffers.Offset, materialIdsOffset: flatbuffers.Offset, representationIdsOffset: flatbuffers.Offset, sampleIdsOffset: flatbuffers.Offset, localTransformIdsOffset: flatbuffers.Offset, globalTransformIdsOffset: flatbuffers.Offset): flatbuffers.Offset;
+}
+
+/**
+ * A class that manages the creation and updating of meshes in a Fragments model.
+ */
+declare class MeshManager {
+    /**
+     * A map of FragmentsModel instances by their model ID.
+     */
+    readonly list: DataMap<string, FragmentsModel>;
+    readonly materials: MaterialManager;
+    readonly lod: LODManager;
+    readonly requests: RequestsManager;
+    private readonly updateThreshold;
+    /**
+     * Per model, how many live tiles hold each item of `visibleItems`.
+     * Weak so a disposed model takes its counts with it.
+     */
+    private readonly _itemTileCounts;
+    /**
+     * Pending fence resolvers from `forceUpdateFinish` callers.
+     * Each entry holds the refreshes that were unanswered at call time;
+     * once every one of them has its FINISH, we drain the queue to
+     * completion and resolve. Sorted insertion order isn't needed
+     * — we walk the whole list on each FINISH.
+     */
+    private _fenceWaiters;
+    /**
+     * Per model, the seq of the last REFRESH_VIEW sent and the highest seq
+     * stamped on one of its FINISHes. A single global seq is not enough
+     * with several models: the stamp is the worker's latest seq, so the
+     * FINISH of a model with a short pass carries the seq of the refresh
+     * sent to the next model and released the fence while that one was
+     * still sweeping.
+     *
+     * Only refreshes are tracked because they are the only requests the
+     * worker is bound to answer with a FINISH. Waiting for the last seq
+     * dispatched instead hung `update(true)` whenever any other request
+     * (a pick, a data query, a request of another FragmentsModels
+     * instance, which shares the seq counter) went out after the refresh:
+     * no FINISH this instance receives ever carries that seq (#341).
+     */
+    private readonly _viewSeq;
+    private readonly _finishSeq;
+    private _onUpdate;
+    constructor(onUpdate: () => void);
+    /**
+     * Records that a REFRESH_VIEW with `seq` was sent for `modelId`. The
+     * worker answers every refresh with a FINISH once that view is done
+     * (right away if it was already), so fences wait for it.
+     */
+    viewDispatched(modelId: string, seq: number | undefined): void;
+    /**
+     * Wait until every view refresh sent before this call has been
+     * answered by its model's FINISH AND the resulting tile updates
+     * have been applied on main. A worker handles its messages in
+     * order, so whatever was sent to a model before its refresh is
+     * reflected too. Replaces the old polling-based implementation:
+     *
+     *   - **Old**: `setInterval` re-running `update()` every `rate` ms
+     *     until a FINISH arrived, plus a `buffer` setTimeout guarding
+     *     against false-positive FINISHes from prior batches. Floor of
+     *     ~rate + buffer ms even when the worker had nothing to do.
+     *   - **New**: snapshot, per model, the seq of the refresh still
+     *     unanswered, register a fence waiter, resolve the moment each
+     *     of those models has a FINISH stamped with `seq >= snapshot`
+     *     and the request queue has been drained. Zero polling; precise
+     *     per-call settlement.
+     *
+     * Called from `FragmentsModels.update(true)`.
+     */
+    forceUpdateFinish(): Promise<void>;
+    private isSettled;
+    private finishEmptyScene;
+    /**
+     * Called by `RequestsManager` whenever a FINISH tile request lands
+     * on main. The FINISH is stamped with the worker's `lastSeenSeq`
+     * at emission time, which is also the highest RPC seq whose effects
+     * are reflected in the batch carrying this FINISH.
+     *
+     * Walks the fence-waiter list and resolves any whose `targetSeq`
+     * has now settled, draining the request queue first so the visual
+     * effects are on screen by the time the awaiter wakes up.
+     */
+    private handleFinish;
+    private resolveReadyWaiters;
+    /**
+     * Process every queued tile request without the per-frame
+     * `updateThreshold` cap. Used by force-flush paths where the
+     * caller is explicitly waiting for everything to settle —
+     * spreading the work across many frames there would just delay
+     * the visual.
+     */
+    private drainAll;
+    update(): void;
+    private setTileData;
+    private processTileRequest;
+    private toLocalIds;
+    private untrackTileItems;
+    /**
+     * Keeps `model.visibleItems` as the set of items held by at least one
+     * live tile. An item can be in several tiles, so each one counts the
+     * tiles that hold it and leaves the set when the last of them goes.
+     */
+    private trackVisibleItems;
+    private createMesh;
+    private setupBoundings;
+    private create;
+    private updateStatus;
+    /**
+     * Minimum number of visibility runs before a shell tile switches from
+     * one geometry.group per run (one draw call each) to a compacted index
+     * buffer drawn with a single call. Small run counts stay on the group
+     * path: the copy is not worth it and highlights need groups anyway.
+     */
+    private static readonly compactMinRuns;
+    /**
+     * Rewrite the tile's GPU index with just the visible runs so the whole
+     * tile is one draw call. Returns false (after restoring the full index
+     * if it was compacted before) when the group path must be used:
+     * LOD/wire meshes, tiles without a CPU index copy, highlighted tiles
+     * (highlight groups address the full index) and tiles with few runs.
+     */
+    private applyCompactIndex;
+    private restoreFullIndex;
+    private readonly white;
+    private cleanAttributeMemory;
+    private setPositions;
+    private setFaceIds;
+    private setIndex;
+    private setNormals;
+    private setItemIds;
+    private deleteAttribute;
+    private setMeshData;
+}
+
+export declare class Model {
+    bb: flatbuffers.ByteBuffer | null;
+    bb_pos: number;
+    __init(i: number, bb: flatbuffers.ByteBuffer): Model;
+    static getRootAsModel(bb: flatbuffers.ByteBuffer, obj?: Model): Model;
+    static getSizePrefixedRootAsModel(bb: flatbuffers.ByteBuffer, obj?: Model): Model;
+    static bufferHasIdentifier(bb: flatbuffers.ByteBuffer): boolean;
+    metadata(): string | null;
+    metadata(optionalEncoding: flatbuffers.Encoding): string | Uint8Array | null;
+    guids(index: number): string;
+    guids(index: number, optionalEncoding: flatbuffers.Encoding): string | Uint8Array;
+    guidsLength(): number;
+    guidsItems(index: number): number | null;
+    guidsItemsLength(): number;
+    guidsItemsArray(): Uint32Array | null;
+    maxLocalId(): number;
+    mutate_max_local_id(value: number): boolean;
+    localIds(index: number): number | null;
+    localIdsLength(): number;
+    localIdsArray(): Uint32Array | null;
+    categories(index: number): string;
+    categories(index: number, optionalEncoding: flatbuffers.Encoding): string | Uint8Array;
+    categoriesLength(): number;
+    meshes(obj?: Meshes): Meshes | null;
+    attributes(index: number, obj?: Attribute): Attribute | null;
+    attributesLength(): number;
+    relations(index: number, obj?: Relation): Relation | null;
+    relationsLength(): number;
+    relationsItems(index: number): number | null;
+    relationsItemsLength(): number;
+    relationsItemsArray(): Int32Array | null;
+    guid(): string | null;
+    guid(optionalEncoding: flatbuffers.Encoding): string | Uint8Array | null;
+    spatialStructure(obj?: SpatialStructure): SpatialStructure | null;
+    uniqueAttributes(index: number): string;
+    uniqueAttributes(index: number, optionalEncoding: flatbuffers.Encoding): string | Uint8Array;
+    uniqueAttributesLength(): number;
+    relationNames(index: number): string;
+    relationNames(index: number, optionalEncoding: flatbuffers.Encoding): string | Uint8Array;
+    relationNamesLength(): number;
+    indexes(index: number, obj?: ModelIndex): ModelIndex | null;
+    indexesLength(): number;
+    static startModel(builder: flatbuffers.Builder): void;
+    static addMetadata(builder: flatbuffers.Builder, metadataOffset: flatbuffers.Offset): void;
+    static addGuids(builder: flatbuffers.Builder, guidsOffset: flatbuffers.Offset): void;
+    static createGuidsVector(builder: flatbuffers.Builder, data: flatbuffers.Offset[]): flatbuffers.Offset;
+    static startGuidsVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addGuidsItems(builder: flatbuffers.Builder, guidsItemsOffset: flatbuffers.Offset): void;
+    static createGuidsItemsVector(builder: flatbuffers.Builder, data: number[] | Uint32Array): flatbuffers.Offset;
+    /**
+     * @deprecated This Uint8Array overload will be removed in the future.
+     */
+    static createGuidsItemsVector(builder: flatbuffers.Builder, data: number[] | Uint8Array): flatbuffers.Offset;
+    static startGuidsItemsVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addMaxLocalId(builder: flatbuffers.Builder, maxLocalId: number): void;
+    static addLocalIds(builder: flatbuffers.Builder, localIdsOffset: flatbuffers.Offset): void;
+    static createLocalIdsVector(builder: flatbuffers.Builder, data: number[] | Uint32Array): flatbuffers.Offset;
+    /**
+     * @deprecated This Uint8Array overload will be removed in the future.
+     */
+    static createLocalIdsVector(builder: flatbuffers.Builder, data: number[] | Uint8Array): flatbuffers.Offset;
+    static startLocalIdsVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addCategories(builder: flatbuffers.Builder, categoriesOffset: flatbuffers.Offset): void;
+    static createCategoriesVector(builder: flatbuffers.Builder, data: flatbuffers.Offset[]): flatbuffers.Offset;
+    static startCategoriesVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addMeshes(builder: flatbuffers.Builder, meshesOffset: flatbuffers.Offset): void;
+    static addAttributes(builder: flatbuffers.Builder, attributesOffset: flatbuffers.Offset): void;
+    static createAttributesVector(builder: flatbuffers.Builder, data: flatbuffers.Offset[]): flatbuffers.Offset;
+    static startAttributesVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addRelations(builder: flatbuffers.Builder, relationsOffset: flatbuffers.Offset): void;
+    static createRelationsVector(builder: flatbuffers.Builder, data: flatbuffers.Offset[]): flatbuffers.Offset;
+    static startRelationsVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addRelationsItems(builder: flatbuffers.Builder, relationsItemsOffset: flatbuffers.Offset): void;
+    static createRelationsItemsVector(builder: flatbuffers.Builder, data: number[] | Int32Array): flatbuffers.Offset;
+    /**
+     * @deprecated This Uint8Array overload will be removed in the future.
+     */
+    static createRelationsItemsVector(builder: flatbuffers.Builder, data: number[] | Uint8Array): flatbuffers.Offset;
+    static startRelationsItemsVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addGuid(builder: flatbuffers.Builder, guidOffset: flatbuffers.Offset): void;
+    static addSpatialStructure(builder: flatbuffers.Builder, spatialStructureOffset: flatbuffers.Offset): void;
+    static addUniqueAttributes(builder: flatbuffers.Builder, uniqueAttributesOffset: flatbuffers.Offset): void;
+    static createUniqueAttributesVector(builder: flatbuffers.Builder, data: flatbuffers.Offset[]): flatbuffers.Offset;
+    static startUniqueAttributesVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addRelationNames(builder: flatbuffers.Builder, relationNamesOffset: flatbuffers.Offset): void;
+    static createRelationNamesVector(builder: flatbuffers.Builder, data: flatbuffers.Offset[]): flatbuffers.Offset;
+    static startRelationNamesVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addIndexes(builder: flatbuffers.Builder, indexesOffset: flatbuffers.Offset): void;
+    static createIndexesVector(builder: flatbuffers.Builder, data: flatbuffers.Offset[]): flatbuffers.Offset;
+    static startIndexesVector(builder: flatbuffers.Builder, numElems: number): void;
+    static endModel(builder: flatbuffers.Builder): flatbuffers.Offset;
+    static finishModelBuffer(builder: flatbuffers.Builder, offset: flatbuffers.Offset): void;
+    static finishSizePrefixedModelBuffer(builder: flatbuffers.Builder, offset: flatbuffers.Offset): void;
+}
+
+/**
+ * Interface representing a map of model IDs to their corresponding local IDs.
+ */
+export declare interface ModelIdMap {
+    [key: string]: number[] | undefined;
+}
+
+export declare class ModelIndex {
+    bb: flatbuffers.ByteBuffer | null;
+    bb_pos: number;
+    __init(i: number, bb: flatbuffers.ByteBuffer): ModelIndex;
+    static getRootAsModelIndex(bb: flatbuffers.ByteBuffer, obj?: ModelIndex): ModelIndex;
+    static getSizePrefixedRootAsModelIndex(bb: flatbuffers.ByteBuffer, obj?: ModelIndex): ModelIndex;
+    name(): string | null;
+    name(optionalEncoding: flatbuffers.Encoding): string | Uint8Array | null;
+    stringKeys(index: number): string;
+    stringKeys(index: number, optionalEncoding: flatbuffers.Encoding): string | Uint8Array;
+    stringKeysLength(): number;
+    numberKeys(index: number): number | null;
+    numberKeysLength(): number;
+    numberKeysArray(): Uint32Array | null;
+    stringValues(index: number): string;
+    stringValues(index: number, optionalEncoding: flatbuffers.Encoding): string | Uint8Array;
+    stringValuesLength(): number;
+    numberValues(index: number): number | null;
+    numberValuesLength(): number;
+    numberValuesArray(): Uint32Array | null;
+    end(index: number): number | null;
+    endLength(): number;
+    endArray(): Uint32Array | null;
+    start(index: number): number | null;
+    startLength(): number;
+    startArray(): Uint32Array | null;
+    static startModelIndex(builder: flatbuffers.Builder): void;
+    static addName(builder: flatbuffers.Builder, nameOffset: flatbuffers.Offset): void;
+    static addStringKeys(builder: flatbuffers.Builder, stringKeysOffset: flatbuffers.Offset): void;
+    static createStringKeysVector(builder: flatbuffers.Builder, data: flatbuffers.Offset[]): flatbuffers.Offset;
+    static startStringKeysVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addNumberKeys(builder: flatbuffers.Builder, numberKeysOffset: flatbuffers.Offset): void;
+    static createNumberKeysVector(builder: flatbuffers.Builder, data: number[] | Uint32Array): flatbuffers.Offset;
+    /**
+     * @deprecated This Uint8Array overload will be removed in the future.
+     */
+    static createNumberKeysVector(builder: flatbuffers.Builder, data: number[] | Uint8Array): flatbuffers.Offset;
+    static startNumberKeysVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addStringValues(builder: flatbuffers.Builder, stringValuesOffset: flatbuffers.Offset): void;
+    static createStringValuesVector(builder: flatbuffers.Builder, data: flatbuffers.Offset[]): flatbuffers.Offset;
+    static startStringValuesVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addNumberValues(builder: flatbuffers.Builder, numberValuesOffset: flatbuffers.Offset): void;
+    static createNumberValuesVector(builder: flatbuffers.Builder, data: number[] | Uint32Array): flatbuffers.Offset;
+    /**
+     * @deprecated This Uint8Array overload will be removed in the future.
+     */
+    static createNumberValuesVector(builder: flatbuffers.Builder, data: number[] | Uint8Array): flatbuffers.Offset;
+    static startNumberValuesVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addEnd(builder: flatbuffers.Builder, endOffset: flatbuffers.Offset): void;
+    static createEndVector(builder: flatbuffers.Builder, data: number[] | Uint32Array): flatbuffers.Offset;
+    /**
+     * @deprecated This Uint8Array overload will be removed in the future.
+     */
+    static createEndVector(builder: flatbuffers.Builder, data: number[] | Uint8Array): flatbuffers.Offset;
+    static startEndVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addStart(builder: flatbuffers.Builder, startOffset: flatbuffers.Offset): void;
+    static createStartVector(builder: flatbuffers.Builder, data: number[] | Uint32Array): flatbuffers.Offset;
+    /**
+     * @deprecated This Uint8Array overload will be removed in the future.
+     */
+    static createStartVector(builder: flatbuffers.Builder, data: number[] | Uint8Array): flatbuffers.Offset;
+    static startStartVector(builder: flatbuffers.Builder, numElems: number): void;
+    static endModelIndex(builder: flatbuffers.Builder): flatbuffers.Offset;
+    static createModelIndex(builder: flatbuffers.Builder, nameOffset: flatbuffers.Offset, stringKeysOffset: flatbuffers.Offset, numberKeysOffset: flatbuffers.Offset, stringValuesOffset: flatbuffers.Offset, numberValuesOffset: flatbuffers.Offset, endOffset: flatbuffers.Offset, startOffset: flatbuffers.Offset): flatbuffers.Offset;
+}
+
+export declare interface ModelSection {
+    buffer: Float32Array;
+    index: number;
+    fillsIndices: number[];
+}
+
+declare class MultiBufferData<T> {
+    private static _stash;
+    private _first;
+    private static _tempData;
+    private static _inf;
+    constructor(size: number, firstElement: T);
+    static getComplementary(data: any, callback: (position: number, size: number) => void): void;
+    static get<T>(data: MultiBufferData<T>, positions: number[], filter?: Filter, callback?: (i: number, value: T) => void): {
+        position: Uint32Array;
+        size: Uint32Array;
+    };
+    fullOf(data: T): boolean;
+    update(position: number, data: T): void;
+    size(filter?: Filter): number;
+    private static setAllBufferData;
+    private static makeBufferComplementary;
+    private static setBuffers;
+    private add;
+    private remove;
+    private static getData;
+    private filter;
+    private static transform;
+    private static getBuffers;
+    private static getTempData;
+    private doesFilterPass;
+    private setupUpdateBuffers;
+    private setupMiddleBufferEnd;
+    private setupFirstBuffer;
+    private setupMiddleBufferStart;
+    private chainBuffers;
+    private setupLastBuffer;
+    private newBuffers;
+    private setupInputData;
+    private newData;
+    private getBufferData;
+}
+
+export declare enum MultiThreadingRequestClass {
+    CREATE_MODEL = 0,
+    DELETE_MODEL = 1,
+    EXECUTE = 2,
+    RAYCAST = 3,
+    FETCH_BOXES = 4,
+    REFRESH_VIEW = 5,
+    RECOMPUTE_MESHES = 6,
+    CREATE_MATERIAL = 7,
+    THROW_ERROR = 8,
+    LOAD_PROGRESS = 9,
+    ABORT_MODEL = 10
+}
+
+/**
+ * Data defining a new element of a fragments model.
+ */
+export declare type NewElementData = {
+    /** The attributes of the element. */
+    attributes: ItemData;
+    /** The global transform of the element. */
+    globalTransform: THREE.Matrix4;
+    /** The samples of the element. */
+    samples: {
+        /** The local transform of the sample. */
+        localTransform: THREE.Matrix4 | number | string;
+        /** The representation of the sample. */
+        representation: THREE.BufferGeometry | number | string;
+        /** The material of the sample. */
+        material: THREE.MeshLambertMaterial | number | string;
+    }[];
+};
+
+declare function newModel(config: {
+    raw: boolean;
+}): Uint8Array;
+
+export declare enum ObjectClass {
+    LINE = 0,
+    SHELL = 1
+}
+
+export declare class Parabola {
+    core: WEBIFC.Parabola;
+    constructor(api: WEBIFC.IfcAPI);
+    get(data: ParabolaData): WEBIFC.Buffers;
+}
+
+export declare type ParabolaData = {
+    segmentCount?: number;
+    start?: number[];
+    horizontalLength?: number;
+    startHeight?: number;
+    startGradient?: number;
+    endGradient?: number;
+};
+
+export declare function parseHashRef(s: string): number | null;
+
+declare interface ParseResult {
+    header: string[];
+    footer: string[];
+    index: LineIndex;
+}
+
+/**
+ * Parse the argument list of a STEP data statement (`#ID=TYPENAME(args);`)
+ * into web-ifc's raw tape shape, suitable for `webIfc.FromRawLineData`.
+ * Throws on malformed arguments.
+ */
+export declare function parseStepArguments(line: string): StepArgument[];
+
+export declare interface ProcessData {
+    id?: string;
+    bytes?: Uint8Array;
+    /**
+     * @see {@link readCallback}
+     * @default false
+     */
+    readFromCallback?: boolean;
+    /**
+     * Read ifc file incrementally, instead of passing {@link bytes}.
+     *
+     * @example node.js
+     * ```typescript
+     * import { open } from "node:fs/promises";
+     *
+     * const handle = await open(filePath, "r");
+     * const chunkSize = 64 * 1024; // 64KB
+     * const buffer = new Uint8Array(chunkSize);
+     * const readCallback: ((offset: number) => {
+     *   const bytesRead = readSync(handle.fd, buffer, 0, chunkSize, offset);
+     *   return buffer.slice(0, bytesRead);
+     * })
+     * const output = await importer.process({ readFromCallback: true, readCallback });
+     * await handle.close();
+     * ```
+     */
+    readCallback?: ModelLoadCallback;
+    raw?: boolean;
+    progressCallback?: (progress: number, data: ProgressData) => void;
+}
+
+export declare class Profile {
+    core: ProfileSection;
+    static map: Map<string, ProfileType>;
+    constructor(api: WEBIFC.IfcAPI);
+    get(api: WEBIFC.IfcAPI, data: ProfileData): WEBIFC.Buffers;
+}
+
+export declare type ProfileData = {
+    type?: ProfileType;
+    width?: number;
+    depth?: number;
+    thickness?: number;
+    flangeThickness?: number;
+    hasFillet?: boolean;
+    filletRadius?: number;
+    radius?: number;
+    slope?: number;
+    circleSegments?: 20;
+    placement?: THREE.Matrix4;
+};
+
+export declare enum ProfileType {
+    "H" = 0,
+    "C" = 1,
+    "Z" = 2,
+    "T" = 3,
+    "L" = 4
+}
+
+export declare interface ProgressData {
+    process: "geometries" | "attributes" | "relations" | "conversion";
+    state: "start" | "inProgress" | "finish";
+    class?: string;
+    entitiesProcessed?: number;
+}
+
+declare type Promisify<T, Async extends boolean> = Async extends true ? Promise<T> : T;
+
+export declare type QueryAggregation = "exclusive" | "inclusive";
+
+/**
+ * Data defining a circle extrusion geometry (e.g. reinforcement bars).
+ */
+export declare type RawCircleExtrusion = {
+    /** The radius of the circle extrusion. */
+    radius: number[];
+    /** The axes of the circle extrusion. */
+    axes: {
+        /** The wires of the axis. */
+        wires: number[][];
+        /**
+         * The order of the axis parts. E.g. order [0, 0, 1, 1] and parts
+         * [WIRE, CIRCLE_CURVE, WIRE, CIRCLE_CURVE] means that the axis has
+         * the first wire, the first circle curve, the second wire and the
+         * second circle curve.
+         * */
+        order: number[];
+        /**
+         * The parts of the axis parts. E.g. order [0, 0, 1, 1] and parts
+         * [WIRE, CIRCLE_CURVE, WIRE, CIRCLE_CURVE] means that the axis has
+         * the first wire, the first circle curve, the second wire and the
+         * second circle curve.
+         * */
+        parts: TFB.AxisPartClass[];
+        /** The wire sets of the axis. */
+        wireSets: number[][];
+        /** The circle curves of the axis. */
+        circleCurves: {
+            /** The aperture of the circle curve. */
+            aperture: number;
+            /** The position of the circle curve. */
+            position: number[];
+            /** The radius of the circle curve. */
+            radius: number;
+            /** The x direction of the circle curve. */
+            xDirection: number[];
+            /** The y direction of the circle curve. */
+            yDirection: number[];
+        }[];
+    }[];
+};
+
+/**
+ * Data defining a global transform of a mesh.
+ */
+export declare type RawGlobalTransformData = RawTransformData & {
+    /** The ID of the item the global transform is associated with. */
+    itemId: number | string;
+};
+
+/**
+ * Payload describing a user-defined model index. Maps directly to the
+ * ModelIndex schema's flat key/value vectors with optional slicing.
+ *
+ * Mode is inferred from which fields are populated:
+ *
+ *   - `keysOnly`:        only `keys`.
+ *   - `oneToOne`:        `keys` + `values`, no `start`/`end`.
+ *   - `oneToNLinear`:    `keys` + `values` + `end`.
+ *   - `oneToNNonLinear`: `keys` + `values` + `start` + `end`.
+ *
+ * Keys must be homogeneous (`number[]` or `string[]`). Values, if present,
+ * must also be homogeneous.
+ */
+export declare interface RawIndexData {
+    /** Index identifier, unique within the model. */
+    name: string;
+    /**
+     * Key vector. Drives the storage type (`number_keys` or `string_keys`).
+     *
+     * Performance: prefer `number` keys for large or hot indexes. Number keys are
+     * read straight from a `Uint32Array`, while string keys cost a UTF-8 decode
+     * plus a long-string hash on every lookup-map build. If your keys are long
+     * strings (e.g. hashes), hash them down to a `uint32` at build time and keep a
+     * small side table if you need the original string back; both the build and
+     * every lookup get dramatically cheaper, and it also keeps the worker-to-main
+     * payload a plain typed-array copy.
+     */
+    keys: number[] | string[];
+    /** Value vector. Drives `number_values` or `string_values`. Omit for keys-only. */
+    values?: number[] | string[];
+    /** Per-key end offset into `values` (exclusive). Empty for keys-only and 1:1. */
+    end?: number[];
+    /** Per-key start offset into `values`. Empty unless slicing is non-linear. */
+    start?: number[];
+}
+
+/**
+ * Data defining a fragments item. It can be anything, from a property to property set or a physical element like a wall or a beam.
+ */
+export declare type RawItemData = {
+    /** The attributes of the item. */
+    data: Record<string, ItemAttribute>;
+    /** The category of the item. */
+    category: string;
+    /** The GUID of the item (optional). */
+    guid?: string;
+};
+
+/**
+ * Data defining a fragments material.
+ */
+export declare type RawMaterial = {
+    /** The red component of the material. */
+    r: number;
+    /** The green component of the material. */
+    g: number;
+    /** The blue component of the material. */
+    b: number;
+    /** The alpha component of the material. */
+    a: number;
+    /** The number of rendered faces of the material. */
+    renderedFaces: TFB.RenderedFaces;
+    /** The stroke type of the material. */
+    stroke: TFB.Stroke;
+};
+
+/**
+ * Data defining metadata of the fragments model.
+ */
+export declare type RawMetadataData = Record<string, any>;
+
+/**
+ * Data defining a fragments relation.
+ */
+export declare type RawRelationData = {
+    /** The relations of the item. */
+    data: Record<string, number[]>;
+};
+
+/**
+ * Data defining a representation of a geometry.
+ */
+export declare type RawRepresentation = {
+    /** The ID of the representation (optional). */
+    id?: number;
+    /** The bounding box of the representation. */
+    bbox: number[];
+    /** The class of the representation. */
+    representationClass: number;
+    /** The definition of the representation's geometry. */
+    geometry?: RawShell | RawCircleExtrusion;
+};
+
+/**
+ * Data defining a sample (instance) of a mesh.
+ */
+export declare type RawSample = {
+    /** The ID of the global transform the sample is associated with. */
+    item: number;
+    /** The ID of the material the sample is associated with. */
+    material: number;
+    /** The ID of the representation the sample is associated with. */
+    representation: number;
+    /** The ID of the local transform the sample is associated with. */
+    localTransform: number;
+};
+
+/**
+ * Data defining a shell geometry (e.g. a brep).
+ */
+export declare type RawShell = {
+    /** The points of the shell. */
+    points: number[][];
+    /** The profiles of the shell. */
+    profiles: Map<number, number[]>;
+    /** The holes of the shell. */
+    holes: Map<number, number[][]>;
+    /** The big profiles of the shell. */
+    bigProfiles: Map<number, number[]>;
+    /** The big holes of the shell. */
+    bigHoles: Map<number, number[][]>;
+    /** The type of the shell. */
+    type: TFB.ShellType;
+    /** The profile face IDs of the shell. */
+    profilesFaceIds: number[];
+};
+
+/**
+ * Data defining a transform (local or global) of a mesh.
+ */
+export declare type RawTransformData = {
+    /** The position of the transform. */
+    position: number[];
+    /** The x direction of the transform coordinates. */
+    xDirection: number[];
+    /** The y direction of the transform coordinates. */
+    yDirection: number[];
+};
+
+declare class RaycastController {
+    private readonly _meshes;
+    private readonly _model;
+    private readonly _boxes;
+    private readonly _tiles;
+    private readonly _items;
+    private readonly _edgeThreshold;
+    private readonly _raycastMultiplier;
+    private readonly _maxDuration;
+    private readonly _precission;
+    private readonly _temp;
+    constructor(model: Model, boxes: VirtualBoxController, tiles: VirtualTilesController, items: ItemConfigController);
+    static cast(mesh: VirtualMeshManager, representation: Representation, ray: THREE.Ray, frustum: THREE.Frustum, snap?: SnappingClass): any[] | undefined;
+    raycast(ray: THREE.Ray, frustum: THREE.Frustum, planes: THREE.Plane[], returnAll?: boolean): any;
+    snapRaycast(ray: THREE.Ray, frustum: THREE.Frustum, snaps: Snap[], planes: THREE.Plane[]): any[];
+    rectangleRaycast(frustum: THREE.Frustum, planes: THREE.Plane[], fullyInside: boolean): number[];
+    private narrowPhaseFrustum;
+    private sampleMatchesFrustum;
+    private geometryFullyInside;
+    private buildSampleGeometries;
+    private toLocalPlanes;
+    private pushLocalPlanes;
+    private geometryIntersectsPlanes;
+    private triangleIntersectsFrustum;
+    private clipPolygonByPlane;
+    private snapCastEdges;
+    private filterVisible;
+    private computeSnaps;
+    private computeEdgesCast;
+    private addDistanceToEdgeResult;
+    private getRawEdges;
+    private sortBoxes;
+    private castBox;
+    private dataSort;
+    private localIdsFromItemIds;
+    private getNearest;
+    private getEdges;
+    private getNearScore;
+    private setupSampleCastData;
+    private addLocalId;
+    private fetchSampleData;
+    private computeRaycastList;
+    private formatRaycastResult;
+    private findAll;
+    private isTimeExceeded;
+    private getFilteredSampleCast;
+    private getSnaps;
+    private filterOnFront;
+    private setCastSide;
+    private getFaces;
+    private setCastPlane;
+    private castSample;
+    private isValidSnap;
+    private transform;
+    private setupPlanesForSampleCast;
+}
+
+/**
+ * Interface representing the data for a raycast operation.
+ */
+export declare interface RaycastData {
+    /** The camera used for the raycast */
+    camera: THREE.PerspectiveCamera | THREE.OrthographicCamera;
+    /** The mouse position */
+    mouse: THREE.Vector2;
+    /** The DOM element where the scene is rendered */
+    dom: HTMLCanvasElement;
+}
+
+/**
+ * Interface representing the result of a raycast operation.
+ */
+export declare interface RaycastResult {
+    /** The local ID of the item */
+    localId: number;
+    /** The item ID */
+    itemId: number;
+    /** The point of the raycast */
+    point: THREE.Vector3;
+    /** The normal of the raycast */
+    normal?: THREE.Vector3;
+    /** The distance of the raycast */
+    distance: number;
+    /** The distance of the raycast from the ray origin */
+    rayDistance?: number;
+    /** The object that was hit */
+    object: THREE.Object3D;
+    /** The Fragments model that was hit */
+    fragments: FragmentsModel;
+    /** The ray used for the raycast */
+    ray?: THREE.Ray;
+    /** The frustum used for the raycast */
+    frustum: THREE.Frustum;
+    /** The representation class of the raycast */
+    representationClass: RepresentationClass;
+    /** The snapping class of the raycast */
+    snappingClass: SnappingClass;
+    /** The first edge of the snapped edge */
+    snappedEdgeP1?: THREE.Vector3;
+    /** The second edge of the snapped edge */
+    snappedEdgeP2?: THREE.Vector3;
+    /** The points of the raycasted face */
+    facePoints?: Float64Array;
+    /** The indices of the raycasted face */
+    faceIndices?: Uint16Array;
+}
+
+/**
+ * Interface representing the data for a rectangle raycast operation.
+ */
+export declare interface RectangleRaycastData {
+    /** The camera used for the raycast */
+    camera: THREE.PerspectiveCamera | THREE.OrthographicCamera;
+    /** The DOM element where the scene is rendered */
+    dom: HTMLCanvasElement;
+    /** The top left corner of the rectangle */
+    topLeft: THREE.Vector2;
+    /** The bottom right corner of the rectangle */
+    bottomRight: THREE.Vector2;
+    /** Whether the rectangle is fully included in the view */
+    fullyIncluded: boolean;
+}
+
+/**
+ * Interface representing the result of a rectangle raycast operation.
+ */
+export declare interface RectangleRaycastResult {
+    /** The local IDs of the items */
+    localIds: number[];
+    /** The Fragments model that was hit */
+    fragments: FragmentsModel;
+}
+
+declare type RefBuffer = Uint32Array | Float64Array;
+
+export declare class Relation {
+    bb: flatbuffers.ByteBuffer | null;
+    bb_pos: number;
+    __init(i: number, bb: flatbuffers.ByteBuffer): Relation;
+    static getRootAsRelation(bb: flatbuffers.ByteBuffer, obj?: Relation): Relation;
+    static getSizePrefixedRootAsRelation(bb: flatbuffers.ByteBuffer, obj?: Relation): Relation;
+    data(index: number): string;
+    data(index: number, optionalEncoding: flatbuffers.Encoding): string | Uint8Array;
+    dataLength(): number;
+    static startRelation(builder: flatbuffers.Builder): void;
+    static addData(builder: flatbuffers.Builder, dataOffset: flatbuffers.Offset): void;
+    static createDataVector(builder: flatbuffers.Builder, data: flatbuffers.Offset[]): flatbuffers.Offset;
+    static startDataVector(builder: flatbuffers.Builder, numElems: number): void;
+    static endRelation(builder: flatbuffers.Builder): flatbuffers.Offset;
+    static createRelation(builder: flatbuffers.Builder, dataOffset: flatbuffers.Offset): flatbuffers.Offset;
+}
+
+/**
+ * Union type representing all possible relation change types.
+ */
+export declare type RelsChange = RelsModifyChange;
+
+/**
+ * Interface representing a change event when relations are modified in a model item.
+ */
+export declare interface RelsModifyChange {
+    /** Indicates this is a "modified" type change */
+    type: "modified";
+    /** Record containing the newly added relation data */
+    added: Record<string, Set<number>>;
+    /** Set of strings representing the deleted relation keys */
+    deleted: Set<string>;
+    /** Record containing the removed relation data */
+    removed: Record<string, Set<number>>;
+    /** Record containing the modified relation data */
+    modified: Record<string, Set<number>>;
+}
+
+export declare enum RenderedFaces {
+    ONE = 0,
+    TWO = 1
+}
+
+export declare class Representation {
+    bb: flatbuffers.ByteBuffer | null;
+    bb_pos: number;
+    __init(i: number, bb: flatbuffers.ByteBuffer): Representation;
+    id(): number;
+    mutate_id(value: number): boolean;
+    bbox(obj?: BoundingBox): BoundingBox | null;
+    representationClass(): RepresentationClass;
+    mutate_representation_class(value: RepresentationClass): boolean;
+    static sizeOf(): number;
+    static createRepresentation(builder: flatbuffers.Builder, id: number, bbox_min_x: number, bbox_min_y: number, bbox_min_z: number, bbox_max_x: number, bbox_max_y: number, bbox_max_z: number, representation_class: RepresentationClass): flatbuffers.Offset;
+}
+
+export declare enum RepresentationClass {
+    NONE = 0,
+    SHELL = 1,
+    CIRCLE_EXTRUSION = 2
+}
+
+declare type RequestOfType<T extends EditRequestType> = Extract<EditRequest, {
+    type: T;
+}>;
+
+/**
+ * Manages a list of requests for the MeshManager.
+ */
+declare class RequestsManager {
+    /**
+     * List of requests.
+     */
+    readonly list: any[];
+    /**
+     * Checks if there are any pending requests.
+     *
+     * @returns `true` if there are pending requests, otherwise `false`.
+     */
+    get arePending(): boolean;
+    /**
+     * Callback function to be invoked when a request with
+     * `TileRequestClass.FINISH` is added. Receives the FINISH's `seq`
+     * stamp (the highest RPC seq the worker had processed when emitting
+     * this FINISH); used by the fence-based `forceUpdateFinish` to
+     * resolve waiters whose target seq has now settled, per model.
+     */
+    onFinish: (seq: number | undefined, modelId: string) => void;
+    handleRequest(meshes: MeshManager, request: any): Promise<void>;
+    /**
+     * Adds an array of requests to the list. If a request with `TileRequestClass.FINISH` is added,
+     * the `onFinishRequest` callback is invoked.
+     *
+     * @param requests - Array of requests to be added.
+     */
+    add(requests: any[]): void;
+    /**
+     * Cleans the list by removing requests with the specified model ID and `TileRequestClass.FINISH`.
+     *
+     * @param modelID - The model ID to filter requests by.
+     */
+    clean(modelID: string): void;
+    /**
+     * Inserts a request into the list based on its `tileRequestClass`.
+     *
+     * @param request - The request to be inserted.
+     * @returns `true` if the request was successfully inserted, otherwise `false`.
+     */
+    insert(request: any): boolean;
+}
+
+/**
+ * Union type representing all possible result input types.
+ */
+export declare type ResultInputType<T extends ItemInformationType> = T extends keyof MappedResultInput ? MappedResultInput[T] : never;
+
+export declare class Revolve {
+    core: WEBIFC.Revolution;
+    constructor(api: WEBIFC.IfcAPI);
+    get(api: WEBIFC.IfcAPI, data: RevolveData): WEBIFC.Buffers;
+}
+
+export declare type RevolveData = {
+    transform?: number[];
+    profile?: number[];
+    start?: number;
+    end?: number;
+    segmentCount?: number;
+};
+
+export declare class Sample {
+    bb: flatbuffers.ByteBuffer | null;
+    bb_pos: number;
+    __init(i: number, bb: flatbuffers.ByteBuffer): Sample;
+    item(): number;
+    mutate_item(value: number): boolean;
+    material(): number;
+    mutate_material(value: number): boolean;
+    representation(): number;
+    mutate_representation(value: number): boolean;
+    localTransform(): number;
+    mutate_local_transform(value: number): boolean;
+    static sizeOf(): number;
+    static createSample(builder: flatbuffers.Builder, item: number, material: number, representation: number, local_transform: number): flatbuffers.Offset;
+}
+
+export declare type SampleRequestData = Omit<RawSample, "material" | "representation" | "localTransform" | "item"> & {
+    item: number | string;
+    material: number | string;
+    representation: number | string;
+    localTransform: number | string;
+};
+
+/**
+ * Union type representing all possible selection input types.
+ */
+export declare type SelectionInputType<T extends ItemSelectionType> = T extends keyof MappedSelectionInput ? MappedSelectionInput[T] : never;
+
+export declare class Shell {
+    bb: flatbuffers.ByteBuffer | null;
+    bb_pos: number;
+    __init(i: number, bb: flatbuffers.ByteBuffer): Shell;
+    static getRootAsShell(bb: flatbuffers.ByteBuffer, obj?: Shell): Shell;
+    static getSizePrefixedRootAsShell(bb: flatbuffers.ByteBuffer, obj?: Shell): Shell;
+    profiles(index: number, obj?: ShellProfile): ShellProfile | null;
+    profilesLength(): number;
+    holes(index: number, obj?: ShellHole): ShellHole | null;
+    holesLength(): number;
+    points(index: number, obj?: FloatVector): FloatVector | null;
+    pointsLength(): number;
+    bigProfiles(index: number, obj?: BigShellProfile): BigShellProfile | null;
+    bigProfilesLength(): number;
+    bigHoles(index: number, obj?: BigShellHole): BigShellHole | null;
+    bigHolesLength(): number;
+    type(): ShellType;
+    mutate_type(value: ShellType): boolean;
+    profilesFaceIds(index: number): number | null;
+    profilesFaceIdsLength(): number;
+    profilesFaceIdsArray(): Uint16Array | null;
+    static startShell(builder: flatbuffers.Builder): void;
+    static addProfiles(builder: flatbuffers.Builder, profilesOffset: flatbuffers.Offset): void;
+    static createProfilesVector(builder: flatbuffers.Builder, data: flatbuffers.Offset[]): flatbuffers.Offset;
+    static startProfilesVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addHoles(builder: flatbuffers.Builder, holesOffset: flatbuffers.Offset): void;
+    static createHolesVector(builder: flatbuffers.Builder, data: flatbuffers.Offset[]): flatbuffers.Offset;
+    static startHolesVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addPoints(builder: flatbuffers.Builder, pointsOffset: flatbuffers.Offset): void;
+    static startPointsVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addBigProfiles(builder: flatbuffers.Builder, bigProfilesOffset: flatbuffers.Offset): void;
+    static createBigProfilesVector(builder: flatbuffers.Builder, data: flatbuffers.Offset[]): flatbuffers.Offset;
+    static startBigProfilesVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addBigHoles(builder: flatbuffers.Builder, bigHolesOffset: flatbuffers.Offset): void;
+    static createBigHolesVector(builder: flatbuffers.Builder, data: flatbuffers.Offset[]): flatbuffers.Offset;
+    static startBigHolesVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addType(builder: flatbuffers.Builder, type: ShellType): void;
+    static addProfilesFaceIds(builder: flatbuffers.Builder, profilesFaceIdsOffset: flatbuffers.Offset): void;
+    static createProfilesFaceIdsVector(builder: flatbuffers.Builder, data: number[] | Uint16Array): flatbuffers.Offset;
+    /**
+     * @deprecated This Uint8Array overload will be removed in the future.
+     */
+    static createProfilesFaceIdsVector(builder: flatbuffers.Builder, data: number[] | Uint8Array): flatbuffers.Offset;
+    static startProfilesFaceIdsVector(builder: flatbuffers.Builder, numElems: number): void;
+    static endShell(builder: flatbuffers.Builder): flatbuffers.Offset;
+    static createShell(builder: flatbuffers.Builder, profilesOffset: flatbuffers.Offset, holesOffset: flatbuffers.Offset, pointsOffset: flatbuffers.Offset, bigProfilesOffset: flatbuffers.Offset, bigHolesOffset: flatbuffers.Offset, type: ShellType, profilesFaceIdsOffset: flatbuffers.Offset): flatbuffers.Offset;
+}
+
+export declare type ShellData = {
+    type: TFB.RepresentationClass.SHELL;
+    profiles: Map<number, number[]>;
+    holes: Map<number, number[][]>;
+    points: number[][];
+    profilesFaceIds: number[];
+    bbox: {
+        min: {
+            x: number;
+            y: number;
+            z: number;
+        };
+        max: {
+            x: number;
+            y: number;
+            z: number;
+        };
+    };
+};
+
+export declare class ShellHole {
+    bb: flatbuffers.ByteBuffer | null;
+    bb_pos: number;
+    __init(i: number, bb: flatbuffers.ByteBuffer): ShellHole;
+    static getRootAsShellHole(bb: flatbuffers.ByteBuffer, obj?: ShellHole): ShellHole;
+    static getSizePrefixedRootAsShellHole(bb: flatbuffers.ByteBuffer, obj?: ShellHole): ShellHole;
+    indices(index: number): number | null;
+    indicesLength(): number;
+    indicesArray(): Uint16Array | null;
+    profileId(): number;
+    mutate_profile_id(value: number): boolean;
+    static startShellHole(builder: flatbuffers.Builder): void;
+    static addIndices(builder: flatbuffers.Builder, indicesOffset: flatbuffers.Offset): void;
+    static createIndicesVector(builder: flatbuffers.Builder, data: number[] | Uint16Array): flatbuffers.Offset;
+    /**
+     * @deprecated This Uint8Array overload will be removed in the future.
+     */
+    static createIndicesVector(builder: flatbuffers.Builder, data: number[] | Uint8Array): flatbuffers.Offset;
+    static startIndicesVector(builder: flatbuffers.Builder, numElems: number): void;
+    static addProfileId(builder: flatbuffers.Builder, profileId: number): void;
+    static endShellHole(builder: flatbuffers.Builder): flatbuffers.Offset;
+    static createShellHole(builder: flatbuffers.Builder, indicesOffset: flatbuffers.Offset, profileId: number): flatbuffers.Offset;
+}
+
+export declare class ShellProfile {
+    bb: flatbuffers.ByteBuffer | null;
+    bb_pos: number;
+    __init(i: number, bb: flatbuffers.ByteBuffer): ShellProfile;
+    static getRootAsShellProfile(bb: flatbuffers.ByteBuffer, obj?: ShellProfile): ShellProfile;
+    static getSizePrefixedRootAsShellProfile(bb: flatbuffers.ByteBuffer, obj?: ShellProfile): ShellProfile;
+    indices(index: number): number | null;
+    indicesLength(): number;
+    indicesArray(): Uint16Array | null;
+    static startShellProfile(builder: flatbuffers.Builder): void;
+    static addIndices(builder: flatbuffers.Builder, indicesOffset: flatbuffers.Offset): void;
+    static createIndicesVector(builder: flatbuffers.Builder, data: number[] | Uint16Array): flatbuffers.Offset;
+    /**
+     * @deprecated This Uint8Array overload will be removed in the future.
+     */
+    static createIndicesVector(builder: flatbuffers.Builder, data: number[] | Uint8Array): flatbuffers.Offset;
+    static startIndicesVector(builder: flatbuffers.Builder, numElems: number): void;
+    static endShellProfile(builder: flatbuffers.Builder): flatbuffers.Offset;
+    static createShellProfile(builder: flatbuffers.Builder, indicesOffset: flatbuffers.Offset): flatbuffers.Offset;
+}
+
+export declare enum ShellType {
+    NONE = 0,
+    BIG = 1
+}
+
+/**
+ * The main class for managing a 3D model loaded from a fragments file in a single thread. It's designed for easy data querying in the backend, so all the 3D visualization logic is not present.
+ */
+export declare class SingleThreadedFragmentsModel implements IFragmentsModel<false> {
+    private readonly _modelId;
+    private _virtualModel;
+    /**
+     * The promise of the asynchronous part of the model setup, started by the
+     * constructor. See {@link ready}. It is memoized: the setup runs exactly
+     * once, no public path can re-trigger it.
+     */
+    private readonly _setup;
+    private _disposed;
+    /**
+     * The ID of the model.
+     */
+    get modelId(): string;
+    /**
+     * Resolves when the model is fully set up. The constructor starts an
+     * asynchronous setup that spans multiple macrotasks; await this before
+     * relying on the model being completely initialized.
+     *
+     * If {@link dispose} is called while the setup is still running, this
+     * promise rejects with a {@link LoadAbortedError}. If nobody awaits it,
+     * the rejection is already handled internally, so it never surfaces as
+     * an unhandled rejection.
+     */
+    get ready(): Promise<void>;
+    /**
+     * The constructor of the fragments model.
+     * @param raw - Whether `modelData` is raw (uncompressed) or deflated. If
+     * omitted, it is auto-detected from the buffer (see {@link isRawBuffer}).
+     */
+    constructor(modelId: string, modelData: Uint8Array, raw?: boolean);
+    /**
+     * Dispose the model. Use this when you're done with the model.
+     * If you use the {@link FragmentsModels.dispose} method, this will be called automatically for all models.
+     *
+     * If the setup started by the constructor is still running, it is aborted
+     * at its next yield point and {@link ready} rejects with a
+     * {@link LoadAbortedError}. Calling this more than once is a no-op.
+     */
+    dispose(): void;
+    /**
+     * Get the spatial structure of the model.
+     */
+    getSpatialStructure(): any;
+    /**
+     * Get the local IDs corresponding to the specified GUIDs.
+     * @param guids - Array of GUIDs to look up.
+     */
+    getLocalIdsByGuids(guids: string[]): (number | null)[];
+    /**
+     * Translate internal `itemId`s into user-facing `localId`s, preserving
+     * order. See {@link VirtualFragmentsModel.getLocalIdsFromItemIds}.
+     */
+    getLocalIdsFromItemIds(itemIds: Iterable<number>): number[];
+    /**
+     * Get all the categories of the model.
+     */
+    getCategories(): string[];
+    /**
+     * Get the names of every user-defined index stored on this model. See the
+     * `ModelIndex` schema for the supported shapes.
+     */
+    getIndexNames(): string[];
+    /**
+     * Describe the shape of a named index without performing any lookups.
+     * Returns `null` if no index with that name exists.
+     */
+    getIndexInfo(name: string): IndexInfo | null;
+    /**
+     * Get the keys of an index. Useful for keys-only indexes (membership tests,
+     * iteration) but valid for any mode. Number keys come back as a
+     * `Uint32Array`, string keys as `string[]`.
+     */
+    getIndexKeys<K extends string | number>(name: string): IndexArrayType<K> | null;
+    /**
+     * Get key at given index.
+     * Useful for keys-only indexes but valid for any mode.
+     */
+    getIndexKey<K extends string | number>(name: string, index: number): K | null;
+    /**
+     * Get the values of an index. Useful for inverse lookups.
+     */
+    getIndexValues<V extends string | number>(name: string): V[] | null;
+    /**
+     * Test whether a key exists in the named index without resolving its value.
+     */
+    hasIndexEntry<K extends string | number>(name: string, key: K): boolean;
+    /**
+     * Forward lookup of a single entry in the named index. The return shape
+     * depends on the index mode.
+     */
+    getIndexEntry<K extends string | number, V extends IndexEntry>(name: string, key: K): V | null;
+    /**
+     * Inverse lookup. Returns every key that maps to `value`.
+     */
+    getInverseIndexEntry<K extends string | number, V extends string | number>(name: string, value: K): IndexArrayType<V> | null;
+    /**
+     * @deprecated use {@link getItemsIdsWithGeometry}
+     */
+    getItemsWithGeometry(): number[];
+    /**
+     * Get all the items of the model that have geometry.
+     */
+    getItemsIdsWithGeometry(): number[];
+    /**
+     * Get the metadata of the model.
+     */
+    getMetadata<T extends Record<string, any> = Record<string, any>>(): T;
+    /**
+     * Get the Coordinate Reference System (CRS) data of the model, if available.
+     */
+    getCRS(): any;
+    /**
+     * Get the GUIDs corresponding to the specified local IDs.
+     * @param localIds - Array of local IDs to look up.
+     */
+    getGuidsByLocalIds(localIds: number[]): (string | null)[];
+    /**
+     * Get the buffer of the model.
+     * @param raw - Whether to get the raw buffer. If false, it will be compressed.
+     */
+    getBuffer(raw?: boolean): ArrayBufferLike;
+    /**
+     * Get a buffer containing only the specified items and their associated geometry.
+     * @param localIds - The local IDs of the items to include.
+     * @param raw - Whether to get the raw buffer. If false, it will be compressed.
+     */
+    getSubsetBuffer(localIds: number[], raw?: boolean): Uint8Array;
+    /**
+     * Get all the items of the model that belong to the specified category.
+     * @param category - The category to look up.
+     */
+    getItemsOfCategories(categories: RegExp[]): {
+        [category: string]: number[];
+    };
+    /**
+     * Get the maximum local ID of the model.
+     */
+    getMaxLocalId(): number;
+    /**
+     * Get the spatial structure children of the specified items.
+     * @param ids - The IDs of the items to look up.
+     */
+    getItemsChildren(ids: Identifier[]): number[];
+    /**
+     * Get all the data of the specified items.
+     * @param ids - The IDs of the items to look up.
+     * @param config - The configuration of the items data.
+     */
+    getItemsData(ids: number[], config?: Partial<ItemsDataConfig>): ItemData[];
+    /**
+     * Get the absolute positions of the specified items.
+     * @param localIds - The local IDs of the items to look up.
+     */
+    getPositions(localIds?: number[]): {
+        x: number;
+        y: number;
+        z: number;
+    }[];
+    /**
+     * Gets coordinates of the model.
+     */
+    getCoordinates(): number[];
+    /**
+     * Get geometry data for the specified items.
+     * @param localIds - The local IDs of the items to get geometry for.
+     * @param lod - The level of detail for the geometry (optional).
+     */
+    getItemsGeometry(localIds: number[], lod?: CurrentLod): MeshData[][];
+    getItemsVolume(localIds: number[]): number;
+    /**
+     * Query items based on specified parameters.
+     * @param params - The query parameters.
+     * @param config - Optional query configuration.
+     */
+    getItemsByQuery(params: ItemsQueryParams, config?: ItemsQueryConfig): number[];
+    /**
+     * Gets the section (edges and fills) between the model and a given clipping plane.
+     * @param plane - The plane to get the section of.
+     * @param localIds - The local IDs of the items to get the section of. If undefined, it will return the section of all items.
+     */
+    getSection(plane: THREE.Plane, localIds?: number[]): ModelSection;
+    /**
+     * Get all the local IDs of the model.
+     */
+    getLocalIds(): number[];
+    /**
+     * Gets all the materials IDs of the model.
+     */
+    getMaterialsIds(): number[];
+    /**
+     * Gets the materials of the model.
+     * @param localIds - The local IDs of the materials to get. If undefined, it will return all materials.
+     */
+    getMaterials(localIds?: Iterable<number>): Map<number, RawMaterial>;
+    /**
+     * Gets all the representations IDs of the model.
+     */
+    getRepresentationsIds(): number[];
+    /**
+     * Gets the representations of the model.
+     * @param localIds - The local IDs of the representations to get. If undefined, it will return all representations.
+     */
+    getRepresentations(localIds?: Iterable<number>): Map<number, RawRepresentation>;
+    /**
+     * Gets all the local transforms IDs of the model.
+     */
+    getLocalTransformsIds(): number[];
+    /**
+     * Gets the local transforms of the model.
+     * @param localIds - The local IDs of the local transforms to get. If undefined, it will return all local transforms.
+     */
+    getLocalTransforms(localIds?: Iterable<number>): Map<number, RawTransformData>;
+    /**
+     * Gets all the global transforms IDs of the model.
+     */
+    getGlobalTransformsIds(): number[];
+    /**
+     * Gets the global transforms of the model.
+     * @param localIds - The local IDs of the global transforms to get. If undefined, it will return all global transforms.
+     */
+    getGlobalTransforms(localIds?: Iterable<number>): Map<number, RawGlobalTransformData>;
+    /**
+     * Gets all the samples IDs of the model.
+     */
+    getSamplesIds(): number[];
+    /**
+     * Gets the samples of the model.
+     * @param localIds - The local IDs of the samples to get. If undefined, it will return all samples.
+     */
+    getSamples(localIds?: Iterable<number>): Map<number, RawSample>;
+    /**
+     * Returns per-tile index-buffer chunks for the given items. Used by
+     * outline-style passes that share tile geometry and clip drawing to
+     * just the outlined samples. See {@link VirtualFragmentsModel.getItemDrawChunks}.
+     */
+    getItemDrawChunks(localIds: Iterable<number>): {
+        tileId: number;
+        position: Uint32Array;
+        size: Uint32Array; /**
+        * Gets all the global transforms IDs of the model.
+        */
+    }[];
+    /**
+     * Gets all the items IDs of the model.
+     */
+    getItemsIds(): number[];
+    /**
+     * Gets the items of the model.
+     * @param localIds - The local IDs of the items to get. If undefined, it will return all items.
+     */
+    getItems(localIds?: Iterable<number>): Map<number, RawItemData>;
+    /**
+     * Gets the relations of the model.
+     * @param localIds - The local IDs of the relations to get. If undefined, it will return all relations.
+     */
+    getRelations(localIds?: number[]): Map<number, RawRelationData>;
+    /**
+     * Gets the global transforms IDs of the items of the model.
+     * @param ids - The local IDs of the items to get the global transforms IDs of.
+     */
+    getGlobalTranformsIdsOfItems(ids: number[]): number[];
+    /**
+     * Apply a batch of edit requests. Accumulates onto this model's
+     * pending-edit history; call {@link save} to flatten them into a new
+     * committed buffer or {@link reset} to discard.
+     * @param [raw] whether to return the raw buffer or the the result of {@link pako.deflate}. Defaults to `true`.
+     * @returns The delta raw/deflated flatbuffer bytes and the local IDs assigned to
+     * any newly-created items.
+     */
+    edit(requests: EditRequest[], raw?: boolean): {
+        deltaModelBuffer: Uint8Array;
+        ids: number[];
+    };
+    /** Discard all pending edits on this model. */
+    reset(): void;
+    /**
+     * Flatten the current pending-edit history into a new committed buffer.
+     * @param [raw] whether to return the raw buffer or the the result of {@link pako.deflate}. Defaults to `true`.
+     * @returns The raw/deflated flatbuffer bytes of the updated model.
+     */
+    save(raw?: boolean): Uint8Array;
+    /** Undo the last edit. */
+    undo(): void;
+    /** Redo the last undone edit. */
+    redo(): void;
+    /** Get the current edit history (applied requests + undone redo stack). */
+    getRequests(): {
+        requests: EditRequest[];
+        undoneRequests: EditRequest[];
+    };
+    /**
+     * Get the requests added since an earlier call (see `Editor.getModelRequestsSince`).
+     * @param from - The `count` the earlier call returned.
+     * @param generation - The `generation` the earlier call returned.
+     */
+    getRequestsSince(from?: number, generation?: number): EditRequestsSince;
+    /**
+     * Replace the edit history with a caller-provided one. Useful for
+     * restoring state from disk.
+     */
+    setRequests(data: {
+        requests?: EditRequest[];
+        undoneRequests?: EditRequest[];
+    }): void;
+    /** Navigate to a specific point in the edit history by index. */
+    selectRequest(index: number): void;
+}
+
+declare type Snap = SnappingClass;
+
+/**
+ * Enum representing the snapping class for a raycast operation.
+ */
+export declare enum SnappingClass {
+    /** Represents a point snapping class */
+    POINT = 0,
+    /** Represents a line snapping class */
+    LINE = 1,
+    /** Represents a face snapping class */
+    FACE = 2
+}
+
+export declare interface SnappingRaycastData extends RaycastData {
+    snappingClasses: SnappingClass[];
+}
+
+declare function solveIds(requests: ET.EditRequest[], nextId: number): number[];
+
+/**
+ * The default {@link IfcSplitterConfig.spatialTypes}.
+ * Exported so it can be extended rather than replaced.
+ */
+export declare const SPATIAL_TYPES: readonly ["IFCPROJECT", "IFCSITE", "IFCBUILDING", "IFCBUILDINGSTOREY"];
+
+export declare class SpatialStructure {
+    bb: flatbuffers.ByteBuffer | null;
+    bb_pos: number;
+    __init(i: number, bb: flatbuffers.ByteBuffer): SpatialStructure;
+    static getRootAsSpatialStructure(bb: flatbuffers.ByteBuffer, obj?: SpatialStructure): SpatialStructure;
+    static getSizePrefixedRootAsSpatialStructure(bb: flatbuffers.ByteBuffer, obj?: SpatialStructure): SpatialStructure;
+    localId(): number | null;
+    mutate_local_id(value: number): boolean;
+    category(): string | null;
+    category(optionalEncoding: flatbuffers.Encoding): string | Uint8Array | null;
+    children(index: number, obj?: SpatialStructure): SpatialStructure | null;
+    childrenLength(): number;
+    static startSpatialStructure(builder: flatbuffers.Builder): void;
+    static addLocalId(builder: flatbuffers.Builder, localId: number): void;
+    static addCategory(builder: flatbuffers.Builder, categoryOffset: flatbuffers.Offset): void;
+    static addChildren(builder: flatbuffers.Builder, childrenOffset: flatbuffers.Offset): void;
+    static createChildrenVector(builder: flatbuffers.Builder, data: flatbuffers.Offset[]): flatbuffers.Offset;
+    static startChildrenVector(builder: flatbuffers.Builder, numElems: number): void;
+    static endSpatialStructure(builder: flatbuffers.Builder): flatbuffers.Offset;
+    static createSpatialStructure(builder: flatbuffers.Builder, localId: number | null, categoryOffset: flatbuffers.Offset, childrenOffset: flatbuffers.Offset): flatbuffers.Offset;
+}
+
+/**
+ * Interface representing an item in a spatial tree.
+ */
+export declare interface SpatialTreeItem {
+    /** The category of the item */
+    category: string | null;
+    /** The local ID of the item */
+    localId: number | null;
+    /** The children of the item */
+    children?: SpatialTreeItem[];
+}
+
+export declare function splitIfcArgs(s: string): string[];
+
+export declare type StepArgument = null | StepArgument[] | {
+    type: number;
+    value?: string | number | boolean | StepArgument[];
+    typecode?: number;
+};
+
+/**
+ * Backward compatible stream async iterator
+ * ```typescript
+ * for await (const line of streamAsyncIterator(readableStream)) {
+ *   await callback(line);
+ * }
+ * ```
+ *
+ * Modern environments support stream async iterator out of the box:
+ * ```typescript
+ * for await (const line of readableStream) {
+ *   await callback(line);
+ * }
+ * ```
+ */
+export declare function streamAsyncIterator<T>(stream: ReadableStream<T>): AsyncGenerator<Awaited<T>, void, unknown>;
+
+export declare enum Stroke {
+    DEFAULT = 0
+}
+
+/** Reverse indices for IFCSTYLEDITEM and IFCMATERIALDEFINITIONREPRESENTATION backward pointers. */
+export declare interface StyleMaps {
+    geomToStyledItems: Map<number, number[]>;
+    materialToDefReps: Map<number, number[]>;
+}
+
+export declare class Sweep {
+    core: WEBIFC.Sweep;
+    constructor(api: WEBIFC.IfcAPI);
+    get(api: WEBIFC.IfcAPI, data: SweepData): WEBIFC.Buffers;
+}
+
+export declare type SweepData = {
+    profilePoints?: number[];
+    curvePoints?: number[];
+    startNormal?: number[];
+    scale?: number;
+    close?: boolean;
+    rotate90?: boolean;
+    optimize?: boolean;
+};
+
+declare namespace TFB {
+    export {
+        Attribute,
+        Axis,
+        AxisPartClass,
+        BigShellHole,
+        BigShellProfile,
+        BoundingBox,
+        CircleCurve,
+        CircleExtrusion,
+        DoubleVector,
+        FloatVector,
+        Material,
+        Meshes,
+        Model,
+        ModelIndex,
+        Relation,
+        RenderedFaces,
+        Representation,
+        RepresentationClass,
+        Sample,
+        Shell,
+        ShellHole,
+        ShellProfile,
+        ShellType,
+        SpatialStructure,
+        Stroke,
+        Transform,
+        Wire,
+        WireSet
+    }
+}
+
+declare type ThreadHandler = (args: any) => Promise<void> | void;
+
+declare interface TileBasicData {
+    objectClass: ObjectClass;
+    indexCount?: number;
+    positionCount?: number;
+    normalCount?: number;
+    lodThickness?: number;
+    lod?: CurrentLod;
+}
+
+declare interface TileData extends TileBasicData {
+    box: THREE.Box3;
+    indexLocation: number[];
+    vertexLocation: number[];
+    sampleLocation: Map<number, number>;
+    geometriesLocation: number[];
+    size: number;
+    notVirtual: boolean;
+    usedMemory?: number;
+    materialId?: number;
+    location?: THREE.Vector3;
+    ids?: DataBuffer;
+    indexBuffer?: DataBuffer;
+    positionBuffer?: DataBuffer;
+    faceIdBuffer?: DataBuffer;
+    normalBuffer?: DataBuffer;
+    visibilities?: MultiBufferData<boolean>;
+    highlights?: MultiBufferData<number>;
+}
+
+export declare enum TileRequestClass {
+    UPDATE = 0,
+    CREATE = 1,
+    DELETE = 2,
+    FINISH = 3
+}
+
+/**
+ * Fetches a worker script and returns a blob URL with the ES module `export` stripped, so it can be used as a classic (non-module) worker.
+ * @param workerURL - URL of the ES module worker script.
+ * @returns A blob URL usable with `new FragmentsModels(url, { classicWorker: true })`.
+ */
+export declare function toClassicWorker(workerURL: string): Promise<string>;
+
+export declare class Transform {
+    bb: flatbuffers.ByteBuffer | null;
+    bb_pos: number;
+    __init(i: number, bb: flatbuffers.ByteBuffer): Transform;
+    position(obj?: DoubleVector): DoubleVector | null;
+    xDirection(obj?: FloatVector): FloatVector | null;
+    yDirection(obj?: FloatVector): FloatVector | null;
+    static sizeOf(): number;
+    static createTransform(builder: flatbuffers.Builder, position_x: number, position_y: number, position_z: number, x_direction_x: number, x_direction_y: number, x_direction_z: number, y_direction_x: number, y_direction_y: number, y_direction_z: number): flatbuffers.Offset;
+}
+
+/** An axis a grid was read without, because its curve is not supported. */
+declare type UnsupportedAxis = NonNullable<GridData["unsupportedAxes"]>[number];
+
+/**
+ * Interface for update global transform edit requests.
+ */
+export declare interface UpdateGlobalTransformRequest extends BaseUpdateRequest {
+    type: EditRequestType.UPDATE_GLOBAL_TRANSFORM;
+    data: RawGlobalTransformData;
+}
+
+/**
+ * Interface for update index edit requests. Replaces the entire index
+ * identified by `data.name`. Use DELETE_INDEX + CREATE_INDEX if you want
+ * to rename.
+ * @throws IndexValidationError {@link IndexValidationError}
+ */
+export declare interface UpdateIndexRequest extends BaseEditRequest {
+    type: EditRequestType.UPDATE_INDEX;
+    data: RawIndexData;
+}
+
+/**
+ * Interface for update item edit requests.
+ */
+export declare interface UpdateItemRequest extends BaseUpdateRequest {
+    type: EditRequestType.UPDATE_ITEM;
+    data: RawItemData;
+}
+
+/**
+ * Interface for update local transform edit requests.
+ */
+export declare interface UpdateLocalTransformRequest extends BaseUpdateRequest {
+    type: EditRequestType.UPDATE_LOCAL_TRANSFORM;
+    data: RawTransformData;
+}
+
+/**
+ * Interface for update material edit requests.
+ */
+export declare interface UpdateMaterialRequest extends BaseUpdateRequest {
+    type: EditRequestType.UPDATE_MATERIAL;
+    data: RawMaterial;
+}
+
+/**
+ * Interface for update max local id edit requests.
+ */
+export declare interface UpdateMaxLocalIdRequest extends BaseUpdateRequest {
+    type: EditRequestType.UPDATE_MAX_LOCAL_ID;
+}
+
+/**
+ * Interface for update metadata edit requests.
+ */
+export declare interface UpdateMetadataRequest extends BaseUpdateRequest {
+    type: EditRequestType.UPDATE_METADATA;
+    data: RawMetadataData;
+}
+
+/**
+ * Interface for update relation edit requests.
+ */
+export declare interface UpdateRelationRequest extends BaseUpdateRequest {
+    type: EditRequestType.UPDATE_RELATION;
+    data: RawRelationData;
+}
+
+/**
+ * Interface for update representation edit requests.
+ */
+export declare interface UpdateRepresentationRequest extends BaseUpdateRequest {
+    type: EditRequestType.UPDATE_REPRESENTATION;
+    data: RawRepresentation;
+}
+
+/**
+ * Type for update edit requests.
+ */
+export declare type UpdateRequest = UpdateMaterialRequest | UpdateRepresentationRequest | UpdateSampleRequest | UpdateGlobalTransformRequest | UpdateLocalTransformRequest | UpdateItemRequest | UpdateMaxLocalIdRequest | UpdateRelationRequest | UpdateMetadataRequest | UpdateSpatialStructureRequest;
+
+/**
+ * Interface for update sample edit requests.
+ */
+export declare interface UpdateSampleRequest extends BaseUpdateRequest {
+    type: EditRequestType.UPDATE_SAMPLE;
+    data: SampleRequestData;
+}
+
+/**
+ * Interface for update spatial structure edit requests.
+ */
+export declare interface UpdateSpatialStructureRequest extends BaseUpdateRequest {
+    type: EditRequestType.UPDATE_SPATIAL_STRUCTURE;
+    data: SpatialTreeItem;
+}
+
+declare class VirtualBoxController {
+    lookup: VirtualBoxStructure | null;
+    private readonly _boxSize;
+    private readonly _pointSize;
+    private readonly _temp;
+    private _dimensionsOfSamples;
+    private _samples;
+    private _boxes;
+    private _meshes;
+    private _box;
+    get fullBox(): THREE.Box3;
+    set fullBox(box: THREE.Box3);
+    constructor(fragments: Model);
+    sampleOf(id: number): number[] | undefined;
+    get(id: number): THREE.Box3;
+    process(id: number): void;
+    getCount(): number;
+    dimensionOf(id: number): number;
+    private newLookup;
+    private getBox;
+    private fetchSampleAndRepresentation;
+    private getMinPosition;
+    private storeBox;
+    private getMaxPosition;
+    private addToFullBox;
+}
+
+declare class VirtualBoxStructure {
+    private static readonly _boxSize;
+    private static readonly _limitThreshold;
+    private readonly _compressor;
+    private readonly _collider;
+    private readonly _maker;
+    private readonly _data;
+    private readonly _boxes;
+    constructor(boxes: VirtualBoxController);
+    collideFrustum(bounds: THREE.Plane[], frustum: THREE.Frustum, fullyIncluded?: boolean): number[];
+    /**
+     * Fills `mask` with 1 for every sample whose box is fully outside the
+     * frustum (plus optional clipping planes) and 0 for every candidate.
+     * Allocation-free variant of {@link collideFrustum} for the per-view
+     * culling pass.
+     */
+    fillOutsideFrustumMask(bounds: THREE.Plane[], frustum: THREE.Frustum, mask: Uint8Array): void;
+    collideRay(bounds: THREE.Plane[], beam: THREE.Ray): number[];
+    private setupLimits;
+    private getPointBuffer;
+    private getPointsAmount;
+    private initData;
+    private getData;
+}
+
+declare class VirtualFragmentsModel {
+    data: Model;
+    view: any;
+    raycaster: RaycastController;
+    itemConfig: ItemConfigController;
+    properties: VirtualPropertiesController;
+    materials: VirtualMaterialController;
+    tiles: VirtualTilesController;
+    boxes: VirtualBoxController;
+    indexes: VirtualIndexesController;
+    requests: EditRequest[];
+    private _requestIndex;
+    private _raycastHelper;
+    private _coordinatesHelper;
+    private _highlightHelper;
+    private _visibilityHelper;
+    private _geometryHelper;
+    private _sectionHelper;
+    private _itemsHelper;
+    private _sequenceHelper;
+    private _config;
+    private _modelId;
+    private _alignments;
+    private _grids;
+    private _connection;
+    private _reprIdMap;
+    private _nextId;
+    private _requestsForRedo;
+    private _requestsGeneration;
+    constructor(modelId: string, data: ArrayBuffer, connection: Connection, config?: VirtualModelConfig);
+    getIndexNames(): string[];
+    getIndexInfo(name: string): IndexInfo | null;
+    getIndexKeys<K extends string | number>(name: string): IndexArrayType<K> | null;
+    getIndexKey<K extends string | number>(name: string, index: number): K | null;
+    getIndexValues<V extends string | number>(name: string): V[] | null;
+    hasIndexEntry<K extends string | number>(name: string, key: K): boolean;
+    getIndexEntry<K extends string | number, V extends IndexEntry>(name: string, key: K): V | null;
+    getInverseIndexEntry<K extends string | number, V extends string | number>(name: string, value: K): IndexArrayType<V> | null;
+    getItemsByConfig(condition: (item: number) => boolean): number[];
+    getItemsCategories(ids: number[]): (string | null)[];
+    getItemCategory(id: number): string | null;
+    getItemIdsByLocalIds(localIds: number[]): number[];
+    getItemAttributes(id: number): Record<string, {
+        value: any;
+        type?: string | undefined;
+    }> | null;
+    getAttributesUniqueValues(config: AttributesUniqueValuesParams[]): Record<string, {
+        value: any;
+        localIds: number[];
+    }[]>;
+    getItemsData(ids: number[], config: any): ItemData[];
+    getItemsOfCategories(categories: RegExp[]): {
+        [category: string]: number[];
+    };
+    getItemsWithGeometry(): number[];
+    getItemsWithGeometryCategories(): (string | null)[];
+    getItemsByQuery(params: ItemsQueryParams, config?: ItemsQueryConfig): number[];
+    getItemRelations(id: number): Record<string, number[]> | null;
+    getSpatialStructure(): any;
+    getMaxLocalId(): number;
+    getCategories(): string[];
+    getMetadata(): any;
+    getCRS(): any;
+    getLocalIdsByGuids(guids: string[]): (number | null)[];
+    getGuidsByLocalIds(localIds: number[]): (string | null)[];
+    /**
+     * Returns the user-facing `localId` for each internal `itemId`,
+     * preserving order. Used by GPU-readback pickers that recover item
+     * ids from the per-vertex `id` attribute and need to translate to
+     * the public id space.
+     */
+    getLocalIdsFromItemIds(itemIds: Iterable<number>): number[];
+    getSequenced(result: ItemInformationType, fromItems: ItemSelectionType[], inputs?: {
+        selector?: Partial<Record<ItemSelectionType, any>>;
+        result?: any;
+    }): any;
+    highlight(items: number[], highlightMaterial: MaterialDefinition): void;
+    setColor(items: number[], color: MaterialDefinition["color"]): void;
+    resetColor(items: number[]): void;
+    setOpacity(items: number[], opacity: number): void;
+    resetOpacity(items: number[]): void;
+    getHighlight(localIds: number[]): MaterialDefinition[];
+    getHighlightItemIds(): number[];
+    resetHighlight(items: number[]): void;
+    /**
+     * For every loaded tile that contains at least one of the given local
+     * ids, returns the index-buffer chunks those items occupy in the tile.
+     * Used to draw outline silhouettes by sharing the tile's geometry
+     * attributes and limiting drawing to the returned chunks via
+     * `geometry.groups`.
+     *
+     * @returns One entry per affected tile. Each entry has parallel
+     *   `position` and `size` Uint32Arrays giving start index and count.
+     */
+    getItemDrawChunks(localIds: Iterable<number>): {
+        tileId: number;
+        position: Uint32Array;
+        size: Uint32Array;
+    }[];
+    getCoordinates(): number[];
+    getPositions(localIds?: number[]): {
+        x: number;
+        y: number;
+        z: number;
+    }[];
+    getGeometriesLength(): number;
+    getGuids(): string[];
+    getLocalIds(): number[];
+    getItemsGeometry(localIds: number[], lod?: CurrentLod): MeshData[][];
+    getGeometries(reprsLocalIds: number[]): MeshData[];
+    getItemsVolume(localIds: number[]): number;
+    getAttributeNames(): string[];
+    getAttributeValues(): any[];
+    getAttributeTypes(): string[];
+    getRelationNames(): string[];
+    getItemsMaterialDefinition(localIds: number[]): {
+        localIds: number[];
+        definition: MaterialDefinition;
+    }[];
+    resetVisible(): void;
+    getItemsByVisibility(visible: boolean): number[];
+    raycast(ray: THREE.Ray, frustum: THREE.Frustum, returnAll?: boolean): any;
+    snapRaycast(ray: THREE.Ray, frustum: THREE.Frustum, snaps: SnappingClass[]): any[];
+    rectangleRaycast(frustum: THREE.Frustum, fullyIncluded: boolean): number[];
+    getSection(plane: THREE.Plane, localIds?: number[]): ModelSection;
+    getAlignments(): AlignmentData[];
+    getGrids(): Promise<GridData[]>;
+    getBuffer(raw: boolean): ArrayBufferLike;
+    getSubsetBuffer(localIds: number[], raw: boolean): Uint8Array;
+    dispose(): void;
+    setVisible(localIds: number[], visible: boolean): void;
+    toggleVisible(localIds: number[]): void;
+    getVisible(items: number[]): boolean[];
+    hideForEdit(localIds: number[]): void;
+    clearHiddenForEdit(): void;
+    getItemsChildren(ids: Identifier[]): number[];
+    setupData(onProgress?: (progress: number) => void, throwIfAborted?: () => void): Promise<void>;
+    refreshView(view: any): void;
+    getFullBBox(): THREE.Box3;
+    getBBoxes(items: number[]): THREE.Box3;
+    traverse(itemIds: number[], onItem: (itemId: number, index: number) => void): void;
+    update(time: number): boolean;
+    /**
+     * Per-localId lookup over the pending requests, used by the property reads
+     * instead of scanning the whole requests list per item.
+     */
+    get requestIndex(): EditRequestIndex;
+    edit(requests: EditRequest[], raw?: boolean): {
+        deltaModelBuffer: Uint8Array;
+        ids: number[];
+    };
+    reset(): void;
+    save(raw?: boolean): Uint8Array;
+    undo(): void;
+    redo(): void;
+    getRequests(): {
+        requests: EditRequest[];
+        undoneRequests: EditRequest[];
+    };
+    /**
+     * The requests added since an earlier call, or all of them if the log changed otherwise.
+     * @param from - The `count` the earlier call returned.
+     * @param generation - The `generation` the earlier call returned.
+     */
+    getRequestsSince(from: number, generation: number): EditRequestsSince;
+    setRequests(data: {
+        requests?: EditRequest[];
+        undoneRequests?: EditRequest[];
+    }): void;
+    private startIdsAfter;
+    selectRequest(index: number): void;
+    getMaterialsIds(): number[];
+    getMaterials(ids?: Iterable<number>): Map<number, RawMaterial>;
+    getRepresentationsIds(): number[];
+    getRepresentations(ids?: Iterable<number>): Map<number, RawRepresentation>;
+    getLocalTransformsIds(): number[];
+    getLocalTransforms(ids?: Iterable<number>): Map<number, RawTransformData>;
+    getGlobalTransformsIds(): number[];
+    getGlobalTransforms(ids?: Iterable<number>): Map<number, RawGlobalTransformData>;
+    getSamplesIds(): number[];
+    getSamples(ids?: Iterable<number>): Map<number, RawSample>;
+    getItemsIds(): number[];
+    getItems(ids?: Iterable<number>): Map<number, RawItemData>;
+    getRelations(ids?: number[]): Map<number, RawRelationData>;
+    getGlobalTranformsIdsOfItems(ids: number[]): number[];
+    getElementsData(ids: Iterable<number>): {
+        [id: number]: ElementData;
+    };
+    /**
+     * Fast snap-only data fetch keyed by **itemId** (the FlatBuffer's
+     * `sample.item()` index). See `EditUtils.getItemSnapData` for the
+     * rationale; in short, it uses `boxes.sampleOf(itemId)` for an O(1)
+     * sample lookup instead of walking the full sample table.
+     */
+    getItemSnapData(itemId: number): ElementData | null;
+    setLodMode(lodMode: LodMode): void;
+    private setupBVH;
+    private setupProperties;
+    private setupRaycaster;
+    private setupMaterials;
+    private setupTiles;
+    private setupModel;
+    private _onTransferMaterial;
+    private setupItemsConfig;
+}
+
+/**
+ * Read-side controller for user-defined indexes on a {@link VirtualFragmentsModel}.
+ *
+ * Indexes are an open primitive: the model carries a vector of named
+ * `ModelIndex` tables in the FlatBuffer, and pending CREATE/UPDATE/DELETE_INDEX
+ * edit requests can shadow or hide them. This controller resolves both
+ * sources through a uniform key/value API regardless of where the data
+ * actually lives.
+ *
+ * Forward lookups are O(1) after a one-time O(N) build of a per-index key
+ * map. Inverse lookups are O(N) on first call (one full pass over keys and
+ * values) and O(1) afterwards.
+ *
+ * Stored indexes are cached for the model's lifetime. Pending indexes are
+ * cached per "request batch" (invalidated when `requests.length` changes,
+ * which covers push, undo, redo, and `selectRequest`).
+ *
+ * Performance note: index reads cross the worker boundary by structured
+ * clone. Typed arrays clone at memcpy speed, so number-keyed indexes are
+ * cheap at any size; the expensive part of string keys is decoding the
+ * strings, not the crossing itself. For large indexes with long string
+ * keys, hash the keys to uint32 at build time and store the number-keyed
+ * index instead (see the discussion in #250).
+ */
+declare class VirtualIndexesController {
+    private readonly _vm;
+    private readonly _storedByName;
+    private _storedNames;
+    /** Overlay built from pending CREATE/UPDATE/DELETE_INDEX requests. */
+    private _overlay;
+    /** Length of the request list when the overlay was built; rebuild on mismatch. */
+    private _overlayRequestsLen;
+    constructor(vm: VirtualFragmentsModel);
+    /**
+     * Names of every index visible to the model right now: stored names
+     * minus those deleted by pending requests, plus names introduced by
+     * pending CREATE_INDEX requests.
+     */
+    getNames(): string[];
+    /**
+     * Describe the shape of a named index without performing any lookups.
+     * Returns `null` if no index with that name exists or it has been deleted.
+     */
+    getInfo(name: string): IndexInfo | null;
+    /**
+     * Return the keys of an index. Useful for keys-only indexes (membership
+     * tests, iteration) but valid for any mode. Number keys come back as a
+     * `Uint32Array`, string keys as a fresh `string[]`.
+     */
+    getKeys(name: string): Uint32Array | string[] | null;
+    getKey(name: string, index: number): string | number | null;
+    getValues(name: string): string[] | number[] | null;
+    /**
+     * Test whether a key exists in the named index without resolving its value.
+     */
+    has(name: string, key: string | number): boolean;
+    /**
+     * Forward lookup for a single key. The return shape depends on the index
+     * mode (see {@link IndexEntry}). Returns `null` if the index or key is
+     * missing, or the key type doesn't match.
+     */
+    getEntry(name: string, key: string | number): IndexEntry | null;
+    /**
+     * Inverse lookup. For a value, return every key that maps to it. Builds
+     * and caches the inverse map on first call.
+     */
+    getInverseEntry(name: string, value: string | number): InverseIndexEntry;
+    /**
+     * Discard cached resolved data. Stored entries are dropped; the pending
+     * overlay is rebuilt on the next read. Useful if model data is mutated
+     * out-of-band (which the public API doesn't do today).
+     */
+    invalidate(name?: string): void;
+    private resolve;
+    private resolveStored;
+    private storedNames;
+    private overlay;
+    private entryFromFb;
+    private entryFromRaw;
+    private readNumberKey;
+    private readStringKey;
+    private readNumberValueAt;
+    private readStringValueAt;
+    private numberValuesArray;
+    private endAt;
+    private startAt;
+    /** Lazily build the `key -> position in keys vector` map for forward lookup. */
+    private keyMap;
+    private sliceBounds;
+    private readScalarValue;
+    private readNumberSlice;
+    private readStringSlice;
+    private materializeNumberKeys;
+    private materializeStringKeys;
+    /** Lazily build the inverse map. */
+    private inverseMap;
+}
+
+declare class VirtualMaterialController {
+    private readonly _modelId;
+    private readonly _list;
+    private readonly _idsByDefinition;
+    private readonly _onTransfer;
+    private _modelMaterialCount;
+    private _indexedBuffer;
+    private _sampleStarts;
+    private _sampleIds;
+    private _sampleMaterials;
+    constructor(modelId: string, onTransfer: VirtualMaterialTransfer);
+    update(model: Model): number[];
+    /**
+     * Drops every highlight definition, returning the id space to the model's
+     * own materials. Only call it when no item holds a highlight id any more.
+     * The main thread truncates its copy on the next transfer (`firstId`).
+     */
+    reclaimHighlights(): void;
+    fetch(materialId: number): MaterialDefinition;
+    transfer(materials: MaterialDefinition[]): number[];
+    getItemsMaterialDefinition(model: Model, indices: number[], _localIds: number[]): {
+        localIds: number[];
+        definition: MaterialDefinition;
+    }[];
+    private indexSamples;
+    private deduplicateMaterials;
+    private getAll;
+    private transferMaterialData;
+}
+
+declare type VirtualMaterialTransfer = (data: any, trans?: any[]) => void;
+
+declare abstract class VirtualMeshManager {
+    protected readonly meshes: Meshes;
+    private readonly _templateController;
+    private readonly _meshIds;
+    private readonly _idGenerator;
+    private readonly _modelCode;
+    constructor(modelId: string, meshes: Meshes);
+    abstract setupTemplates(): void;
+    abstract fetchMeshes(meshId: number, evenVoid: boolean): AnyTileData;
+    abstract lineRaycast(id: number, ray: THREE.Ray, frustum: THREE.Frustum): any[];
+    abstract pointRaycast(id: number, ray: THREE.Ray, frustum: THREE.Frustum): any[];
+    abstract raycast(id: number, ray: THREE.Ray, frustum: THREE.Frustum): any[];
+    abstract faceRaycast(id: number, ray: THREE.Ray, frustum: THREE.Frustum): any[];
+    abstract getRepresentation(): RepresentationClass;
+    abstract getObjectClass(): ObjectClass;
+    abstract getLodClass(): LodClass;
+    dispose(): void;
+    protected useMesh(id: number, mesh: AnyTileBasicData, lod: CurrentLod): void;
+    protected getMesh(id: number, lod: CurrentLod): AnyTileData;
+    protected saveMesh(id: number, mesh: AnyTileData, lod: CurrentLod): void;
+    private meshCode;
+    private getModelCode;
+}
+
+/**
+ * Interface representing the configuration for a virtual model.
+ */
+export declare interface VirtualModelConfig {
+    /** Optional properties configuration for the virtual model */
+    properties?: VirtualPropertiesConfig;
+    /** Optional multithreading timing configuration for the virtual model */
+    multithreading?: VirtualMultithreadingConfig;
+}
+
+/**
+ * Interface representing multithreading timing configuration for virtual models.
+ */
+export declare interface VirtualMultithreadingConfig {
+    /** Interval in milliseconds to flush queued mesh requests */
+    meshConnectionRate?: number;
+    /** Queue length that, when exceeded, triggers immediate mesh request flushing */
+    meshConnectionThreshold?: number;
+    /** Delay in milliseconds between worker-side update loop iterations */
+    threadUpdaterDelay?: number;
+}
+
+/**
+ * Interface representing the configuration for virtual properties in a Fragments model.
+ */
+export declare interface VirtualPropertiesConfig {
+    /** An array of extra relations to include in the virtual model */
+    extraRelations?: {
+        category: string;
+        relation: string;
+        inverseName: string;
+    }[];
+}
+
+declare class VirtualPropertiesController {
+    private readonly _model;
+    private readonly _boxes;
+    private readonly _localIdsToGeometryIds;
+    private _guidToLocalIdMap;
+    private _items;
+    private _itemDataCache;
+    private _itemDataConfig;
+    private _spatialStructure;
+    private _virtualModel;
+    constructor(virtualModel: VirtualFragmentsModel, boxes: VirtualBoxController, config?: VirtualPropertiesConfig);
+    private _relations;
+    private _localIdIndexCache;
+    private _relationsItemIndexCache;
+    private indexOfLocalId;
+    private indexOfRelationsItem;
+    private getAllLocalIds;
+    addInverseRelation(category: string, relation: string, inverseName: string): void;
+    getItemsCount(): number;
+    getMaxLocalId(): number;
+    getMetadata(): any;
+    getCRS(): CRSData | null;
+    getItemIdsFromLocalIds(localIds?: Iterable<number>): number[];
+    getLocalIdsFromItemIds(itemIds: Iterable<number>): number[];
+    getBox(items: number[], result: THREE.Box3): void;
+    getSpatialStructure(): SpatialTreeItem;
+    getItemsChildren(ids: Identifier[]): number[];
+    getGuids(): string[];
+    getLocalIds(): number[];
+    getItemsCategories(ids: Identifier[]): (string | null)[];
+    getLocalIdsByGuids(guids: string[]): (number | null)[];
+    getGuidsByLocalIds(localIds: number[]): (string | null)[];
+    getAttributeNames(): string[];
+    getAttributeValues(): any[];
+    getAttributesUniqueValues(params: AttributesUniqueValuesParams[]): Record<string, {
+        value: any;
+        localIds: number[];
+    }[]>;
+    getAttributeTypes(): string[];
+    getRelationNames(): string[];
+    getItemAttributes(id: Identifier): Record<string, {
+        value: any;
+        type?: string | undefined;
+    }> | null;
+    private parseAttribute;
+    getItemData(id: Identifier, config?: {
+        parentName?: string;
+        rel?: string;
+    }): ItemData;
+    getItemsData(ids: Identifier[], config?: Partial<ItemsDataConfig>): ItemData[];
+    getRawRelations(ids?: number[]): Map<number, RawRelationData>;
+    getItemRelations(id: Identifier): Record<string, number[]> | null;
+    getCategories(): string[];
+    getItemsOfCategories(categories: RegExp[]): {
+        [category: string]: number[];
+    };
+    private _categoryIndexCache;
+    /**
+     * Lazily built category → localIds index over the immutable flatbuffer
+     * data. Keyed by the underlying buffer and length so it rebuilds if the
+     * model buffer is regenerated. Items created/updated/deleted via edit
+     * requests are handled by the callers on top of this index.
+     */
+    private getCategoryIndex;
+    getItemsWithGeometry(): number[];
+    getItemsWithGeometryCategories(): (string | null)[];
+    private checkAttribute;
+    getItemsByAttribute({ name, value, type, negate, itemIds, }: GetItemsByAttributeParams): number[];
+    private getItemsByRelation;
+    getItemsByQuery(params: ItemsQueryParams, config?: ItemsQueryConfig): number[];
+    private getTreeItem;
+    private preindexGeometryIds;
+    private convertToLocalId;
+    private getChildrenLocalIds;
+    private traverseSpatialStructure;
+}
+
+declare type VirtualTileData = {
+    modelId: string;
+    connection: Connection;
+    multithreading?: VirtualMultithreadingConfig;
+    model: Model;
+    boxes: VirtualBoxController;
+    items: ItemConfigController;
+    materials: number[];
+};
+
+declare class VirtualTilesController {
+    meshes: Meshes;
+    tilesUpdated: boolean;
+    private static _graphicMemoryConsumed;
+    private readonly _sampleAmount;
+    private readonly _tileDimension;
+    private readonly _tileBySample;
+    private readonly _lodBySample;
+    private readonly _virtualMeshes;
+    private readonly _meshConnection;
+    private readonly _samples;
+    private readonly _tileIdGenerator;
+    private readonly _tiles;
+    private readonly _tilesChanged;
+    private readonly _sizeByTile;
+    private readonly _samplesDimensions;
+    private readonly _sampleLodClass;
+    private readonly _sampleLodState;
+    private readonly _sampleLodSize;
+    private readonly _boxes;
+    private readonly _items;
+    private readonly _materials;
+    private readonly _modelId;
+    private readonly _model;
+    private readonly _lastView;
+    private readonly _params;
+    private readonly _temp;
+    private _currentSample;
+    /**
+     * Whether the sweep may rewind to the largest samples on the next big
+     * view change. Cleared by a rewind, set again when the cursor wraps, so
+     * the sweep rewinds at most once per full lap (see {@link rewindSweep}).
+     */
+    private _rewindArmed;
+    private _virtualPlanes;
+    private _changedSamples;
+    private _virtualView;
+    /**
+     * Per-sample frustum verdict from the spatial hierarchy, refreshed on
+     * every real view change: 1 = the sample's box is provably outside
+     * the frustum/clipping planes (skip all per-sample plane math in
+     * {@link fetchLodLevel}), 0 = candidate (run the exact per-sample
+     * test as before, so the final classification is unchanged). All
+     * zeroes when no view or lookup exists — the pass then behaves
+     * exactly like the flat version.
+     */
+    private _outsideMask;
+    private _lodMode;
+    constructor(data: VirtualTileData);
+    restart(): void;
+    fetchSample(id: number, lod: CurrentLod): any;
+    fetchGeometry(id: number): AnyTileData;
+    dispose(): void;
+    generate(onProgress?: (progress: number) => void, throwIfAborted?: () => void): Promise<void>;
+    setupView(view: any): void;
+    /**
+     * Rebuilds {@link _outsideMask} from the spatial hierarchy for the
+     * current view. One hierarchy walk per view change replaces the
+     * per-sample plane tests for everything that is provably outside —
+     * with a zoomed-in camera that is typically most of the model. Falls
+     * back to all-candidates (no skipping) when the model has no lookup
+     * (empty model) or no view yet.
+     */
+    private updateOutsideMask;
+    updateVirtualMeshes(itemIds: number[]): void;
+    getSampleTransform(id: number): any;
+    /**
+     * For every loaded tile that contains at least one of the given items,
+     * returns the index-buffer chunks those items occupy in the tile.
+     *
+     * Lets a renderer clone the tile mesh sharing its `geometry.attributes`
+     * and `index`, then add `geometry.groups` for just the returned chunks
+     * to draw only the outlined slices. No highlight bookkeeping, no
+     * per-item slot allocation, no material array growth.
+     *
+     * Samples are stored in the tile in insertion order with locations
+     * `0..N-1`; `indexLocation[i]` is the start of sample `i` in the tile's
+     * index buffer, so a contiguous run of in-set samples maps to a single
+     * `(position, size)` chunk.
+     *
+     * @param itemIds - Internal item ids to look up. Public callers go
+     *   through {@link VirtualFragmentsModel.getItemDrawChunks}, which
+     *   accepts localIds and converts.
+     * @returns One entry per affected tile. `position[i]` and `size[i]`
+     *   are parallel arrays giving start index and index count.
+     */
+    getDrawChunksForItems(itemIds: Set<number>): Array<{
+        tileId: number;
+        position: Uint32Array;
+        size: Uint32Array;
+    }>;
+    update(time: number): Promise<void>;
+    raycast(representation: Representation, ray: THREE.Ray, frustum: THREE.Frustum, snap?: SnappingClass): any[];
+    setLodMode(lodMode: LodMode): void;
+    private init;
+    private initSampleLod;
+    private fetchSampleAndRepresentation;
+    private fetchCurrentMesh;
+    private fetchCurrentMaterial;
+    private fetchSampleLodSize;
+    private setupTileVisibilityAndHighlight;
+    private addLodToTile;
+    private addBoxLodToTile;
+    private notifyUpdateFinished;
+    private emitFinish;
+    /**
+     * Structural equality of two worker-side views, covering every field
+     * the culling/LOD pass reads. `graphicThreshold` is deliberately
+     * ignored — it only budgets the invisible-tile cache, so a change in
+     * it must not trigger a full re-cull (the new value still takes
+     * effect because the caller stores the incoming view first).
+     */
+    private viewEquals;
+    private planeEquals;
+    private vectorEquals;
+    private updatePositionIfNeeded;
+    /**
+     * Restarts the sweep at the largest samples, so a big view change
+     * repaints what dominates the screen first. At most once per full lap:
+     * under continuous motion (#300) every refresh crossed a threshold, the
+     * sweep kept going back to the start and the smaller samples were never
+     * revisited until the camera stopped. Returns whether the cursor is now
+     * at the start of the sweep.
+     */
+    private rewindSweep;
+    private updateCurrentSample;
+    private processSamplesDimension;
+    /**
+     * Defensive only. A camera-less main thread sends a model-containing frustum
+     * rather than omitting one, so this should always be true in practice —
+     * but the field is untyped across the worker boundary, and dereferencing
+     * it unguarded is what turns a missing frustum into a crash on every
+     * frame instead of a degraded view.
+     */
+    private get hasCameraFrustum();
+    private setupViewPlanes;
+    private updateOrientationIfNeeded;
+    private getCurrentViewOrientation;
+    private resetUpdateProcess;
+    private manageRaycast;
+    private setTileShellBuffer;
+    private getTileWhenSamplePut;
+    private getPerspTrueDim;
+    private getTileHighlight;
+    private setupTileSampleAttributes;
+    private getTileVisibility;
+    private memoryOverflow;
+    private updateMesh;
+    private tileLoadSample;
+    private updateSampleIfSeen;
+    private hideHighlightedLods;
+    private updateVisible;
+    private makeInvisibleFromTile;
+    private updateSample;
+    private hasHighlightChanged;
+    private hasVisibleChanged;
+    private newTile;
+    private createLod;
+    private sampleTemplate;
+    private makeSampleInvisible;
+    private setSample;
+    private getTileIds;
+    private addBasicTileData;
+    private buildNewVirtualTile;
+    private deleteTileIfNeeded;
+    private getShouldDeleteTile;
+    private checkTileMemoryOverflow;
+    private updateTileData;
+    private getKeepUpdating;
+    private computeTileSize;
+    private newTileId;
+    private logBufferOverflowIfNeeded;
+    private fetchLodLevel;
+    private generateTileCode;
+    private processTileDataId;
+    private deleteGeometry;
+    private processTileSpatialId;
+    private addCustomLodToTile;
+    private getTileLocations;
+    private getTileDimension;
+    private processTileDimensionId;
+    private tileAppend;
+    private putSampleInTiles;
+    private hasLodChanged;
+    private getTileIdsWhenSamplePut;
+    private updateTile;
+    private getLodTileWhenPutSample;
+    private lodTileAppendSample;
+    private addSampleToTile;
+    private setTileBuffer;
+    private updateTiles;
+    private sampleGeoms;
+    private generateSampleInTiles;
+    private buildSampleInTile;
+    private getSampleGeometries;
+    private constructTile;
+    private fetchSampleTransform;
+    private hasChanged;
+    private setupTileLocation;
+    private getTileData;
+    private updateMemoryOnTileLoad;
+    private fetchTileMatrixOnLoad;
+    private updateItem;
+    private screenSize;
+    private getTileDimensionClass;
+    private getViewDimension;
+    private loadTile;
+    /**
+     * The localIds of the items a tile holds, each once. Sent with the
+     * tile's CREATE so the main thread can keep `FragmentsModel.visibleItems`
+     * without decoding the `id` attribute, which holds internal itemIds.
+     */
+    private getTileLocalIds;
+    private getFaceIds;
+    private meshData;
+    private tileAppendAttribute;
+    private itemId;
+}
+
+/** Mapping of void/fill relationships between walls, openings, and fillers (doors/windows). */
+export declare interface VoidFillMap {
+    wallToOpenings: Map<number, Set<number>>;
+    openingToWall: Map<number, number>;
+    openingToFillers: Map<number, Set<number>>;
+    fillerToOpening: Map<number, number>;
+    relLineIds: Map<number, Set<number>>;
+}
+
+export declare class Wall {
+    core: WEBIFC.Extrusion;
+    constructor(api: WEBIFC.IfcAPI);
+    get(api: WEBIFC.IfcAPI, data: WallData): WEBIFC.Buffers;
+}
+
+export declare type WallData = {
+    start?: number[];
+    end?: number[];
+    elevation?: number;
+    height?: number;
+    offset?: number;
+    thickness?: number;
+    direction?: number[];
+    cuttingPlaneNormal?: number[];
+    cuttingPlanePosition?: number[];
+};
+
+export declare class Wire {
+    bb: flatbuffers.ByteBuffer | null;
+    bb_pos: number;
+    __init(i: number, bb: flatbuffers.ByteBuffer): Wire;
+    p1(obj?: FloatVector): FloatVector | null;
+    p2(obj?: FloatVector): FloatVector | null;
+    static sizeOf(): number;
+    static createWire(builder: flatbuffers.Builder, p1_x: number, p1_y: number, p1_z: number, p2_x: number, p2_y: number, p2_z: number): flatbuffers.Offset;
+}
+
+export declare class WireSet {
+    bb: flatbuffers.ByteBuffer | null;
+    bb_pos: number;
+    __init(i: number, bb: flatbuffers.ByteBuffer): WireSet;
+    static getRootAsWireSet(bb: flatbuffers.ByteBuffer, obj?: WireSet): WireSet;
+    static getSizePrefixedRootAsWireSet(bb: flatbuffers.ByteBuffer, obj?: WireSet): WireSet;
+    ps(index: number, obj?: FloatVector): FloatVector | null;
+    psLength(): number;
+    static startWireSet(builder: flatbuffers.Builder): void;
+    static addPs(builder: flatbuffers.Builder, psOffset: flatbuffers.Offset): void;
+    static startPsVector(builder: flatbuffers.Builder, numElems: number): void;
+    static endWireSet(builder: flatbuffers.Builder): flatbuffers.Offset;
+    static createWireSet(builder: flatbuffers.Builder, psOffset: flatbuffers.Offset): flatbuffers.Offset;
+}
+
+export { }

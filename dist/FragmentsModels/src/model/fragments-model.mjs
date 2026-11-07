@@ -1,0 +1,1075 @@
+import * as THREE from "three";
+import { CurrentLod } from "./model-types.mjs";
+import { AlignmentsManager } from "./alignments-manager.mjs";
+import { BoxManager } from "./box-manager.mjs";
+import { CoordinatesManager } from "./coordinates-manager.mjs";
+import { DataManager } from "./data-manager.mjs";
+import { EditManager } from "./edit-manager.mjs";
+import { GridsManager } from "./grids-manager.mjs";
+import { HighlightManager } from "./highlight-manager.mjs";
+import { ItemsManager } from "./items-manager.mjs";
+import { RaycastManager } from "./raycast-manager.mjs";
+import { SectionManager } from "./section-manager.mjs";
+import { SequenceManager } from "./sequence-manager.mjs";
+import { SetupManager } from "./setup-manager.mjs";
+import { ViewManager } from "./view-manager.mjs";
+import { VisibilityManager } from "./visibility-manager.mjs";
+import { DataMap } from "../../../Utils/data-map.mjs";
+import { Event } from "../../../Utils/event.mjs";
+import { MiscHelper } from "../utils/misc/misc-helper.mjs";
+class FragmentsModel {
+  /**
+   * A map of attribute changes that have occurred in the model.
+   * The key is the local ID of the item, and the value is the change.
+   */
+  attrsChanges = /* @__PURE__ */ new Map();
+  /**
+   * A map of relation changes that have occurred in the model.
+   * The key is the local ID of the item, and the value is the change.
+   */
+  relsChanges = /* @__PURE__ */ new Map();
+  /**
+   * The connection to the threads that handle the model data.
+   */
+  threads;
+  /**
+   * A map of tiles that have been loaded for the model.
+   * The key is the tile ID, and the value is the tile.
+   */
+  tiles = new DataMap();
+  /**
+   * Event triggered after a view update cycle finishes processing.
+   * Listeners receive this FragmentsModel instance, allowing queries
+   * like {@link getItemsByVisibility} to retrieve seen/unseen elements.
+   */
+  onViewUpdated = new Event();
+  /**
+   * The localIds of the items held by at least one live tile of this
+   * model. Updated automatically as tiles are created and deleted by
+   * the mesh manager; an item held by several tiles stays until the
+   * last of them is deleted. Tiles live while they are loaded, so this
+   * is not a per-frame frustum test: an item hidden with `setVisible`
+   * or out of view stays here until its tiles are deleted.
+   */
+  visibleItems = /* @__PURE__ */ new Set();
+  /**
+   * The object that represents the model in the Three.js scene.
+   */
+  object = new THREE.Object3D();
+  /**
+   * The graphics quality of the model. It ranges from 0 (lowest) to 1 (highest).
+   */
+  graphicsQuality = 0;
+  deltaModelId = null;
+  _boxManager = new BoxManager();
+  _itemsManager = new ItemsManager();
+  _coordinatesManager = new CoordinatesManager();
+  _setupManager = new SetupManager();
+  _viewManager = new ViewManager();
+  _raycastManager = new RaycastManager();
+  _visibilityManager = new VisibilityManager();
+  _highlightManager = new HighlightManager();
+  _sectionManager = new SectionManager();
+  _dataManager = new DataManager();
+  _sequenceManager = new SequenceManager();
+  _bbox = new THREE.Box3();
+  _alignmentsManager;
+  _gridsManager;
+  _meshManager;
+  _editManager = new EditManager();
+  _editor;
+  _isProcessing = false;
+  _isLoaded = false;
+  _frozen = false;
+  _isSetup = false;
+  static _deltaModelId = "isDeltaModel";
+  _parentModelId = null;
+  /**
+   * The ID of the model.
+   */
+  get modelId() {
+    return this.object.name;
+  }
+  /**
+   * The bounding box of the whole model.
+   */
+  get box() {
+    return this._bbox.clone().applyMatrix4(this.object.matrixWorld);
+  }
+  /**
+   * Whether the model is busy loading data.
+   */
+  get isBusy() {
+    const arePendingRequests = this._meshManager.requests.arePending;
+    return !this._isLoaded || this._isProcessing || arePendingRequests;
+  }
+  /**
+   * Whether the model should stop updating..
+   */
+  get frozen() {
+    return Boolean(this._frozen);
+  }
+  /**
+   * Whether the model should stop updating..
+   */
+  set frozen(value) {
+    if (value === this._frozen) return;
+    this._frozen = value;
+    if (value) return;
+    this._refreshView();
+  }
+  /**
+   * The event that is triggered when the clipping planes are needed in the thread.
+   * Set this method to pass your Three.js clipping planes to the model.
+   *
+   * @deprecated Pass the planes with the `clippingPlanes` option of
+   * {@link FragmentsModels.load}, or call {@link useClippingPlanes} after
+   * loading. This callback keeps working; whichever of the two was set last
+   * is the one the model uses.
+   */
+  get getClippingPlanesEvent() {
+    return this._viewManager.getClippingPlanesEvent;
+  }
+  /**
+   * The event that is triggered when the clipping planes are needed in the thread.
+   * Set this method to pass your Three.js clipping planes to the model.
+   *
+   * @deprecated Pass the planes with the `clippingPlanes` option of
+   * {@link FragmentsModels.load}, or call {@link useClippingPlanes} after
+   * loading. This callback keeps working; whichever of the two was set last
+   * is the one the model uses.
+   */
+  set getClippingPlanesEvent(value) {
+    this._viewManager.getClippingPlanesEvent = value;
+  }
+  /**
+   * The clipping planes the model culls against, in world space. This is the
+   * array passed to {@link useClippingPlanes} (or the `clippingPlanes` load
+   * option) itself, not a copy.
+   */
+  get clippingPlanes() {
+    return this._viewManager.getClippingPlanesEvent();
+  }
+  get camera() {
+    return this._viewManager.currentCamera;
+  }
+  get isDeltaModel() {
+    return this.object.userData[FragmentsModel._deltaModelId];
+  }
+  get parentModelId() {
+    return this._parentModelId;
+  }
+  /**
+   * The thread group this model was loaded into, or `undefined` if it was
+   * loaded into the default pool. Set once at load time, never changes.
+   */
+  threadGroup;
+  /**
+   * The constructor of the fragments model. Don't use this directly. Use the {@link FragmentsModels.load} instead.
+   */
+  constructor(modelId, meshManager, threads, editor, threadGroup) {
+    this.object.name = modelId;
+    this.object.up.set(0, 0, 1);
+    this._meshManager = meshManager;
+    this.threads = threads;
+    this._editor = editor;
+    this.threadGroup = threadGroup;
+    this._alignmentsManager = new AlignmentsManager(this);
+    this._gridsManager = new GridsManager(this);
+    this.tiles.onItemSet.add(({ value: mesh }) => this.object.add(mesh));
+    this.tiles.onBeforeDelete.add(({ value: mesh }) => {
+      this.object.remove(mesh);
+      mesh.geometry.dispose();
+      MiscHelper.forEach(mesh.material, (mat) => mat.dispose());
+    });
+  }
+  /**
+   * Dispose the model. Use this when you're done with the model.
+   * If you use the {@link FragmentsModels.dispose} method, this will be called automatically for all models.
+   *
+   * @param options.keepInScene - If true, frees the model's worker slot,
+   *   registry entries and shared MaterialManager slot but leaves the THREE
+   *   object, tiles, materials in `list`, alignments and grids in place.
+   *   Caller must finalize the visual cleanup later via
+   *   {@link finalizeDispose}. Used by `editor.save()` to swap in a freshly
+   *   loaded model without a blank frame.
+   */
+  async dispose(options) {
+    this._isLoaded = false;
+    this.visibleItems.clear();
+    this.onViewUpdated.reset();
+    await this._dataManager.dispose(
+      this,
+      this._meshManager,
+      this._alignmentsManager,
+      this._gridsManager,
+      options
+    );
+  }
+  /**
+   * Finalize a deferred dispose. Removes the THREE object from its parent,
+   * tears down tile meshes (geometry only — materials are shared via the
+   * MaterialManager and may be reused by a replacement model under the
+   * same modelId), and disposes the model's alignments and grids.
+   *
+   * Only call this after `dispose({ keepInScene: true })`. The tile map
+   * is cleared with events disabled to bypass the onBeforeDelete listener
+   * registered in the constructor (which would otherwise dispose tile
+   * materials).
+   */
+  finalizeDispose() {
+    this.object.removeFromParent();
+    this.tiles.eventsEnabled = false;
+    for (const [, mesh] of this.tiles) {
+      this.object.remove(mesh);
+      mesh.geometry.dispose();
+    }
+    this.tiles.clear();
+    this._alignmentsManager.dispose();
+    this._gridsManager.dispose();
+  }
+  /**
+   * Get the spatial structure of the model.
+   */
+  getSpatialStructure() {
+    return this._dataManager.getSpatialStructure(this);
+  }
+  /**
+   * Get the local IDs corresponding to the specified GUIDs.
+   * @param guids - Array of GUIDs to look up.
+   */
+  getLocalIdsByGuids(guids) {
+    return this._dataManager.getLocalIdsByGuids(this, guids);
+  }
+  /**
+   * Translate internal `itemId`s into user-facing `localId`s, preserving
+   * order. Used by GPU-readback pickers that recover item ids from the
+   * per-vertex `id` attribute and need to map back to the public id
+   * space.
+   */
+  getLocalIdsFromItemIds(itemIds) {
+    return this._dataManager.getLocalIdsFromItemIds(this, itemIds);
+  }
+  /**
+   * Get all the categories of the model.
+   */
+  getCategories() {
+    return this._dataManager.getCategories(this);
+  }
+  /**
+   * Get the names of every user-defined index stored on this model. See the
+   * `ModelIndex` schema for the supported shapes.
+   */
+  getIndexNames() {
+    return this._dataManager.getIndexNames(this);
+  }
+  /**
+   * Describe the shape of a named index without performing any lookups.
+   * Returns `null` if no index with that name exists.
+   */
+  getIndexInfo(name) {
+    return this._dataManager.getIndexInfo(this, name);
+  }
+  /**
+   * Get the keys of an index. Useful for keys-only indexes (membership tests,
+   * iteration) but valid for any mode. Number keys come back as a
+   * `Uint32Array`, string keys as `string[]`.
+   */
+  getIndexKeys(name) {
+    return this._dataManager.getIndexKeys(this, name);
+  }
+  /**
+   * Get key at given index.
+   * Useful for keys-only indexes but valid for any mode.
+   */
+  getIndexKey(name, index) {
+    return this._dataManager.getIndexKey(this, name, index);
+  }
+  /**
+   * Get the values of an index. Useful for inverse lookups.
+   */
+  getIndexValues(name) {
+    return this._dataManager.getIndexValues(this, name);
+  }
+  /**
+   * Test whether a key exists in the named index without resolving its value.
+   */
+  hasIndexEntry(name, key) {
+    return this._dataManager.hasIndexEntry(this, name, key);
+  }
+  /**
+   * Forward lookup of a single entry in the named index. The return shape
+   * depends on the index mode (see {@link IndexEntry}).
+   */
+  getIndexEntry(name, key) {
+    return this._dataManager.getIndexEntry(this, name, key);
+  }
+  /**
+   * Inverse lookup. For an index with forward direction `key -> value`,
+   * returns every key that maps to `value`. The inverse map is built lazily
+   * on first call and cached for the model's lifetime.
+   */
+  getInverseIndexEntry(name, value) {
+    return this._dataManager.getInverseIndexEntry(this, name, value);
+  }
+  getItemsWithGeometryCategories() {
+    return this._dataManager.getItemsWithGeometryCategories(this);
+  }
+  /**
+   * Get all the items of the model that have geometry.
+   */
+  getItemsWithGeometry() {
+    return this._dataManager.getItemsWithGeometry(this);
+  }
+  /**
+   * Get all the items ids of the model that have geometry.
+   */
+  getItemsIdsWithGeometry() {
+    return this._dataManager.getItemsIdsWithGeometry(this);
+  }
+  /**
+   * Get the metadata of the model.
+   */
+  getMetadata() {
+    return this._dataManager.getMetadata(this);
+  }
+  /**
+   * Get the Coordinate Reference System (CRS) data of the model, if available.
+   * Returns null if the source IFC file did not contain IFCPROJECTEDCRS
+   * or IFCCOORDINATEREFERENCESYSTEM entities.
+   */
+  getCRS() {
+    return this._dataManager.getCRS(this);
+  }
+  /**
+   * Get the GUIDs corresponding to the specified local IDs.
+   * @param localIds - Array of local IDs to look up.
+   */
+  getGuidsByLocalIds(localIds) {
+    return this._dataManager.getGuidsByLocalIds(this, localIds);
+  }
+  /**
+   * Get the buffer of the model.
+   * @param raw - Whether to get the raw buffer. If false, it will be compressed.
+   */
+  getBuffer(raw = false) {
+    return this._dataManager.getBuffer(this, raw);
+  }
+  /**
+   * Get a buffer containing only the specified items and their associated geometry.
+   * @param localIds - The local IDs of the items to include.
+   * @param raw - Whether to get the raw buffer. If false, it will be compressed.
+   */
+  getSubsetBuffer(localIds, raw = false) {
+    return this._invoke("getSubsetBuffer", [localIds, raw]);
+  }
+  /**
+   * Get all the items of the model that belong to the specified category.
+   * @param category - The category to look up.
+   */
+  getItemsOfCategories(categories) {
+    return this._dataManager.getItemsOfCategories(this, categories);
+  }
+  async getGuids() {
+    const guids = await this._invoke("getGuids", []);
+    return guids;
+  }
+  /**
+   * Get all the local IDs of the model.
+   */
+  async getLocalIds() {
+    const localIds = await this._invoke("getLocalIds", []);
+    return localIds;
+  }
+  /**
+   * Retrieves items based on the specified query parameters.
+   *
+   * @param params - The query parameters used to filter and retrieve items.
+   * @param config - Optional query configuration.
+   * @returns A promise that resolves to the items matching the query.
+   */
+  getItemsByQuery(params, config) {
+    return this._dataManager.getItemsByQuery(this, params, config);
+  }
+  // TODO: Fix, this is wrong
+  async getItemsMaterialDefinition(localIds) {
+    const result = await this._invoke("getItemsMaterialDefinition", [
+      localIds
+    ]);
+    return result;
+  }
+  /**
+   * Retrieves the geometry data for the specified local IDs.
+   *
+   * The returned data is structured as an array of arrays of `MeshData`,
+   * which contains the necessary information to reconstruct a `THREE.BufferGeometry`.
+   *
+   * @param localIds - An array of local IDs for which the geometry data is requested.
+   * @param lod - The level of detail for the geometry (optional).
+   */
+  getItemsGeometry(localIds, lod = CurrentLod.GEOMETRY) {
+    return this._editManager.getItemsGeometry(this, localIds, lod);
+  }
+  getGeometries(ids) {
+    return this._editManager.getGeometries(this, ids);
+  }
+  /**
+   * Retrieves the total volume of items based on their local IDs.
+   *
+   * @param localIds An array of local IDs representing the items.
+   * @returns A promise that resolves to the total volume of the specified items.
+   */
+  async getItemsVolume(localIds) {
+    const volume = await this._invoke("getItemsVolume", [localIds]);
+    return volume;
+  }
+  /**
+   * Retrieves the names of all attributes associated with the model.
+   *
+   * @returns A promise that resolves to an array of strings, where each string is the name of an attribute.
+   */
+  async getAttributeNames() {
+    const names = await this._invoke("getAttributeNames", []);
+    return names;
+  }
+  /**
+   * Retrieves the attribute values associated with the model.
+   *
+   * @returns A promise that resolves to an array of attribute values.
+   */
+  async getAttributeValues() {
+    const values = await this._invoke("getAttributeValues", []);
+    return values;
+  }
+  async getAttributesUniqueValues(params) {
+    const values = await this._invoke("getAttributesUniqueValues", [
+      params
+    ]);
+    return values;
+  }
+  /**
+   * Retrieves the attribute types associated with the model.
+   *
+   * @returns A promise that resolves to an array of attribute types.
+   */
+  async getAttributeTypes() {
+    const types = await this._invoke("getAttributeTypes", []);
+    return types;
+  }
+  /**
+   * Retrieves the names of all relations associated with this model.
+   *
+   * @returns A promise that resolves to an array of strings, where each string is the name of a relation.
+   */
+  async getRelationNames() {
+    const names = await this._invoke("getRelationNames", []);
+    return names;
+  }
+  /**
+   * Get the maximum local ID of the model.
+   */
+  getMaxLocalId() {
+    return this._dataManager.getMaxLocalId(this);
+  }
+  /**
+   * Get an item by its ID.
+   * @param id - The ID of the item to look up.
+   */
+  getItem(id) {
+    return this._itemsManager.getItem(this, id);
+  }
+  /**
+   * Get the spatial structure children of the specified items.
+   * @param ids - The IDs of the items to look up.
+   */
+  getItemsChildren(ids) {
+    return this._itemsManager.getItemsChildren(this, ids);
+  }
+  /**
+   * Get all the data of the specified items.
+   *
+   * By default, the API returns the item’s built-in attributes only.
+   * Relations are not traversed unless explicitly enabled via the `config`
+   * parameter.
+   *
+   * @param ids - The IDs of the items to look up.
+   * @param config - The configuration of the items data. By default, all
+   * built-in attributes are returned and no relations are loaded.
+   *
+   * @example
+   * // Retrieve all built-in attributes and all related entities (full graph)
+   * await getItemsData(ids, {
+   *   attributesDefault: true,
+   *   relationsDefault: { attributes: true, relations: true },
+   * });
+   *
+   * @example
+   * // Retrieve built-in attributes and Property Sets only (via IsDefinedBy)
+   * await getItemsData(ids, {
+   *   attributesDefault: true,
+   *   relations: {
+   *     IsDefinedBy: { attributes: true, relations: true },
+   *     DefinesOccurrence: { attributes: false, relations: false },
+   *   },
+   * });
+   */
+  getItemsData(ids, config) {
+    return this._itemsManager.getItemsData(this, ids, config);
+  }
+  /**
+   * Get the absolute positions of the specified items.
+   * @param localIds - The local IDs of the items to look up.
+   */
+  getPositions(localIds) {
+    return this._coordinatesManager.getPositions(this, localIds);
+  }
+  /**
+   * Gets coordinates of the model.
+   */
+  getCoordinates() {
+    return this._coordinatesManager.getCoordinates(this);
+  }
+  /**
+   * Retrieves the coordination matrix for the current model.
+   *
+   * This method utilizes the `_coordinatesManager` to compute and return a
+   * `THREE.Matrix4` object based on the original model coordinates.
+   */
+  getCoordinationMatrix() {
+    return this._coordinatesManager.getCoordinationMatrix(this);
+  }
+  /**
+   * Get the merged bounding box of the specified items.
+   * @param localIds - The local IDs of the items to look up.
+   */
+  getMergedBox(localIds) {
+    return this._boxManager.getMergedBox(this, localIds);
+  }
+  /**
+   * Get the individual bounding boxes of the specified items.
+   * @param localIds - The local IDs of the items to look up.
+   */
+  getBoxes(localIds) {
+    return this._boxManager.getBoxes(this, localIds);
+  }
+  /**
+   * Get the absolute alignments of the model (if any).
+   */
+  getAlignments() {
+    return this._alignmentsManager.getAlignments();
+  }
+  /**
+   * Get the horizontal alignments of the model (if any).
+   */
+  getHorizontalAlignments() {
+    return this._alignmentsManager.getHorizontalAlignments();
+  }
+  /**
+   * Get the vertical alignments of the model (if any).
+   */
+  getVerticalAlignments() {
+    return this._alignmentsManager.getVerticalAlignments();
+  }
+  /**
+   * Get the civil alignment styles of the model (if any).
+   */
+  getAlignmentStyles() {
+    return this._alignmentsManager.getAlignmentStyles();
+  }
+  /**
+   * Get the grids of the model (if any).
+   *
+   * Returns a `THREE.Group` with one child per grid (each child is a `THREE.Group`
+   * that carries `userData.id = localId` and `userData.kind = "grid"`).
+   *
+   * Each grid's children are `THREE.Group` instances with `userData.kind = "axis"`,
+   * acting as an axis container.
+   * A `THREE.LINE` instance with `userData.kind = "line"` is appended to it.
+   *
+   * When opting in to showing labels, two `THREE.SHAPE` instances with
+   * `userData.kind = "label"` and `userData.index` (the label's index, `0` or `1`)
+   * are appended to the axis container.
+   *
+   * All grid's descendants (`"axis"`, `"line"`, `"label"`) carry `userData.tag` (the axis label value)
+   * and `userData.axis` (`"uAxes"`, `"vAxes"`, or `"wAxes"`).
+   */
+  getGrids(config) {
+    return this._gridsManager.getGrids(config);
+  }
+  /**
+   * The shared material used to render every grid axis line.
+   * Mutating its properties (color, opacity, dash sizes, etc.) updates all
+   * rendered grid lines immediately. Use `setGridMaterial` to swap to a
+   * different material instance.
+   */
+  getGridMaterial() {
+    return this._gridsManager.getGridMaterial();
+  }
+  /**
+   * Replace the shared grid material. The previous material is disposed
+   * after the swap.
+   */
+  setGridMaterial(material) {
+    this._gridsManager.setGridMaterial(material);
+  }
+  /**
+   * The shared material used to render every grid axis label.
+   * Mutating its properties (color, opacity, dash sizes, etc.) updates all
+   * rendered grid labels immediately. Use `setGridLabelMaterial` to swap to a
+   * different material instance.
+   */
+  getGridLabelMaterial() {
+    return this._gridsManager.getLabelMaterial();
+  }
+  /**
+   * Replace the shared grid label material. The previous material is disposed
+   * after the swap.
+   */
+  setGridLabelMaterial(material) {
+    this._gridsManager.setLabelMaterial(material);
+  }
+  /**
+   * Sets a camera for the model. The model will use it to load tiles dinamically depending on the users view
+   * (e.g. hiding items that are not in the view, setting the LOD to far away items, etc).
+   * @param camera - The camera to use.
+   */
+  useCamera(camera) {
+    this._viewManager.useCamera(camera);
+  }
+  /**
+   * Sets the clipping planes the model culls against, in world space. Pass
+   * the same array your renderer clips with (e.g. `renderer.clippingPlanes`):
+   * the model keeps the reference and reads it on every view refresh, so
+   * adding, removing or moving planes in place is picked up without calling
+   * this again. Assigning a new array to `renderer.clippingPlanes` is not:
+   * call this again with the new array.
+   * @param planes - The clipping planes to use.
+   */
+  useClippingPlanes(planes) {
+    this._viewManager.getClippingPlanesEvent = () => planes;
+  }
+  /**
+   * Sets the LOD / culling mode of the model.
+   * @param lodMode - The LOD / culling mode to set.
+   */
+  setLodMode(lodMode) {
+    return this._viewManager.setLodMode(this, lodMode);
+  }
+  /**
+   * Performs a rectangle raycast on the model.
+   * @param data - The data of the rectangle raycast.
+   */
+  rectangleRaycast(data) {
+    return this._raycastManager.rectangleRaycast(this, this._meshManager, data);
+  }
+  /**
+   * Performs a raycast on the model.
+   * @param data - The data of the raycast.
+   */
+  raycast(data) {
+    return this._raycastManager.raycast(this, data);
+  }
+  /**
+   * Performs a raycast on the model and returns all the results.
+   * @param data - The data of the raycast.
+   */
+  raycastAll(data) {
+    return this._raycastManager.raycastAll(this, data);
+  }
+  /**
+   * Performs a raycast on the model with snapping.
+   * @param data - The data of the raycast.
+   */
+  raycastWithSnapping(data) {
+    return this._raycastManager.raycastWithSnapping(this, data);
+  }
+  /**
+   * Sets the visibility of the specified items.
+   * @param localIds - The local IDs of the items to set the visibility of.
+   * @param visible - Whether the items should be visible.
+   */
+  async setVisible(localIds, visible) {
+    const args = [localIds, visible];
+    await this._invoke("setVisible", args);
+  }
+  /**
+   * Toggles the visibility of the specified items.
+   * @param localIds - The local IDs of the items to toggle the visibility of.
+   */
+  async toggleVisible(localIds) {
+    const args = [localIds];
+    await this._invoke("toggleVisible", args);
+  }
+  /**
+   * Gets the items by visibility.
+   * @param visible - Whether the items should be visible.
+   */
+  getItemsByVisibility(visible) {
+    return this._visibilityManager.getItemsByVisibility(this, visible);
+  }
+  /**
+   * Gets the items by visibility.
+   * @param localIds - The local IDs of the items to get the visibility of.
+   */
+  getVisible(localIds) {
+    return this._visibilityManager.getVisible(this, localIds);
+  }
+  /**
+   * Resets the visibility of all items.
+   */
+  resetVisible() {
+    return this._visibilityManager.resetVisible(this);
+  }
+  /**
+   * Highlights the specified items.
+   * @param localIds - The local IDs of the items to highlight. If undefined, all items will be highlighted.
+   * @param highlightMaterial - The material to use for the highlight.
+   */
+  highlight(localIds, highlightMaterial) {
+    return this._highlightManager.highlight(this, localIds, highlightMaterial);
+  }
+  /**
+   * Applies a color to the specified items while preserving original material properties.
+   * @param localIds - The local IDs of the items to color. If undefined, all items will be colored.
+   * @param color - The color to apply.
+   */
+  setColor(localIds, color) {
+    return this._highlightManager.setColor(this, localIds, color);
+  }
+  /**
+   * Resets the color of the specified items to their original color while preserving other highlight properties (like opacity).
+   * @param localIds - The local IDs of the items to reset color for. If undefined, all items will be affected.
+   */
+  resetColor(localIds) {
+    return this._highlightManager.resetColor(this, localIds);
+  }
+  /**
+   * Applies an opacity to the specified items while preserving original material properties (like color).
+   * @param localIds - The local IDs of the items to change opacity for. If undefined, all items will be affected.
+   * @param opacity - The opacity to apply (0 to 1).
+   */
+  setOpacity(localIds, opacity) {
+    return this._highlightManager.setOpacity(this, localIds, opacity);
+  }
+  /**
+   * Resets the opacity of the specified items to their original opacity while preserving other highlight properties (like color).
+   * @param localIds - The local IDs of the items to reset opacity for. If undefined, all items will be affected.
+   */
+  resetOpacity(localIds) {
+    return this._highlightManager.resetOpacity(this, localIds);
+  }
+  /**
+   * Ghosts (x-rays) items through a per-model GPU state texture, with no
+   * per-item recolor, so it scales to millions of elements. Ghosted surfaces
+   * are desaturated and drawn with a screen-door (see
+   * `FragmentsModels.setGhostOpacity`). Replaces the previous ghost set. It is
+   * renderer state only: highlights, visibility, picking and the worker are
+   * not touched.
+   * @param localIds - The key set. With `invert=false`, these items are
+   *   ghosted; with `invert=true`, everything EXCEPT these is ghosted. Pass the
+   *   SMALL side (e.g. the selection); the table is sized by it.
+   * @param invert - Ghost the complement of `localIds` instead.
+   */
+  async setGhostItems(localIds, invert = false) {
+    let itemIds = [];
+    if (localIds.length > 0) {
+      itemIds = await this.ghostItemIds(localIds);
+    }
+    this._meshManager.materials.setGhostItems(this.modelId, itemIds, invert);
+  }
+  /**
+   * Un-ghosts the given items in place (makes them NOT ghosted), leaving the
+   * rest of the ghost state intact. Pair with visibility: showing an item
+   * should also clear its ghost. No-op if no ghost is active.
+   * @param localIds - The items to un-ghost.
+   */
+  async unsetGhostItems(localIds) {
+    if (localIds.length === 0) return;
+    const itemIds = await this.ghostItemIds(localIds);
+    this._meshManager.materials.unsetGhostItems(this.modelId, itemIds);
+  }
+  /** Clears the ghost (x-ray) of this model, restoring the full material. */
+  clearGhost() {
+    this._meshManager.materials.clearGhost(this.modelId);
+  }
+  /**
+   * The internal item ids of the given localIds (a worker round-trip). These
+   * are the ids the geometry carries per vertex, which GPU lookups such as the
+   * ghost key on. LocalIds with no item are left out.
+   * @param localIds - The local IDs to convert.
+   */
+  async getItemIdsByLocalIds(localIds) {
+    return this.threads.invoke(this.modelId, "getItemIdsByLocalIds", [
+      localIds
+    ]);
+  }
+  async ghostItemIds(localIds) {
+    return (await this.getItemIdsByLocalIds(localIds)).filter(
+      (id) => id !== null && id !== void 0
+    );
+  }
+  /**
+   * Gets the highlight of the specified items.
+   * @param localIds - The local IDs of the items to get the highlight of. If undefined, it will return the highlight of all items.
+   */
+  getHighlight(localIds) {
+    return this._highlightManager.getHighlight(this, localIds);
+  }
+  /**
+   * Resets the highlight of the specified items.
+   * @param localIds - The local IDs of the items to reset the highlight of. If undefined, it will reset the highlight of all items.
+   */
+  resetHighlight(localIds) {
+    return this._highlightManager.resetHighlight(this, localIds);
+  }
+  /**
+   * Gets the item IDs of the items that are highlighted.
+   */
+  getHighlightItemIds() {
+    return this._highlightManager.getHighlightItemIds(this);
+  }
+  /**
+   * Gets the section (edges and fills) between the model and a given clipping plane.
+   * @param plane - The plane to get the section of.
+   * @param localIds - The local IDs of the items to get the section of. If undefined, it will return the section of all items.
+   */
+  getSection(plane, localIds) {
+    return this._sectionManager.getSection(this, plane, localIds);
+  }
+  /**
+   * Gets all the materials IDs of the model.
+   */
+  getMaterialsIds() {
+    return this._editManager.getMaterialsIds(this);
+  }
+  /**
+   * Gets the materials of the model.
+   * @param localIds - The local IDs of the materials to get. If undefined, it will return all materials.
+   */
+  getMaterials(localIds) {
+    return this._editManager.getMaterials(this, localIds);
+  }
+  /**
+   * Gets all the representations IDs of the model.
+   */
+  getRepresentationsIds() {
+    return this._editManager.getRepresentationsIds(this);
+  }
+  /**
+   * Gets the representations of the model.
+   * @param localIds - The local IDs of the representations to get. If undefined, it will return all representations.
+   */
+  getRepresentations(localIds) {
+    return this._editManager.getRepresentations(this, localIds);
+  }
+  /**
+   * Gets all the local transforms IDs of the model.
+   */
+  getLocalTransformsIds() {
+    return this._editManager.getLocalTransformsIds(this);
+  }
+  /**
+   * Gets the local transforms of the model.
+   * @param localIds - The local IDs of the local transforms to get. If undefined, it will return all local transforms.
+   */
+  getLocalTransforms(localIds) {
+    return this._editManager.getLocalTransforms(this, localIds);
+  }
+  /**
+   * Gets all the global transforms IDs of the model.
+   */
+  getGlobalTransformsIds() {
+    return this._editManager.getGlobalTransformsIds(this);
+  }
+  /**
+   * Gets the global transforms of the model.
+   * @param localIds - The local IDs of the global transforms to get. If undefined, it will return all global transforms.
+   */
+  getGlobalTransforms(localIds) {
+    return this._editManager.getGlobalTransforms(this, localIds);
+  }
+  /**
+   * Gets all the samples IDs of the model.
+   */
+  getSamplesIds() {
+    return this._editManager.getSamplesIds(this);
+  }
+  /**
+   * Gets the samples of the model.
+   * @param localIds - The local IDs of the samples to get. If undefined, it will return all samples.
+   */
+  getSamples(localIds) {
+    return this._editManager.getSamples(this, localIds);
+  }
+  /**
+   * Returns per-tile index-buffer chunks for the given items. Each entry
+   * carries a tile id and parallel `position` / `size` Uint32Arrays giving
+   * the start index and index count of every contiguous run of vertices
+   * belonging to one of `localIds` in that tile's index buffer.
+   *
+   * Lets a renderer clone a tile mesh sharing its `geometry.attributes`
+   * and `index`, then call `geometry.addGroup(position[i], size[i], 0)`
+   * for each chunk to draw only the matching slices. No highlight
+   * material slot is allocated; the call is read-only.
+   */
+  getItemDrawChunks(localIds) {
+    return this._dataManager.getItemDrawChunks(this, localIds);
+  }
+  /**
+   * Gets all the items IDs of the model.
+   */
+  getItemsIds() {
+    return this._editManager.getItemsIds(this);
+  }
+  /**
+   * Gets the items of the model.
+   * @param localIds - The local IDs of the items to get. If undefined, it will return all items.
+   */
+  getItems(localIds) {
+    return this._editManager.getItems(this, localIds);
+  }
+  /**
+   * Gets the relations of the model.
+   * @param localIds - The local IDs of the relations to get. If undefined, it will return all relations.
+   */
+  getRelations(localIds) {
+    return this._editManager.getRelations(this, localIds);
+  }
+  /**
+   * Gets the global transforms IDs of the items of the model.
+   * @param ids - The local IDs of the items to get the global transforms IDs of.
+   */
+  getGlobalTranformsIdsOfItems(ids) {
+    return this._editManager.getGlobalTranformsIdsOfItems(this, ids);
+  }
+  /**
+   * Gets the edited elements of the model.
+   */
+  getEditedElements() {
+    return this._editManager.getEditedElements(this);
+  }
+  /**
+   * Processes a sequence of actions in the worker and computes the result based on the provided input.
+   *
+   * @param result - The type of item information to compute, used to select the appropriate result function.
+   * @param fromItems - An array of selection types, each corresponding to an items selector function.
+   * @param input - The initial input data to be processed by the sequence of actions.
+   * @returns The computed result after processing the sequence of actions, or `null` if the result function is not found.
+   * @experimental
+   */
+  getSequenced(result, fromItems, inputs) {
+    return this._sequenceManager.getSequenced(this, result, fromItems, inputs);
+  }
+  async handleRequest(request) {
+    await this._meshManager.requests.handleRequest(this._meshManager, request);
+  }
+  /**
+   * Internal method to call a method of the model on its worker. Don't use
+   * this directly.
+   */
+  _invoke(method, args) {
+    return this.threads.invoke(this.modelId, method, args);
+  }
+  /**
+   * Internal method to get the delta model holding this model's edits, if
+   * it is loaded. Don't use this directly.
+   */
+  _getDeltaModel() {
+    if (this.deltaModelId === null) return void 0;
+    return this._meshManager.list.get(this.deltaModelId);
+  }
+  _getElements(localIds) {
+    return this._editManager.getElements(this, localIds);
+  }
+  /**
+   * Fast snap-only fetch keyed by **itemId**. See
+   * `EditManager.getItemSnapData`. Internal — picker / SnapResolver
+   * consume this. App code should keep using `_getElements` (localId).
+   */
+  _getItemSnapData(itemId) {
+    return this._editManager.getItemSnapData(this, itemId);
+  }
+  /**
+   * Internal method to finish processing. Don't use this directly.
+   */
+  _finishProcessing() {
+    this._isProcessing = false;
+    this.onViewUpdated.trigger(this);
+  }
+  _setDeltaModel(modelId) {
+    this.object.userData[FragmentsModel._deltaModelId] = true;
+    this._parentModelId = modelId;
+  }
+  /**
+   * Internal method to refresh the view of the model. You shouldn't call this directly. Instead, use {@link FragmentsModels.update}.
+   */
+  async _refreshView(force = false) {
+    if (this.frozen) return;
+    const mainPromise = this._viewManager.refreshView(this, this._meshManager, force).then((sent) => {
+      if (sent) this._isProcessing = true;
+    });
+    const deltaPromise = this._editor._update(this.modelId);
+    await Promise.all([mainPromise, deltaPromise]);
+  }
+  /**
+   * Internal method to set up the model. Don't use this directly.
+   */
+  async _setup(data, raw, config) {
+    if (this._isSetup) return;
+    await this._setupManager.setup(this, this._bbox, data, raw, config);
+    this._isLoaded = true;
+    this._isProcessing = true;
+    this._isSetup = true;
+  }
+  /**
+   * Internal method to edit the model. Don't use this directly.
+   * @param requests - The requests to edit the model.
+   */
+  _edit(requests) {
+    return this._editManager.edit(this, requests);
+  }
+  /**
+   * Internal method to reset the model. Don't use this directly.
+   */
+  _reset() {
+    return this._editManager.reset(this);
+  }
+  /**
+   * Internal method to save the model. Don't use this directly.
+   */
+  _save() {
+    return this._editManager.save(this);
+  }
+  /**
+   * Internal method to get the requests of the model. Don't use this directly.
+   */
+  _getRequests() {
+    return this._editManager.getRequests(this);
+  }
+  /**
+   * Internal method to get the requests added since an earlier call. Don't use this directly.
+   * @param from - The `count` the earlier call returned.
+   * @param generation - The `generation` the earlier call returned.
+   */
+  _getRequestsSince(from, generation) {
+    return this._editManager.getRequestsSince(this, from, generation);
+  }
+  /**
+   * Internal method to set the requests of the model. Don't use this directly.
+   * @param data - The data to set the requests of the model.
+   */
+  _setRequests(data) {
+    return this._editManager.setRequests(this, data);
+  }
+  /**
+   * Internal method to select a request of the model. Don't use this directly.
+   * @param index - The index of the request to select.
+   */
+  _selectRequest(index) {
+    return this._editManager.selectRequest(this, index);
+  }
+}
+export {
+  FragmentsModel
+};
+//# sourceMappingURL=fragments-model.mjs.map

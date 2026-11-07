@@ -1,0 +1,58 @@
+{
+  "name": "@thatopen/fragments",
+  "description": "Simple geometric system built on top of Three.js to display 3D BIM data efficiently.",
+  "version": "3.6.0+structura.ids.1",
+  "author": "That Open Company",
+  "contributors": [
+    "Antonio Gonzalez Viegas (https://github.com/agviegas)",
+    "Juan Hoyos (https://github.com/HoyosJuan)"
+  ],
+  "license": "MIT",
+  "homepage": "https://docs.thatopen.com/",
+  "bugs": {
+    "url": "https://github.com/ThatOpen/engine_fragment/issues"
+  },
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "sideEffects": [
+    "./dist/Worker/*",
+    "./src/FragmentsModels/src/multithreading/fragments-thread.ts"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./worker": {
+      "import": "./dist/Worker/worker.mjs",
+      "default": "./dist/Worker/worker.mjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "build-info.json"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rihokirss/engine_fragment.git"
+  },
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "dependencies": {
+    "earcut": "^3.0.1",
+    "flatbuffers": "25.2.10",
+    "lru-cache": "11.1.0",
+    "pako": "2.1.0",
+    "xxhash-wasm": "^1.1.0"
+  },
+  "peerDependencies": {
+    "three": ">=0.182.0",
+    "web-ifc": ">=0.0.77"
+  }
+}
